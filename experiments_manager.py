@@ -297,7 +297,7 @@ def model_fn(features, labels, mode, params):
         (EstimatorSpec): Model to be run by Estimator.
     """
     print('############ Received features='+str(type(features)))
-    if str(type(features)) == '<type \'dict\'>':
+    if isinstance(features,dict):
         #basic case (for serving especially) where input is a dict with only the 'feature' item
         if 'feature' in features and len(features)==1:
             print('Found features dictionnary with unique key \'feature\', using as is')
