@@ -1,33 +1,35 @@
-#What's that ?
-A set of script that demonstrate the use of Tensorflow experiments and estimators on 1D data
+***What's that ?
+
+A set of scripts that demonstrate the use of Tensorflow experiments and estimators on 1D data
 @brief : the main script that enables training, validation and serving Tensorflow based models merging all needs in a
-single script to train, evaluate, export and serve.
-taking large inspirations of official tensorflow demos.
+single script to train, evaluate, export and serve, taking large inspirations of official Tensorflow demos.
 @author : Alexandre Benoit, LISTIC lab, FRANCE
 
 Several ideas are put together:
--experiments and estimators to manage training, valiation and export in a easier way (but experiments are still in the contrib module so subject to strong changes)
+-experiments and estimators to manage training, validation and export in a easier way (but experiments are still in the contrib module so subject to strong changes)
 -using moving averages to store parameters with values smoothed along the last training steps (FIXME : ensure those values are used for real by the estimator, actually the graph shows 2 parameter savers...).
--visualization including embeddings projections to observe some data projections on the TensorBoard
+-visualization including embedding projections to observe some data projections on the TensorBoard
 -tensorflow-serving api use to serve the model and dynamically load updated models
 -some tensorflow-serving client codes to reuse the trained model on single or streaming data
 
 
-#Machine Setup (tested with tensorflow 1.4.1)
+***Machine Setup (tested with tensorflow 1.4.1)
+
 1. install python 2.7 and python pip
-2. install tensorflow and tensorflow serving using pip : pip install tensorflow-gpu tensorflow-serving-api
-Note that the first versions of the dependency lib grpcio may bring some troubles when starting the tensorflow server.
+2. install Tensorflow and Tensorflow serving using pip : pip install tensorflow-gpu tensorflow-serving-api
+Note that the first versions of the dependency lib grpcio may bring some troubles when starting the Tensorflow server.
 grpcio python library version 1.7.3 and latest version above 1.8.4 should work.
 ==> Additionnal recommendations:
-Get much better performances with optimized tensorflow packages coming from here:
+Get much better performances with optimized Tensorflow packages coming from here:
 https://github.com/mind/wheels/releases/
-Install like this adajust the last link to your target version:
+Install as the following adjust but the last link to your target version:
 pip install --ignore-installed --upgrade \ https://github.com/mind/wheels/releases/download/tf1.4.1-gpu-cuda9/tensorflow-1.4.1-cp27-cp27mu-linux_x86_64.whl
 Get the Intel MKL library installed :
 https://github.com/mind/wheels#mkl
 
 
-#Demo with a pretrained network
+***Demo with a pretrained network
+
 A pretrained autoencoder network working on time series is provided with the codes to see what you can get :
 1. open a terminal and go into the source code directory
 2. start the tensorboard on the experiments/1Dsignals_clustering folder using commands
@@ -43,23 +45,23 @@ python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_c
 --> start a client and ask to encode an input signal using command:
 python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-05--11\:34\:05/
 
-#How tu use it to train/test/serve a new model for a new use case ?
+***How tu use it to train/test/serve a new model for a new use case ?
 
 The main script is experiments_manager.py can be used in 3 modes, here are some command examples:
-1. train a model in a context specified in a parameters script such as mysettings_1D_experiments.py (details provided in the following TODO section):
+1. train a model in a context specified in a parameter script such as mysettings_1D_experiments.py (details provided in the following TODO section):
 -> python experiments_manager.py --usersettings=mysettings_1D_experiments.py
-2. start a tensorflow server on the trained/training model :
+2. start a Tensorflow server on the trained/training model :
 -> python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53
-3. interract with the tensorflow server, sending input buffers and receiving answers
+3. interact with the Tensorflow server, sending input buffers and receiving answers
 -> python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/
 
 NOTE : once trained (or along training), start the Tensorboard to parse logs of
 the experiments folder (provided example is experiments/1Dsignals_clustering):
 from the scripts directory using command: tensorboard  --logdir=experiments/1Dsignals_clustering
-Then, open a web brwser and reach http://127.0.0.1:6006/ to monitor training
-values and observe the obtained embeddings
+Then, open a web browser and reach http://127.0.0.1:6006/ to monitor training
+values and observe the obtained embedding.
 
-#DESIGN:
+***DESIGN:
 
 1. The main code for training, validation and prediction is specified in the main script (experiments_manager.py).
 2. Most of the use case specific parameters and Input/Output functions have been
@@ -96,6 +98,8 @@ In addition and as a reminder, here are the functions prototypes:
 -def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batches)
 -def get_input_pipeline_serving()
 -define the Client_IO class that presents at least three methods:
+
+
 ---def __init__(self, debugMode):
 ''' constructor
     Args:
@@ -139,7 +143,7 @@ def data_preprocess(features, model_placement):
         return tf.div(tf.subtract(features, mean), tf.sqrt(var)+1e-6)
 
 def model_outputs_postprocessing_for_serving(model_outputs_dict):
-    ''' define here the post-processings to be applied to each of the model outputs when used withtensorflow serving
+    ''' define here the post-processings to be applied to each of the model outputs when used with Tensorflow serving
         WARNING, in case of multiple outputs, ONE of them must be named as the
         default serving output: tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY
     Args:
@@ -164,7 +168,7 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     '''a specific loss for data reconstruction when dealing with autoencoders
     Args:
         inputs: the input data samples batch
-        model_outputs_dict: the dictionnay of model outputs, field names must comply withthe ones defined in the model_file
+        model_outputs_dict: the dictionnary of model outputs, field names must comply with the ones defined in the model_file
         labels: the reference data / ground truth if available
         weights_loss: the model weights loss that may be used for regularization
     '''
@@ -203,7 +207,7 @@ def get_eval_metric_ops(inputs, model_outputs_dict, labels):
     '''Return a dict of the evaluation Ops.
     Args:
         inputs: the input data samples batch
-        model_outputs_dict: the dictionnay of model outputs, field names must comply withthe ones defined in the model_file
+        model_outputs_dict: the dictionnary of model outputs, field names must comply with the ones defined in the model_file
         labels: the reference data / ground truth if available
     Returns:
         Dict of metric results keyed by name.
@@ -318,7 +322,7 @@ class Client_IO:
         print('Prediction process ended successfuly')
 
 This demo relies on Tensorflow 1.4.1 and makes use of the Experiment and Estimator
-available in the contrib module that is expected to evolve along tensorflow versions.
+available in the contrib module that is expected to evolve along Tensorflow versions.
 Look at https://github.com/GoogleCloudPlatform/cloudml-samples/blob/master/census/tensorflowcore/trainer/model.py
 Look at some general guidelines on Tenforflow here https://github.com/vahidk/EffectiveTensorflow
 Look at the related webpages : http://python.usyiyi.cn/documents/effective-tf/index.html
