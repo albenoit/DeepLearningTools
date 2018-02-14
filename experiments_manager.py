@@ -104,6 +104,7 @@ import os, shutil
 import datetime, time
 import tensorflow as tf
 import numpy as np
+import pandas as pd
 import imp
 from tensorflow.examples.tutorials.mnist import input_data as mnist_data
 from tensorflow.contrib import slim
@@ -679,15 +680,23 @@ def model_fn(features, labels, mode, params):
                               step : The step at which your ops are evaluated in the training program
                             """
                             self._final_ops = final_ops['final_ops']
+                            self._vars=final_ops['vars']
                             self._hist_ops = final_ops['hist_ops']
                             self._final_ops_feed_dict = final_ops_feed_dict
                             self._saver=saver
                             self._summary_writer=summary_writer
 
                         def end(self, session):
+                            print('**** FINALIZING EVAL SESSION...')
+                            if self._vars is not None:
+                                print('Saving all model parameters to pandas file...')
+                                print('vars='+str(self._vars))
+                                model_variables=pd.DataFrame({var.name:[session.run(var)] for var in self._vars})
+                                model_variables.to_pickle(os.path.join(sessionFolder,'model_parameters.bz2'))
+                                print('==>Values='+str(model_variables))
+
                             if self._final_ops is not None:
-                                print('**** FINALIZING EVAL SESSION...')
-                                print('Dequeuing all saved samples')
+                                print('Saving embeddings and summaries')
                                 for op in self._final_ops:
                                     print('Running '+str(op))
                                     session.run(op)
@@ -703,7 +712,13 @@ def model_fn(features, labels, mode, params):
                                 self._saver.save(session,os.path.join(sessionFolder,embeddingsFolder,'embedding_values'))
                                 print('**** EVAL SESSION FINISHED ****')
 
-                eval_finalize_hook=FinalOpsHook(final_ops={'final_ops':save_embeddings_op,'hist_ops':save_embedding_histograms_op},
+                #get all model variables
+                all_variables_states=None
+                if hasattr(usersettings, 'save_model_variables_to_pandas'):
+                    if usersettings.save_model_variables_to_pandas is True:
+                        all_variables_states=tf.global_variables(scope=model_scope)
+
+                eval_finalize_hook=FinalOpsHook(final_ops={'final_ops':save_embeddings_op,'vars':all_variables_states, 'hist_ops':save_embedding_histograms_op},
                                  final_ops_feed_dict=None,
                                  saver=embedding_checkpoint_saver,
                                  summary_writer=embeddings_summary_writer)

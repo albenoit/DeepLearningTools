@@ -14,6 +14,12 @@ tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
 serving_client_timeout_int_secs=1#timeout limit when a client requests a served model
 
+'''if save_model_variables_to_pandas=True, then force to save all model variables to a pandas dataframe file named 'model_parameters.bz2'
+To load them later, do (update the path to your experiment):
+import pandas
+a=pandas.read_pickle('experiments/curves_fitting/my_test_2018-02-12--17:48:17/model_parameters.bz2')
+'''
+save_model_variables_to_pandas=True
 
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='my_test'

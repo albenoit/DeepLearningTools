@@ -18,9 +18,10 @@ class ExperimentsSettingsChecker(object):
         self.experiments_settings=experiments_settings
 
     def validate_settings(self):
-            print('Checking the experiments settings file...')
-            print('** look at the README.md file to read a working example')
-            print('** look at the experiments_settings_checker script to see all the required fields')
+            print('******************************************************')
+            print('* Checking the experiments settings file...')
+            print('* look at the README.md file to read a working example')
+            print('* look at the experiments_settings_checker script to see all the required fields')
             #check model
             self.has('model_file', 'model_file must be set as a filename targetting the model description to optimise')
             assert os.path.exists(self.experiments_settings.model_file), '{model} targetted by model_file filename does not exist'.format(experiments_settings.model_file)
@@ -71,4 +72,13 @@ class ExperimentsSettingsChecker(object):
             self.has('tensorflow_server_address', 'a string specifying the IP adress of the tensorflow server to be contacted by a client')
             self.has('tensorflow_server_port', 'an integer that specifies the port use to communicate whith the tensorflow server')
 
-            print('...No problem detected at this step.')
+            print('...All required parameters are set')
+
+            #optionnal parameters:
+            try:
+                self.has('save_model_variables_to_pandas', 'set \'save_model_variables_to_pandas\' to True to save model variables to a pandas Dataframe to facilitate model analysis after each validation step')
+            except Exception, e:
+                print('OPTIONNAL argument could be added: '+str(e))
+
+            print('*** Parameters check ended successfuly')
+            print('******************************************************')
