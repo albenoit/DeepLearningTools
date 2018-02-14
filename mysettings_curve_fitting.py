@@ -215,6 +215,8 @@ class Client_IO:
         if self.debugMode is True:
             print('RPC Client ready to interract with the server')
 
+        self.fig, self.ax = plt.subplots()
+
     def getInputData(self, idx):
         ''' method that returns data samples complying with the placeholder
         defined in function get_input_pipeline_serving
@@ -241,9 +243,10 @@ class Client_IO:
         response = np.array(result.outputs[served_head].float_val)
         print('request shape='+str(self.sample.shape))
         print('Answer shape='+str(response.shape))
-        plt.plot(self.x, self.sample,'r+')
-        plt.plot(self.x, response, 'b+')
-        plt.show()
+        self.ax.cla()
+        self.ax.plot(self.x, self.sample,'r+')
+        self.ax.plot(self.x, response, 'b+')
+        plt.pause(1)
 
     def finalize(self):
         ''' a function called when the prediction loop ends '''
