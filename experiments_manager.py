@@ -881,7 +881,7 @@ def do_inference(host, port, model_name, concurrency, num_tests):
       predictionIdx=predictionIdx+1
       sample=client_io.getInputData(predictionIdx)
       if FLAGS.debug:
-          print('Input data is ready'+str(sample))
+          print('Input data is ready (data, shape)'+str((sample, sample.shape)))
       request = predict_pb2.PredictRequest()
       request.model_spec.name = model_name
       request.model_spec.signature_name = usersettings.served_head

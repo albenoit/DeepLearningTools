@@ -809,15 +809,20 @@ def extract_feature_columns(data_dict, features_labels):
     least key 'name' and has an optionnal LIST specified by key :
     ---'vocabulary_list' if column is categorial and should be one hot encoded according to the specified vocabulary
     ---'buckets_boundaries' if column numeric but should be should be one hot encoded according to the specified boundarie values
+    ---'normalizer_fn' if the column is numeric and should be normalized
     @returns a dense data tensor
     '''
     #preparing input data features, convert to the appropriate type
     data_features=[]
     for data_col in features_labels['data_cols']['names_opt_categories_or_buckets']:
        print('***preparing input data column:'+str(data_col))
-       if len(data_col)==1:
+       if len(data_col)==1 or 'normalizer_fn' in data_col:
            print('----->numeric data to be casted as float 32')
-           data_features.append(tf.feature_column.numeric_column(key=data_col['name']))
+           normalization_fn=None
+           if 'normalizer_fn' in data_col:
+               normalization_fn=data_col['normalizer_fn']
+               print('Normalization function found:'+str(data_col['normalizer_fn']))
+           data_features.append(tf.feature_column.numeric_column(key=data_col['name'], normalizer_fn=normalization_fn))
        elif 'vocabulary_list' in data_col:
            print('----->categorial data to be one hot encoded')
            #name=data_col['name'].split(' ')[0]+'_indicator'
