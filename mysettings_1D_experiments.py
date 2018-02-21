@@ -263,11 +263,10 @@ class Client_IO:
            the data sample with shape and type complying with the server input
         '''
         #here, only random numbers
-        sample=np.random.random([1,240,12]).astype(np.float32)
+        self.sample=np.random.random([1,240,12]).astype(np.float32)
         if self.debugMode is True:
-            print('Generating input features (random values) of shape '+str(sample.shape))
-        return sample
-
+            print('Generating input features (random values) of shape '+str(self.sample.shape))
+        return self.sample
 
     def decodeResponse(self, result):
         ''' receive the server response and decode as requested
