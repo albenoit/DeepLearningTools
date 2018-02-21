@@ -6,22 +6,20 @@ def weight_variable(shape):
     @param shape, the 4d tensor shape
     variable is allocated on the CPU memory even if processing will use it on GPU
     '''
-    with tf.device('/cpu:0'):
-        n= np.prod(shape[:3])#n_input_channels*kernelShape
-        trunc_stddev = np.sqrt(1.3 * 2.0 / n)
-        initial = tf.truncated_normal(shape, 0.0, trunc_stddev)
-        weights=tf.get_variable(name='weights', initializer=initial)
-        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, tf.nn.l2_loss(weights))
-        return weights
+    n= np.prod(shape[:3])#n_input_channels*kernelShape
+    trunc_stddev = np.sqrt(1.3 * 2.0 / n)
+    initial = tf.truncated_normal(shape, 0.0, trunc_stddev)
+    weights=tf.get_variable(name='weights', initializer=initial)
+    tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, tf.nn.l2_loss(weights))
+    return weights
 
 def bias_variable(shape):
     ''' basic constant bias variable init (a little above 0)
     @param shape, the 4d tensor shape
     variable is allocated on the CPU memory even if processing will use it on GPU
     '''
-    with tf.device('/cpu:0'):
-        initial = tf.constant(0.01, shape=shape)
-        return tf.get_variable(name='biases', initializer=initial)
+    initial = tf.constant(0.01, shape=shape)
+    return tf.get_variable(name='biases', initializer=initial)
 
 # =============================== Q(z|X) ======================================
 def Q(X, input_data_dim, z_dim, h_dim):
