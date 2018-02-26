@@ -82,6 +82,31 @@ nb_test_samples=1000
 batch_size=200
 nb_classes=2
 reference_labels=['values']
+sigma=1.0
+
+def target_curve(x):
+    ''' the function y=f(x) to learn
+    Args:
+       x: input values in the form of numpy array or tensorflow Tensors
+    Return:
+       y=f(x)
+    '''
+    y=x*2+5 #main model (Numpy and Tensorflow syntax compliant)
+
+    #add noise and adapt to the context (Numpy or Tensorflow)
+    print('x='+str(x))
+    if isinstance(x,tf.Tensor):
+        noise=tf.random_normal(
+                            shape=tf.shape(x),
+                            mean=0.0,
+                            stddev=1.0,)
+    elif isinstance(x,np.ndarray):
+        noise=np.random.normal(loc=0.0, scale=1.0, size=x.shape).astype(np.float32)
+    else:
+        raise ValueError('Unsupported data type')
+
+    return y+sigma*noise
+
 ####################################################
 ## Define here use case specific metrics, loss, etc.
 #with tf.name_scope("loss"):
@@ -172,8 +197,8 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
     def input_fn():
         with tf.name_scope("generate_data"):
             # a simple uniform distribution centered on zero
-            linear_data = tf.random_uniform(shape=[batch_size,1], minval=-5, maxval=5)
-            linear_data=tf.multiply(linear_data,tf.multiply(linear_data,linear_data))
+            sampled_x = tf.random_uniform(shape=[batch_size,1], minval=-5, maxval=5)
+            linear_data=target_curve(sampled_x)
             print('input sample='+str(linear_data))
         return linear_data, linear_data
     return input_fn, None
@@ -227,7 +252,7 @@ class Client_IO:
         '''
         #here, only random numbers
         self.x=np.random.uniform(low=-10, high=10, size=[batch_size,1]).astype(np.float32)
-        self.sample=np.power(self.x,3.0)
+        self.sample=target_curve(self.x)
         if self.debugMode is True:
             print('Generating input features (random values) of shape '+str(sample.shape))
         return self.sample
