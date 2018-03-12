@@ -124,9 +124,6 @@ def model(  data,
     from tensorflow.contrib.learn import ModeKeys
     is_training = mode == ModeKeys.TRAIN
 
-    #reshape data to a 4d shape to apply classical 2D ops(and the row dimension will be 1)
-    data=tf.expand_dims(data, 1)
-
     print("input data="+str(data))
     raw_data_input_shape=data.get_shape().as_list()
     print('RAW input data shape='+str(data.get_shape().as_list()))
@@ -229,5 +226,4 @@ def model(  data,
 
     print('Field of view='+str(field_of_view))
 
-
-    return {'code':last_encoding_feature_maps, 'reconstructed_data':tf.squeeze(reconstructed_data, 1)}
+    return {'code':last_encoding_feature_maps, 'reconstructed_data':reconstructed_data}

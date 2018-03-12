@@ -82,7 +82,16 @@ nb_test_samples=1000
 batch_size=200
 nb_classes=2
 reference_labels=['values']
-sigma=1.0
+
+def numpycurve(x):
+    sigma=1.0
+    noise=np.random.normal(loc=0.0, scale=0.1, size=x.shape).astype(np.float32)
+    y=x.copy()
+    x_neg=np.where(x<=0)
+    x_pos=np.where(x>0)
+    y[x_neg]=x[x_neg]**3
+    y[x_pos]=np.sqrt(x[x_pos])*5
+    return y+noise
 
 def target_curve(x):
     ''' the function y=f(x) to learn
@@ -91,21 +100,18 @@ def target_curve(x):
     Return:
        y=f(x)
     '''
-    y=x*2+5 #main model (Numpy and Tensorflow syntax compliant)
 
     #add noise and adapt to the context (Numpy or Tensorflow)
-    print('x='+str(x))
+    #print('x='+str(x))
     if isinstance(x,tf.Tensor):
-        noise=tf.random_normal(
-                            shape=tf.shape(x),
-                            mean=0.0,
-                            stddev=1.0,)
-    elif isinstance(x,np.ndarray):
-        noise=np.random.normal(loc=0.0, scale=1.0, size=x.shape).astype(np.float32)
-    else:
-        raise ValueError('Unsupported data type')
+        #explicitely reshaping output to help graph construction
+        y=tf.reshape(tf.py_func(numpycurve, [x], tf.float32), x.shape)
+        return y
 
-    return y+sigma*noise
+    elif isinstance(x,np.ndarray):
+        return numpycurve(x)
+
+    raise ValueError('Unsupported data type')
 
 ####################################################
 ## Define here use case specific metrics, loss, etc.
@@ -151,7 +157,7 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     '''a specific loss for data reconstruction when dealing with autoencoders
     Args:
         inputs: the input data samples batch
-        model_outputs_dict: the dictionnay of model outputs, field names must comply withthe ones defined in the model_file
+        model_outputs_dict: the dictionnay of model outputs, field names must comply with the ones defined in the model_file
         labels: the reference data / ground truth if available
         weights_loss: the model weights loss that may be used for regularization
     '''
@@ -170,7 +176,7 @@ def get_eval_metric_ops(inputs, model_outputs_dict, labels):
     '''Return a dict of the evaluation Ops.
     Args:
         inputs: the input data samples batch
-        model_outputs_dict: the dictionnay of model outputs, field names must comply withthe ones defined in the model_file
+        model_outputs_dict: the dictionnay of model outputs, field names must comply with the ones defined in the model_file
         labels: the reference data / ground truth if available
     Returns:
         Dict of metric results keyed by name.
@@ -198,9 +204,9 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
         with tf.name_scope("generate_data"):
             # a simple uniform distribution centered on zero
             sampled_x = tf.random_uniform(shape=[batch_size,1], minval=-5, maxval=5)
-            linear_data=target_curve(sampled_x)
-            print('input sample='+str(linear_data))
-        return linear_data, linear_data
+            sampled_y=target_curve(sampled_x)
+            print('input sample='+str(sampled_y))
+        return sampled_y, sampled_y
     return input_fn, None
 
 '''
@@ -251,7 +257,7 @@ class Client_IO:
            the data sample with shape and type complying with the server input
         '''
         #here, only random numbers
-        self.x=np.random.uniform(low=-10, high=10, size=[batch_size,1]).astype(np.float32)
+        self.x=np.random.uniform(low=-5, high=5, size=[batch_size,1]).astype(np.float32)
         self.sample=target_curve(self.x)
         if self.debugMode is True:
             print('Generating input features (random values) of shape '+str(sample.shape))
@@ -266,8 +272,9 @@ class Client_IO:
             result: a PredictResponse object that contains the request result
         '''
         response = np.array(result.outputs[served_head].float_val)
-        print('request shape='+str(self.sample.shape))
-        print('Answer shape='+str(response.shape))
+        if self.debugMode is True:
+            print('request shape='+str(self.sample.shape))
+            print('Answer shape='+str(response.shape))
         self.ax.cla()
         self.ax.plot(self.x, self.sample,'r+')
         self.ax.plot(self.x, response, 'b+')

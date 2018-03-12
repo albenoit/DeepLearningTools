@@ -101,7 +101,15 @@ def data_preprocess(features, model_placement):
     # standardize each column separately
     with tf.device(model_placement):
         mean, var = tf.nn.moments(features, [1], keep_dims=True)
-        return tf.div(tf.subtract(features, mean), tf.sqrt(var)+1e-6)
+        normalized_cols=tf.div(tf.subtract(features, mean), tf.sqrt(var)+1e-6)
+
+        #L-infinity norm of the feature vectors
+        #normalized_inputs=tf.norm(normalized_cols, ord=np.inf, keepdims=True)
+
+        #reshape data to a 4d shape to apply classical 2D ops(and the row dimension will be 1)
+        data=tf.expand_dims(normalized_cols, 1)
+
+        return data
 
 def model_outputs_postprocessing_for_serving(model_outputs_dict):
     ''' define here the post-processings to be applied to each of the model outputs when used withtensorflow serving
@@ -115,8 +123,8 @@ def model_outputs_postprocessing_for_serving(model_outputs_dict):
     #in this use case, we have two outputs:
     #->  code that is kept as is
     #->  semantic map logits from which we extract the most probable class index for each pixel
-    postprocessed_outputs={model_head_embedding_name:model_outputs_dict['code'],
-                           model_head_prediction_name:model_outputs_dict['reconstructed_data'],
+    postprocessed_outputs={model_head_embedding_name:tf.squeeze(model_outputs_dict['code'], 1),
+                           model_head_prediction_name:tf.squeeze(model_outputs_dict['reconstructed_data'], 1)
                            }
     return postprocessed_outputs
 
@@ -133,6 +141,19 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
         labels: the reference data / ground truth if available
         weights_loss: the model weights loss that may be used for regularization
     '''
+    '''reconstruction_from_code = tf.gradients(model_outputs_dict['code'],inputs,grad_ys=model_outputs_dict['code'])[0]
+    print('inputs shape='+str(inputs))
+    print('reconstruction_from_code='+str(reconstruction_from_code))
+
+    reconstruction_from_code_loss=tf.losses.mean_squared_error(
+                                reconstruction_from_code,
+                                inputs,
+                                weights=1.0,
+                                scope=None,
+                                loss_collection=tf.GraphKeys.LOSSES,
+                                #reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS
+                                )
+    '''
     reconstruction_loss=tf.losses.mean_squared_error(
                                 model_outputs_dict['reconstructed_data'],
                                 inputs,
@@ -142,7 +163,7 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
                                 #reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS
                                 )
 
-    return reconstruction_loss+weights_weight_decay*weights_loss
+    return reconstruction_loss+weights_weight_decay*weights_loss #+reconstruction_from_code_loss
 
 def get_validation_summaries(inputs, predictions, labels, embedding_code):
     ''' add here (if required) some summaries to be applied on the validation dataset
