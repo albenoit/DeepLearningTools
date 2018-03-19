@@ -33,21 +33,24 @@ def model(data,
     #get input data dim
     data_initial_shape=data.get_shape().as_list()
     print('Model input data shape='+str(data_initial_shape))
-    data_flatten=tf.layers.flatten(data)
-    X_dim=data_flatten.get_shape().as_list()[-1]
+    X_dim=data.get_shape().as_list()[-1]
 
     h_dim=n_outputs #hidden layer size
 
-    with tf.variable_scope('Encoder'):
+    h=tf.layers.Dense(units=h_dim,
+                    activation=tf.nn.relu)(data)
+    pred=tf.layers.Dense(units=X_dim,
+                    activation=None)(h)
+    '''with tf.variable_scope('Encoder'):
         #encoder parameters and graph
         E_W1 = weight_variable([X_dim, h_dim])
         E_b1 = bias_variable(shape=[h_dim])
-        h = tf.nn.relu(tf.matmul(data_flatten, E_W1) + E_b1)
+        h = tf.nn.relu(tf.matmul(data, E_W1) + E_b1)
         #raw_input('hidden layer (W,b)='+str((E_W1,E_b1, h)))
     with tf.variable_scope('Decoder'):
         D_W1 = weight_variable([h_dim, X_dim])
         D_b1 = bias_variable(shape=[X_dim])
         pred = tf.matmul(h, D_W1) + D_b1
         #raw_input('hidden layer (W,b, tensor)='+str((D_W1,D_b1, pred)))
-
+    '''
     return {'code':h, 'prediction':pred}

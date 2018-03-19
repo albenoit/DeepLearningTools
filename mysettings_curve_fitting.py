@@ -80,17 +80,18 @@ raw_data_filename_extension=None
 nb_train_samples=1000 #manually adjust here the number of temporal items out of the temporal block size
 nb_test_samples=1000
 batch_size=200
-nb_classes=2
+nb_classes=10
 reference_labels=['values']
 
 def numpycurve(x):
     sigma=1.0
-    noise=np.random.normal(loc=0.0, scale=0.1, size=x.shape).astype(np.float32)
-    y=x.copy()
-    x_neg=np.where(x<=0)
+    noise=np.random.normal(loc=0.0, scale=1.0, size=x.shape).astype(np.float32)
+    y=x**2
+    '''x_neg=np.where(x<=0)
     x_pos=np.where(x>0)
-    y[x_neg]=x[x_neg]**3
+    y[x_neg]=x[x_neg]**2
     y[x_pos]=np.sqrt(x[x_pos])*5
+    '''
     return y+noise
 
 def target_curve(x):
@@ -100,7 +101,6 @@ def target_curve(x):
     Return:
        y=f(x)
     '''
-
     #add noise and adapt to the context (Numpy or Tensorflow)
     #print('x='+str(x))
     if isinstance(x,tf.Tensor):
@@ -163,7 +163,7 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     '''
     reconstruction_loss=tf.losses.mean_squared_error(
                                 model_outputs_dict['prediction'],
-                                inputs,
+                                labels,
                                 weights=1.0,
                                 scope=None,
                                 loss_collection=tf.GraphKeys.LOSSES,
@@ -183,7 +183,7 @@ def get_eval_metric_ops(inputs, model_outputs_dict, labels):
     '''
     return {
             'MSE': tf.metrics.mean_squared_error(
-                labels=inputs,
+                labels=labels,
                 predictions=model_outputs_dict['prediction'],
                 name='mean_squared_error'),
             }
@@ -206,7 +206,7 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
             sampled_x = tf.random_uniform(shape=[batch_size,1], minval=-5, maxval=5)
             sampled_y=target_curve(sampled_x)
             print('input sample='+str(sampled_y))
-        return sampled_y, sampled_y
+        return sampled_x, sampled_y
     return input_fn, None
 
 '''
@@ -258,10 +258,10 @@ class Client_IO:
         '''
         #here, only random numbers
         self.x=np.random.uniform(low=-5, high=5, size=[batch_size,1]).astype(np.float32)
-        self.sample=target_curve(self.x)
+        self.target=target_curve(self.x)
         if self.debugMode is True:
-            print('Generating input features (random values) of shape '+str(sample.shape))
-        return self.sample
+            print('Generating input features (random values) of shape '+str(self.target.shape))
+        return self.x
 
 
     def decodeResponse(self, result):
@@ -273,10 +273,10 @@ class Client_IO:
         '''
         response = np.array(result.outputs[served_head].float_val)
         if self.debugMode is True:
-            print('request shape='+str(self.sample.shape))
+            print('request shape='+str(self.x.shape))
             print('Answer shape='+str(response.shape))
         self.ax.cla()
-        self.ax.plot(self.x, self.sample,'r+')
+        self.ax.plot(self.x, self.target,'r+')
         self.ax.plot(self.x, response, 'b+')
         plt.pause(1)
 
