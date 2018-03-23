@@ -89,7 +89,7 @@ def debug_show_data(data, message):
     print("########################################################### DEBUG : {message}:shape={shape}, data={data}".format(message=message, shape=data.shape, data=data))
     return np.float32(1.0)
 
-def extractFilenames(root_dir, file_extension="/*.jpg", raiseOnEmpty=True):
+def extractFilenames(root_dir, file_extension="*.jpg", raiseOnEmpty=True):
     ''' utility function:
     given a root directory and file extension, walk through folderfiles to
     create a list of searched files
@@ -103,7 +103,11 @@ def extractFilenames(root_dir, file_extension="/*.jpg", raiseOnEmpty=True):
     print(msg)
     for root, dirnames, filenames in os.walk(root_dir):
         file_proto=os.path.join(root, file_extension)
-        files.extend(glob.glob(file_proto))
+        print('-> Parsing folder : '+file_proto)
+        newfiles = glob.glob(file_proto)
+        if len(newfiles)>0:
+            print('----> Found files:'+str(len(newfiles)))
+        files.extend(newfiles)
 
     if len(files)==0 and raiseOnEmpty is True:
         raise ValueError('No files found at '+msg)

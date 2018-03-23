@@ -444,11 +444,11 @@ def model_fn(features, labels, mode, params):
                 xdimensions_labels=len(labels.get_shape().as_list())-2
                 print('xdimensions '+str(xdimensions)+' vs xdimensions_labels '+str(xdimensions_labels))
                 #FIXME, the following criteria is stil hazardous and may nt adapt to new use cases
-                denseLabels= (xdimensions == xdimensions_labels) and len(features.get_shape().as_list())>=4
+                denseLabels= (xdimensions>=2 and xdimensions_labels>=2) and len(features.get_shape().as_list())>=4
                 if denseLabels is True: #multiple samples/labels per data sample use case
                     #crop raw data as for labels whatever the dimension of the data (considering initial shape [batch, [xdimensions], channels])
                     xdimensions=(len(features.get_shape().as_list())-2)
-                    def get_feature_central_area(feature_map):
+                    def get_feature_central_area(feature_map, feature_name):
                         ''' returns a slice of the input feature map without border of size usersettings.field_of_view
                           Args:
                               feature_map: the input feature map
@@ -456,31 +456,41 @@ def model_fn(features, labels, mode, params):
                               the central part of the input feature but
                               keep as is if field of view is too large
                         '''
+                        print('--> Extracting central patch AREA of feature map \'{name}\' : {tensor}'.format(name=feature_name, tensor=feature_map))
+                        central_value=None
                         if usersettings.patchSize-usersettings.field_of_view>0:
-                            return tf.slice( feature_map,
+                            central_value=tf.slice( feature_map,
                                                   begin=[0]+[usersettings.field_of_view//2]*xdimensions+[0],
                                                   size=[-1]+[usersettings.patchSize-usersettings.field_of_view]*xdimensions+[-1])
                         else:
-                            return feature_map
-                    features_fov=get_feature_central_area(features)
-                    model_outputs_fov={output_key: get_feature_central_area(output_feature) for output_key,output_feature in model_outputs_dict.items()}
+                            central_value=feature_map
+                        print('---> central value shape='+str(central_value.get_shape().as_list()))
+                        return central_value
+                    features_fov=get_feature_central_area(features, 'input')
+                    model_outputs_fov={output_key: get_feature_central_area(output_feature, output_key) for output_key,output_feature in model_outputs_dict.items()}
                     #pick the central pixel Value
-                    def get_feature_central_pixel(feature_map):
-                      ''' returns the central pixel of the input feature map
+                    def get_feature_central_pixel(feature_map, feature_name):
+                        ''' returns the central pixel of the input feature map
                           Args:
                               feature_map: the input feature map
                           Returns:
                               the central pixel of the input feature
-                      '''
-                      #get center coordinates
-                      central_data_idx=(np.array(feature_map.get_shape().as_list()[1:1+xdimensions])/2).tolist()
-                      #return the central slice
-                      return tf.slice( feature_map,
+                        '''
+                        print('--> Extracting central patch VALUE of feature map \'{name}\' : {tensor}'.format(name=feature_name, tensor=feature_map))
+
+                        #get center coordinates
+                        central_data_idx=(np.array(feature_map.get_shape().as_list()[1:1+xdimensions])/2).tolist()
+                        print('---> central patch VALUE index='+str(central_data_idx))
+                        #return the central slice
+                        central_value= tf.slice( feature_map,
                                       begin=[0]+central_data_idx+[0],
                                       size=[-1]+[1]*xdimensions+[-1])
-                    model_outputs_center_val_dict={output_key: get_feature_central_pixel(output_feature) for output_key,output_feature in model_outputs_dict.items()}
-                    labels_center_val=get_feature_central_pixel(labels)
-                    features_center_val=get_feature_central_pixel(features_fov)
+                        print('---> central patch VALUE shape='+str(central_value.get_shape().as_list()))
+                        return central_value
+
+                    model_outputs_center_val_dict={output_key: get_feature_central_pixel(output_feature, output_key) for output_key,output_feature in model_outputs_dict.items()}
+                    labels_center_val=get_feature_central_pixel(labels, 'labels')
+                    features_center_val=get_feature_central_pixel(features_fov, 'input')
                     '''#resize labels map to the size of the code to pick a rough label value consistent with the code
                     labels_resized_to_code_size=tf.image.resize_nearest_neighbor(
                       images=labels,
@@ -554,6 +564,7 @@ def model_fn(features, labels, mode, params):
                                                    dtypes=features_to_save.dtype.name,#'float',
                                                    shapes=features_to_save[0].get_shape(),
                                                    name=name+'_samples_queue')
+
                         #-> define the enqueing op
                         samples_enqueue=samples_saving_queue.enqueue_many(features_to_save)
 

@@ -73,8 +73,8 @@ reference_data_dir_train_ = "../../../../Datasets/CityScapes/gtFine_trainvaltest
 raw_data_dir_train=(raw_data_dir_train_, reference_data_dir_train_)
 raw_data_dir_val_ = "../../../../Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/val/"
 reference_data_dir_val_ = "../../../../Datasets/CityScapes/gtFine_trainvaltest/gtFine/val/"
-raw_data_filename_extension='/*.png'
-ref_data_filename_extension='/*labelIds.png'
+raw_data_filename_extension='*.png'
+ref_data_filename_extension='*labelIds.png'
 #load all image files to use for training or testing
 nb_train_images=1#len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train_, file_extension=raw_data_filename_extension))
 nb_val_images=1#len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val_, file_extension=raw_data_filename_extension))
