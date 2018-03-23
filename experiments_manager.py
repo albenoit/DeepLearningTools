@@ -247,7 +247,7 @@ def experiment_fn(run_config, params):
         serving_input_fn=usersettings.get_input_pipeline_serving,
         default_output_alternative_key=None,
         assets_extra=None,
-        as_text=True,
+        as_text=False,
         exports_to_keep=5
     )
     # Define the experiment
