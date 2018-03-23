@@ -167,10 +167,15 @@ def run_experiment(argv=None):
         )
     #Session hardware configuration :
     gpu_options=tf.GPUOptions(allow_growth=True)
+    #activate XLA JIT level 1 by default
+    graph_options=tf.GraphOptions()
+    graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
     sessionConfig=tf.ConfigProto(
                                 allow_soft_placement=True,
                                 log_device_placement=FLAGS.debug,
-                                gpu_options=gpu_options)
+                                gpu_options=gpu_options,
+                                graph_options=graph_options
+                                )
 
     # Set the run_config and the directory to save the model and stats
     summary_steps_period=1 #by default, log each step
