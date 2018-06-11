@@ -111,10 +111,13 @@ from tensorflow.contrib import slim
 from tensorflow.contrib.learn import ModeKeys
 from tensorflow.contrib.learn import learn_runner
 
+from tensorflow.python import debug as tf_debug
+
 global usersettings
 embeddingsFolder='embeddings'
 settingsFile_saveName='experiment_settings.py'
 
+MOVING_AVERAGE_DECAY=0.9999
 # Show debugging output
 tf.logging.set_verbosity(tf.logging.DEBUG)
 
@@ -169,7 +172,7 @@ def run_experiment(argv=None):
     gpu_options=tf.GPUOptions(allow_growth=True)
     #activate XLA JIT level 1 by default
     graph_options=tf.GraphOptions()
-    graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
+    graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.OFF#ON_1#OFF
     sessionConfig=tf.ConfigProto(
                                 allow_soft_placement=True,
                                 log_device_placement=FLAGS.debug,
@@ -250,13 +253,23 @@ def experiment_fn(run_config, params):
         as_text=False,
         exports_to_keep=5
     )
-    # Define the experiment
     train_monitors=[steps_counter_hook]
+    eval_hooks=None
+    if FLAGS.debug:
+      debughook=tf_debug.TensorBoardDebugHook("alben:2333",
+                                            send_traceback_and_source_code=False,
+                                            log_usage=False)
+      #add debug hook to train and eval monitors
+      eval_hooks=[debughook]
+      train_monitors+=debughook
+
+    # Define the experiment
     if train_input_hook is not None:
         train_monitors+=[train_input_hook]
-    eval_hooks=None
     if eval_input_hook is not None:
         eval_hooks=[eval_input_hook]
+    #CLI debug hook hooks = [tf_debug.LocalCLIDebugHook()]
+
     experiment = tf.contrib.learn.Experiment(
                     estimator=estimator,
                     train_input_fn=train_input_fn,
@@ -336,26 +349,18 @@ def model_fn(features, labels, mode, params):
             print('->'+str((key, value)))
 
     if usersettings.predict_using_smoothed_parameters is True:
-        with tf.device("/cpu:0"),tf.variable_scope('moving_average_trainables_saver'), tf.device("/cpu:0"):
-            #list all trainables
-            #FIXME : fix this step, maybe refer to this : http://ruishu.io/2017/11/22/ema/
-            #and this https://github.com/tensorflow/tensorflow/issues/3460
-            #TODO, check difference with tf.contrib.framework.get_trainable_variables()
-            trainables=tf.trainable_variables()
-            print('Found {trainables_nb} trainable variables'.format(trainables_nb=len(trainables)))
-            #raw_input(trainables)
-            if params.debug is True:
-                print('Found the following trainable variables')
-                for trainable_var in trainables:
-                    print(trainable_var)
+        #TODO, have a look here to fix current issues : from https://medium.freecodecamp.org/how-to-deploy-an-object-detection-model-with-tensorflow-serving-d6436e65d1d9
+        #A confident demo: https://cloud.google.com/tpu/docs/inception-v3-advanced#exponential_moving_average
 
-            # Create an ExponentialMovingAverage object
-            ema = tf.train.ExponentialMovingAverage(decay=0.9999)
-            # Create the shadow variables, and add ops to maintain moving averages of trained variables
-            maintain_averages_op = ema.apply(trainables)
-            # ema variables are automatically added to tf.GraphKeys.VARIABLES so that they are saved along training !
-            # no need to explicitly add them. The following assert ensures this for the first variable
-            assert(ema.average(trainables[0]) in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES))
+        with tf.device("/cpu:0"),tf.variable_scope('moving_average_trainables_saver'), tf.device("/cpu:0"):
+
+            ema = tf.train.ExponentialMovingAverage(
+                decay=MOVING_AVERAGE_DECAY, num_updates=global_step)
+            variables_to_average = (tf.trainable_variables() +
+                                    tf.moving_average_variables())
+            with tf.control_dependencies([train_op]), tf.name_scope('moving_average'):
+              maintain_averages_op = ema.apply(variables_to_average)
+
             if params.debug: #plot the first layer weights sum to compare the variable and the ema version
                 tf.summary.scalar(trainables[0].name, tf.reduce_sum(trainables[0]))
                 tf.summary.scalar(ema.average(trainables[0]).name, tf.reduce_sum(ema.average(trainables[0])))
@@ -382,6 +387,7 @@ def model_fn(features, labels, mode, params):
     embedding_checkpoint_saver=None
     if mode != ModeKeys.INFER: #if training or validation, but not predicting/serving, compute a loss, etc.
         with tf.name_scope('model_loss'):
+          with tf.name_scope('regularization_loss'):
             # -> first get the weights loss found in collection tf.GraphKeys.REGULARIZATION_LOSSES
             regularization_losses=tf.losses.get_regularization_losses()
             # list all weights
@@ -390,10 +396,10 @@ def model_fn(features, labels, mode, params):
                 for layer_loss in regularization_losses:
                     print(layer_loss)
             print('Found {nb_losses} layers regularisation_losses'.format(nb_losses=len(regularization_losses)))
-            weights_loss=tf.losses.get_regularization_loss()
-            #finalize total loss
-            loss=usersettings.get_total_loss(inputs=features, model_outputs_dict=model_outputs_dict, labels=labels, weights_loss=weights_loss)
-        tf.summary.scalar('Weights_loss', weights_loss)
+            weights_loss=tf.reduce_sum(regularization_losses)#tf.losses.get_regularization_loss()
+            tf.summary.scalar('Regularization_loss', weights_loss)
+          #finalize total loss
+          loss=usersettings.get_total_loss(inputs=features, model_outputs_dict=model_outputs_dict, labels=labels, weights_loss=weights_loss)
 
         if mode == ModeKeys.TRAIN:
             '''define the training op that will first apply all ops found in collection
@@ -402,7 +408,8 @@ def model_fn(features, labels, mode, params):
             '''
             train_op = get_train_op_fn(loss, params)
             number_of_parameters=0
-            for var in tf.trainable_variables():
+            trainables=tf.trainable_variables()
+            for var in trainables:
                 trainable_nb_values=np.prod(var.get_shape().as_list())
                 if params.debug:
                     print('trained variable with {nb} parameters : {tensor}'.format(nb=trainable_nb_values, tensor=var))
@@ -739,6 +746,24 @@ def model_fn(features, labels, mode, params):
                                  saver=embedding_checkpoint_saver,
                                  summary_writer=embeddings_summary_writer)
                 evaluation_hooks=[eval_finalize_hook]
+
+                # smoothed parameters load eval hook
+                class LoadEMAHook(tf.train.SessionRunHook):
+                  def __init__(self, model_dir):
+                    super(LoadEMAHook, self).__init__()
+                    self._model_dir = model_dir
+
+                  def begin(self):
+                    ema = tf.train.ExponentialMovingAverage(MOVING_AVERAGE_DECAY)
+                    variables_to_restore = ema.variables_to_restore()
+                    self._load_ema = tf.contrib.framework.assign_from_checkpoint_fn(
+                        tf.train.latest_checkpoint(self._model_dir), variables_to_restore)
+
+                  def after_create_session(self, sess, coord):
+                    tf.logging.info('********** Reloading EMA... ************')
+                    self._load_ema(sess)
+                  if usersettings.predict_using_smoothed_parameters is True:
+                    evaluation_hooks=eval_finalize_hook+[LoadEMAHook(FLAGS.model_dir)]
 
     with tf.name_scope('model_outputs_postprocessing'):
         exported_outputs=usersettings.model_outputs_postprocessing_for_serving(model_outputs_dict)
