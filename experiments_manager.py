@@ -191,7 +191,12 @@ def run_experiment(argv=None):
                                 model_dir=sessionFolder
                                             )
 
-    '''TODO: have a look at https://www.tensorflow.org/api_docs/python/tf/contrib/learn/learn_runner/tune
+    '''TODO: have a look at :
+    https://www.tensorflow.org/api_docs/python/tf/contrib/learn/learn_runner/tune
+    related discussions :
+    --> https://github.com/tensorflow/tensorflow/issues/7868
+    --> https://github.com/tensorflow/tensorflow/issues/16576
+    --> a proposal: https://github.com/makoeppel/hyperParameterSearchTF/tree/master
     tuner = create_tuner(study_configuration, objective_key)
     learn_runner.tune(experiment_fn=_create_my_experiment, tuner)
     '''
