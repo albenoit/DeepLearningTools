@@ -59,6 +59,9 @@ nb_summary_per_train_epoch=4
 #define image patches extraction parameters
 patchSize=224
 
+#random seed used to init weights, etc. Use an integer value to make experiments reproducible
+random_seed=None
+
 # learning rate decaying parameters
 nbEpoch=50
 weights_weight_decay=0.0001
@@ -76,13 +79,13 @@ reference_data_dir_val_ = "../../../../Datasets/CityScapes/gtFine_trainvaltest/g
 raw_data_filename_extension='*.png'
 ref_data_filename_extension='*labelIds.png'
 #load all image files to use for training or testing
-nb_train_images=1#len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train_, file_extension=raw_data_filename_extension))
-nb_val_images=1#len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val_, file_extension=raw_data_filename_extension))
+nb_train_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train_, file_extension=raw_data_filename_extension))
+nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val_, file_extension=raw_data_filename_extension))
 reference_labels=['semantic_labels']
 raw_data_dir_val=(raw_data_dir_val_, reference_data_dir_val_)
 number_of_crops_per_image=100
 nb_train_samples=nb_train_images*number_of_crops_per_image# number of images * number of crops per image
-nb_test_samples=1000#nb_val_images*number_of_crops_per_image
+nb_test_samples=7000#nb_val_images*number_of_crops_per_image
 batch_size=2
 nb_classes=34
 
@@ -117,7 +120,7 @@ def model_outputs_postprocessing_for_serving(model_outputs_dict):
     #in this use case, we have two outputs:
     #->  code that is kept as is
     #->  semantic map logits from which we extract the most probable class index for each pixel
-    postprocessed_outputs={model_head_embedding_name:model_outputs_dict['code'],
+    postprocessed_outputs={#model_head_embedding_name:model_outputs_dict['code'],
                            model_head_prediction_name:tf.saturate_cast(tf.argmax(model_outputs_dict['logits_semantic_map'],3, name='argmax_image'), tf.uint8),
                            }
     return postprocessed_outputs

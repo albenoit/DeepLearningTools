@@ -60,6 +60,8 @@ nb_summary_per_train_epoch=4
 #define image patches extraction parameters
 patchSize=224
 
+#random seed used to init weights, etc. Use an integer value to make experiments reproducible
+random_seed=10
 # learning rate decaying parameters
 nbEpoch=300
 weights_weight_decay=0.0001

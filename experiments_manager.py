@@ -320,6 +320,8 @@ def model_fn(features, labels, mode, params):
     Returns:
         (EstimatorSpec): Model to be run by Estimator.
     """
+    if usersettings.random_seed is not None:
+      tf.set_random_seed(usersettings.random_seed)
     print('############ Received features='+str(type(features)))
     if isinstance(features,dict):
         #basic case (for serving especially) where input is a dict with only the 'feature' item
@@ -925,14 +927,19 @@ def do_inference(host, port, model_name, concurrency, num_tests):
   predictionIdx=0
   while notDone:
       predictionIdx=predictionIdx+1
+      start_time=time.time()
       sample=client_io.getInputData(predictionIdx)
       if FLAGS.debug:
           print('Input data is ready (data, shape)'+str((sample, sample.shape)))
+          print('Time to prepare collect data request:',round(time.time() - start_time, 2))
+          start_time=time.time()
       request = predict_pb2.PredictRequest()
       request.model_spec.name = model_name
       request.model_spec.signature_name = usersettings.served_head
       request.inputs[usersettings.input_data_name].CopyFrom(
             tf.contrib.util.make_tensor_proto(sample, shape=sample.shape))
+      if FLAGS.debug:
+        print('Time to prepare request:',round(time.time() - start_time, 2))
 
       #asynchronous message reception, may hide some AbortionError details and only provide CancellationError(code=StatusCode.CANCELLED, details="Cancelled")
       '''result_future = stub.Predict.future(request, usersettings.serving_client_timeout_int_secs)  # 5 seconds
@@ -942,7 +949,14 @@ def do_inference(host, port, model_name, concurrency, num_tests):
       #synchronous approach... that may provide more details on AbortionError
       if FLAGS.debug:
           print(stub.Predict(request, usersettings.serving_client_timeout_int_secs))
-      client_io.decodeResponse(stub.Predict(request, usersettings.serving_client_timeout_int_secs))
+          start_time=time.time()
+      answer=stub.Predict(request, usersettings.serving_client_timeout_int_secs)
+      if FLAGS.debug:
+        print('Time to send request/decode response:',round(time.time() - start_time, 2))
+        start_time=time.time()
+      client_io.decodeResponse(answer)
+      if FLAGS.debug:
+        print('Time to decode response:',round(time.time() - start_time, 2))
 
       if num_tests>=0:
           if predictionIdx>=num_tests:

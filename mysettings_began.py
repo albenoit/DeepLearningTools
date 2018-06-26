@@ -66,6 +66,9 @@ summary_fake_samples_max_number=3
 #define image patches extraction parameters
 patchSize=28
 
+#random seed used to init weights, etc. Use an integer value to make experiments reproducible
+random_seed=None
+
 # learning rate decaying parameters
 nbEpoch=100
 weights_weight_decay=0.0001
