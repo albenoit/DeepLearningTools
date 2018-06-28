@@ -95,6 +95,7 @@ def extractFilenames(root_dir, file_extension="*.jpg", raiseOnEmpty=True):
     create a list of searched files
     @param root_dir: the root folder from which files should be searched
     @param file_extension: the extension of the files
+    @param raiseOnEmpty: a boolean, set True if an exception should be raised if no file is found
     '''
     files  = []
     msg='extractFilenames: from working directory {wd}, looking for files {path} with extension {ext}'.format(wd=os.getcwd(),

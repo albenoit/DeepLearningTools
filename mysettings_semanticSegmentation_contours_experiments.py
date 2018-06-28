@@ -69,6 +69,7 @@ weights_weight_decay=0.0001
 initial_learning_rate=0.0001
 num_epochs_per_decay=10 #number of epoch keepng the same learning rate
 learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
+grad_clip_norm=1.0
 predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> a first set of data
@@ -122,16 +123,30 @@ def model_outputs_postprocessing_for_serving(model_outputs_dict):
     #in this use case, we have two outputs:
     #->  code that is kept as is
     #->  semantic map logits from which we extract the most probable class index for each pixel
-    postprocessed_outputs={model_head_embedding_name:model_outputs_dict['code'],
+    postprocessed_outputs={#model_head_embedding_name:model_outputs_dict['code'],
                            model_head_prediction_regions_map_name:tf.saturate_cast(tf.argmax(model_outputs_dict['logits_semantic_regions_map'],3, name='argmax_image'), tf.uint8),
-                           model_head_prediction_contours_map_name:tf.saturate_cast(tf.argmax(model_outputs_dict['logits_semantic_contours_map'],3, name='argmax_image'), tf.uint8),
+                           #model_head_prediction_contours_map_name:tf.saturate_cast(tf.argmax(model_outputs_dict['logits_semantic_contours_map'],3, name='argmax_image'), tf.uint8),
                            }
     return postprocessed_outputs
 
 def getOptimizer(loss, learning_rate, global_step):
     '''define here the specific optimizer to be used
     '''
-    return tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
+    #get gradient summary information and the gradient norm
+    tvars, raw_grads, gradient_norm=model_utils.track_gradients(loss)
+
+    #clip them wrt the max allowed norm
+    if grad_clip_norm>0:
+      grads, _ = tf.clip_by_global_norm(raw_grads, clip_norm=grad_clip_norm, use_norm=gradient_norm)
+    else:
+      grads=raw_grads
+
+    #setup solver
+    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+    #update weights with the clipped gradient
+    optimizer_op = optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
+
+    return optimizer_op
 
 def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     '''a specific loss for data reconstruction when dealing with autoencoders

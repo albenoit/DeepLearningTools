@@ -146,3 +146,29 @@ def concrete_dropout(inputs, layer,
                                trainable=trainable,
                                name=name)
     return cd_layer.apply(inputs, training=training)
+
+
+
+def track_gradients(loss):
+  ''' Helper function to use in the getOptimizer function
+      to compute and gradients and log them into the Tensorboard
+      Args:
+        loss: the loss to be appled for gradients computation
+      Returns:
+        tvars: the trainable variables
+        raw_grads: the raw gradient values
+        gradient_norm: the gradient global norm
+  '''
+  #get all trained variables that will be optimized
+  tvars = tf.trainable_variables()
+  #compute gradients and track them
+  raw_grads = tf.gradients(loss, tvars)
+  #track gradient global norm
+  gradient_norm=tf.global_norm(raw_grads, name='loss_grad_global_norm')
+  tf.summary.scalar('gradient_global_norm_raw', gradient_norm)
+  for grad in raw_grads:
+    if grad is not None:
+      trainable_nb_values=np.prod(grad.get_shape().as_list())
+    if trainable_nb_values>1:
+          tf.summary.histogram(grad.op.name, grad)
+  return tvars, raw_grads, gradient_norm
