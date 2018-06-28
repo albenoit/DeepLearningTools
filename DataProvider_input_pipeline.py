@@ -116,12 +116,12 @@ def extractFilenames(root_dir, file_extension="*.jpg", raiseOnEmpty=True):
         print('Found files : '+str(len(files)))
     return sorted(files)
 
-def imread_from_opencv(filename, cv_imreadMode=cv2.IMREAD_UNCHANGED, debug_mode=False):
+def imread_from_opencv(filename, cv_imreadMode=-1, debug_mode=False):
   ''' read an image using OpenCV
       image is loaded as is. In case of a 3 channels image, BGR to RGB conversion
       is applied
       @param filename as a numpy array (coming from Tensorflow)
-      @param cv_imreadMode as described in the official opencv doc
+      @param cv_imreadMode as described in the official opencv doc. Note: cv2.IMREAD_UNCHANGED=-1
   '''
   image= cv2.imread(str(filename), cv_imreadMode)
   if image is None:
@@ -714,7 +714,7 @@ class FileListProcessor_Semantic_Segmentation:
                     use_opencv_imread=False,
                     balance_classes_distribution=False,
                     classes_entropy_threshold=0.6,
-                    opencv_read_flags=cv2.IMREAD_UNCHANGED, #cv2.IMREAD_LOAD_GDAL | cv2.IMREAD_ANYDEPTH ):
+                    opencv_read_flags=-1,#cv2.IMREAD_UNCHANGED=-1, #cv2.IMREAD_LOAD_GDAL | cv2.IMREAD_ANYDEPTH ):
                     field_of_view=0,
                     manage_nan_values=None):
         self.filelist_raw_data=filelist_raw_data
