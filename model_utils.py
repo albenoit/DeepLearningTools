@@ -169,6 +169,6 @@ def track_gradients(loss):
   for grad in raw_grads:
     if grad is not None:
       trainable_nb_values=np.prod(grad.get_shape().as_list())
-    if trainable_nb_values>1:
+      if trainable_nb_values>1:
           tf.summary.histogram(grad.op.name, grad)
   return tvars, raw_grads, gradient_norm

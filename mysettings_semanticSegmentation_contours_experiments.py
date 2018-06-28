@@ -5,6 +5,7 @@
 import DataProvider_input_pipeline
 import tensorflow as tf
 import numpy as np
+import model_utils
 
 #-> set here your own working folder
 workingFolder='experiments/semantic_segmentation_contours'
