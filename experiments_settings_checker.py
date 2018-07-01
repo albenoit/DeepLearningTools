@@ -11,6 +11,11 @@ class ExperimentsSettingsChecker(object):
             assert hasattr(self.experiments_settings,param), message
             assert getattr(self.experiments_settings,param)>0, message
 
+    def assertPositive_above_equal_zero(self, param, param_description):
+            message='Specification error on variable {param}: {descr}. It must be set and be above 0'.format(param=param, descr=param_description)
+            assert hasattr(self.experiments_settings,param), message
+            assert getattr(self.experiments_settings,param)>=0, message
+
     def has(self, param, error_message):
         assert hasattr(self.experiments_settings, param), 'Missing {param} : {msg}'.format(param=param, msg=error_message)
 
@@ -26,7 +31,7 @@ class ExperimentsSettingsChecker(object):
             self.has('model_file', 'model_file must be set as a filename targetting the model description to optimise')
             assert os.path.exists(self.experiments_settings.model_file), '{model} targetted by model_file filename does not exist'.format(experiments_settings.model_file)
             self.assertPositive_above_zero('patchSize', 'the extend (in pixels/data samples width) of the input data samples provided to the model')
-            self.assertPositive_above_zero('field_of_view', 'the width/field of view of the model. With convolutionnal models, this corresponds to the neighborhood width in the input space that is taken into account to take a decision')
+            self.assertPositive_above_equal_zero('field_of_view', 'the width/field of view of the model. With convolutionnal models, this corresponds to the neighborhood width in the input space that is taken into account to take a decision')
 
             #check train and validation dataset parameters
             self.assertPositive_above_zero('nb_train_samples', 'the number of samples used for training')
