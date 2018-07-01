@@ -124,16 +124,14 @@ tf.logging.set_verbosity(tf.logging.DEBUG)
 # Set default flags for the output directories
 FLAGS = tf.app.flags.FLAGS
 #tf.app.flags.DEFINE_string("settings_file",FLAGS.usersettings,"settings file to load")
-tf.app.flags.DEFINE_string(
-    flag_name='model_dir', default_value='.',
-    docstring='Output directory for model and training stats.')
+tf.app.flags.DEFINE_string('model_dir', None,'Output directory for model and training stats.')
 tf.app.flags.DEFINE_boolean("debug",False,"activate debug information display (ops device placement, some buffer sizes, etc.)")
 tf.app.flags.DEFINE_boolean("predict", False, "Switch to prediction mode")
 tf.app.flags.DEFINE_boolean("start_server",False,"start the tensorflow server on the machine to run predictions")
 tf.app.flags.DEFINE_boolean("commands",False, "Display some command examples")
 tf.app.flags.DEFINE_string("usersettings",'mysettings_1D_experiments.py', "filename of the settings file dedicated to some experiment(s)")
 tf.app.flags.DEFINE_integer("predict_stream",0,"this value number of predictions, infinite loop if <0")
-
+tf.app.flags.DEFINE_boolean("restart_interrupted", False, "Set True to restart an interrupted session, model_dir option should be set")
 
 def loadModel():
     ''' basic method to load the model targeted by usersettings.model_file
@@ -965,9 +963,12 @@ def do_inference(host, port, model_name, concurrency, num_tests):
   return 0
 
 
-def loadExperimentsSettings(filename):
+def loadExperimentsSettings(filename, restart_from_sessionFolder=None):
     ''' load experiments parameters from the mysettingsxxx.py script
         also mask GPUs to only use the ones specified in the settings file
+      Args:
+        filename: the settings file, if restarting an interrupted training session, you should target the experiments_settings.py copy available in the experiment folder to restart"
+        restart_from_sessionFolder: [OPTIONNAL] set the  session folder of a previously interrupted training session to restart
     '''
     print('Trying to load experiments settings file : '+str(filename))
     try:
@@ -986,7 +987,14 @@ def loadExperimentsSettings(filename):
     model_name=usersettings.model_file.split('.')[0]
     #manage the working folder
     workingFolder=usersettings.workingFolder
-    sessionFolder=os.path.join(workingFolder, usersettings.session_name+'_'+datetime.datetime.now().strftime("%Y-%m-%d--%H:%M:%S"))
+    if restart_from_sessionFolder is not None:
+      if os.path.exists(restart_from_sessionFolder):
+        print('Attempting to restart a previoulsly run training job...')
+        sessionFolder=restart_from_sessionFolder
+      else:
+        raise ValueError('Could not restart interrupted training session, working folder not found:'+str(model_dir))
+    else:
+      sessionFolder=os.path.join(workingFolder, usersettings.session_name+'_'+datetime.datetime.now().strftime("%Y-%m-%d--%H:%M:%S"))
     return usersettings, sessionFolder, model_name
 
 # Run script ##############################################
@@ -1031,16 +1039,16 @@ if __name__ == "__main__":
         print('-> python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53')
         print('3. interract with the tensorflow server, sending input buffers and receiving answers')
         print('-> python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/')
-
     else:
         print('### TRAINING MODE ###')
-        usersettings, sessionFolder, model_name = loadExperimentsSettings(FLAGS.usersettings)
+        usersettings, sessionFolder, model_name = loadExperimentsSettings(FLAGS.usersettings, FLAGS.model_dir)
         #copy settings and model file to the working folder
-        os.makedirs(sessionFolder)
-        os.makedirs(os.path.join(sessionFolder,embeddingsFolder))
-        shutil.copyfile(os.path.join(scripts_WD, usersettings.model_file), os.path.join(sessionFolder, usersettings.model_file))
-        settings_copy_fullpath=os.path.join(sessionFolder, settingsFile_saveName)
-        shutil.copyfile(os.path.join(scripts_WD, FLAGS.usersettings), settings_copy_fullpath)
+        if not FLAGS.restart_interrupted:
+          os.makedirs(sessionFolder)
+          os.makedirs(os.path.join(sessionFolder,embeddingsFolder))
+          shutil.copyfile(os.path.join(scripts_WD, usersettings.model_file), os.path.join(sessionFolder, usersettings.model_file))
+          settings_copy_fullpath=os.path.join(sessionFolder, settingsFile_saveName)
+          shutil.copyfile(os.path.join(scripts_WD, FLAGS.usersettings), settings_copy_fullpath)
         tf.app.run(
             main=run_experiment,
             argv=None
