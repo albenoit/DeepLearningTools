@@ -85,7 +85,19 @@ nb_test_samples=1000
 batch_size=200
 nb_classes=10
 reference_labels=['values']
+"""
+hparams = HParams(
+    num_hidden_units=[100, 200, 300]
+)
 
+default_param = HParams(
+    num_hidden_units=100,
+    learning_rate=0.002,
+    n_classes=10,
+    train_steps=100,
+    min_eval_frequency=100
+)
+"""
 def numpycurve(x):
     sigma=1.0
     noise=np.random.normal(loc=0.0, scale=1.0, size=x.shape).astype(np.float32)
