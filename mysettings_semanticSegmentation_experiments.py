@@ -256,7 +256,7 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
                 apply_random_saturation=apply_pixel_transforms(isTraining),
                 apply_whitening=True,
                 batch_size_train=batch_size,
-                use_opencv_imread=True,
+                use_alternative_imread='opencv',
                 balance_classes_distribution=isTraining,
                 classes_entropy_threshold=0.6,
                 opencv_read_flags=cv2.IMREAD_UNCHANGED,

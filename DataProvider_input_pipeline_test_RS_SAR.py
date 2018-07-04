@@ -17,9 +17,9 @@ os.chdir(sessionFolder)
 '''first focus on a set of folders with raw ad reference data,
 here all data parameters are hard written since all data is supposed to be versionned
 '''
-raw_data_dir_train = "../../../datasamples/EarthEngine/landcover_semantic_segmentation/"
-nb_classes=23+1#23 landcover classes + the clouds class
-patchSize=224
+raw_data_dir_train = "../../datasamples/Total/Out_put/"
+nb_classes=2#23 landcover classes + the clouds class
+patchSize=400
 patchesPerImage=10
 allow_display=True
 process_labels_histogram=False
@@ -50,17 +50,11 @@ if processCommands.labels_count:
 print('Looking for files in '+str(raw_data_dir_train) +' from working folder '+os.getcwd())
 dataset_raw_train=DataProvider_input_pipeline.extractFilenames(raw_data_dir_train, '*.tif')
 
-def display_sentinel_image(input_img, mask_clouds_OPAQUE=True, mask_clouds_CIRRUS=True):
-        input_rgb=input_img[:,:,1:4]
-        if mask_clouds_OPAQUE == True and mask_clouds_CIRRUS == True:
-            cloud_map=input_img[:,:,15]>=1024 #Q60 band greater or equal to 1024
-        elif mask_clouds_CIRRUS is True:
-            cloud_map=input_img[:,:,15]>1024 #Q60 band greater than 1024
-        elif mask_clouds_OPAQUE is True:
-            cloud_map=input_img[:,:,15]==1024 #Q60 band equal to 1024
-        #print('Cloud pixels='+str(np.sum(cloud_map.astype(int))))
-        img_labels=input_img[:,:,17]
-        return input_rgb, cloud_map, img_labels
+def display_sar_image(input_img):
+        input_sar=input_img[:,:,0]
+        shape=input_img[:,:,1]
+        bbox=input_img[:,:,2]
+        return input_sar, shape, bbox
 
 if processCommands.check_data:
     print('Trying to load each image of the train dataset, this may take some time...')
@@ -82,11 +76,11 @@ if processCommands.check_data:
         ''' Display images section '''
         if allow_display is True:
             #print('Labels (min, max)='+str((img_labels.min(), img_labels.max())))
-            input_rgb, cloud_map, img_labels=display_sentinel_image(img, mask_clouds_OPAQUE=True, mask_clouds_CIRRUS=False)
+            input_rgb, target_bounding_boxes, target_shapes=display_sentinel_image(img, mask_clouds_OPAQUE=True, mask_clouds_CIRRUS=False)
             img_labels[np.where(cloud_map)]=23
             cv2.imshow('input image', DataProvider_input_pipeline.scaleImg_0_255(input_rgb).astype(np.uint8))
-            cv2.imshow('reference image', img[:,:,-1].astype(np.uint8)*int(255/nb_classes))
-            cv2.imshow('cloud image', cloud_map.astype(np.uint8)*255)
+            cv2.imshow('target_bounding_boxes crop', target_bounding_boxes.astype(np.uint8)*255)
+            cv2.imshow('target_shapes map', target_shapes.astype(np.uint8)*255)
             cv2.waitKey()
             #DataProvider_input_pipeline.plot_sample_channel_histograms(img, filenameID="image_"+str(imageIdx)+'_')
             #plt.show()
@@ -100,18 +94,18 @@ if not(processCommands.mode_test):
 		                                                    max_patches_per_image=patchesPerImage,
 		                                                    image_area_coverage_factor=2.0,
 		                                                    num_preprocess_threads=1,
-		                                                    apply_random_flip_left_right=True,
-		                                                    apply_random_flip_up_down=True,
+		                                                    apply_random_flip_left_right=False,
+		                                                    apply_random_flip_up_down=False,
 		                                                    apply_random_brightness=None,
 		                                                    apply_random_saturation=None,
 		                                                    apply_whitening=False,
-		                                                    batch_size_train=20,
-		                                                    use_alternative_imread='opencv',
+		                                                    batch_size_train=1,
+		                                                    use_alternative_imread='gdal',
 		                                                    balance_classes_distribution=True,
 		                                                    classes_entropy_threshold=0.3,
-		                                                    opencv_read_flags=cv2.IMREAD_LOAD_GDAL | cv2.IMREAD_ANYDEPTH,
+		                                                    opencv_read_flags=-99,
 		                                                    field_of_view=0,
-                                                            manage_nan_values=nan_management)
+                                                        manage_nan_values=nan_management)
 else:
     print "Testing the TEST pipeline mode"
     data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation(dataset_raw_train, None,
@@ -126,10 +120,10 @@ else:
 		                                                    apply_random_saturation=None,
 		                                                    apply_whitening=False,
 		                                                    batch_size_train=1,
-		                                                    use_alternative_imread='opencv',
+		                                                    use_alternative_imread='gdal',
 		                                                    balance_classes_distribution=False,
 		                                                    classes_entropy_threshold=0.3,
-		                                                    opencv_read_flags=cv2.IMREAD_LOAD_GDAL | cv2.IMREAD_ANYDEPTH,
+		                                                    opencv_read_flags=-99,
                                                         field_of_view=0,
                                                         manage_nan_values=nan_management)
 
@@ -165,20 +159,19 @@ try:
       result=sess.run(deepnet_feed)
       print('#### step='+str(step))
       print('-> output shape='+str(result.shape))
-      input_crop, cloud_map, img_labels=display_sentinel_image(result, mask_clouds_OPAQUE=True, mask_clouds_CIRRUS=False)
+      input_crop, target_shapes, target_bounding_boxes=display_sar_image(result)
       #print('Labels (min, max)='+str((img_labels.min(), img_labels.max())))
-      img_labels[np.where(cloud_map)]=23
       if process_labels_histogram is True:
-
+          img_labels[np.where(cloud_map)]=23
           img_class_count, img_labels_hist=np.histogram(img_labels, bins=nb_classes, range=(0,nb_classes-1))
           print('Image classes count='+str(img_class_count))
           class_count+=img_class_count
       if process_labels_histogram is False:
           if allow_display is True:
               cv2.imshow('input crop, step='+str(step), DataProvider_input_pipeline.scaleImg_0_255(input_crop).astype(np.uint8))
-              cv2.imshow('reference crop, step='+str(step), result[:,:,-1].astype(np.uint8)*int(255/nb_classes))
-              cv2.imshow('cloud map, step='+str(step), cloud_map.astype(np.uint8)*255)
-              cv2.waitKey(1000)
+              cv2.imshow('target_bounding_boxes crop, step='+str(step), target_bounding_boxes.astype(np.uint8)*255)
+              cv2.imshow('target_shapes map, step='+str(step), target_shapes.astype(np.uint8)*255)
+              cv2.waitKey(100)
           else:
              cv2.imwrite('input_crop_'+str(step)+'.bmp', DataProvider_input_pipeline.scaleImg_0_255(input_crop).astype(np.uint8))
              cv2.imwrite('reference_crop_'+str(step)+'.bmp', result[:,:,-1].astype(np.uint8)*int(255/nb_classes))

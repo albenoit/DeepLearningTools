@@ -2,7 +2,11 @@
 @author : Alexandre Benoit, LISTIC lab, FRANCE (plus some colleagues and interns such as Louis Klein on spring 2017)
 @brief  : a set of tools to preprocess data and build up input data pipelines
 '''
+
+#### WARNING, you may have to remove one of the cv2 or gdal import depending on your machine compatibility
 import cv2
+from osgeo import gdal
+
 import matplotlib.pyplot as plt
 import glob
 import os
@@ -76,7 +80,8 @@ def scaleImg_0_255(img):
         print('Failed to detect data type, if float value, then, following should run fine')
     img_min=np.nanmin(img_copy)
     img_max=np.nanmax(img_copy)
-    scaled_img=((img_copy-img_min)*255.0)/(img_max-img_min)
+    epsilon=1e-4
+    scaled_img=((img_copy-img_min)*255.0)/(img_max-img_min+epsilon)
     scaled_img[np.isnan(scaled_img)]=0
     return scaled_img
 
@@ -116,6 +121,21 @@ def extractFilenames(root_dir, file_extension="*.jpg", raiseOnEmpty=True):
         print('Found files : '+str(len(files)))
     return sorted(files)
 
+def imread_from_gdal(filename, debug_mode=False):
+  ''' read an image using OpenCV
+      image is loaded as is. In case of a 3 channels image, BGR to RGB conversion
+      is applied
+      @param filename as a numpy array (coming from Tensorflow)
+      @param cv_imreadMode as described in the official opencv doc. Note: cv2.IMREAD_UNCHANGED=-1
+  '''
+
+  ds = gdal.Open(str(filename))
+  raster_array=ds.ReadAsArray().transpose([1,2,0])
+  if debug_mode == True:
+      print('Reading image with GDAL : {file}'.format(file=filename))
+      print('Image shape='+str(raster_array.shape))
+  return raster_array.astype(np.float32)
+
 def imread_from_opencv(filename, cv_imreadMode=-1, debug_mode=False):
   ''' read an image using OpenCV
       image is loaded as is. In case of a 3 channels image, BGR to RGB conversion
@@ -127,7 +147,7 @@ def imread_from_opencv(filename, cv_imreadMode=-1, debug_mode=False):
   if image is None:
       raise ValueError('Failed to read image '+filename)
   if debug_mode == True:
-      print('Reading image {file} using mode {flag}'.format(file=filename, flag=cv_imreadMode))
+      print('Reading image with OpenCV: {file} using mode {flag}'.format(file=filename, flag=cv_imreadMode))
       print('Image shape='+str(image.shape))
       if len(image.shape)>2:
           print('Image first layer min={minVal}, max={maxVal} (omitting nan values)'.format(minVal=np.nanmin(image[:,:,0]), maxVal=np.nanmax(image[:,:,0])))
@@ -359,10 +379,17 @@ class FileListProcessor_Semantic_Segmentation:
         @return the concatenated image of same 2D size but of depth = raw.depth+ref.depth)
         '''
         with tf.name_scope('read_raw_ref_image_pair'):
-            if self.use_opencv_imread == True:
+            if self.use_alternative_imread is not None:
+              if self.use_alternative_imread == 'opencv':
                 # use Opencv image reading methods WARNING, take care of the channels order that may change !!!
                 raw_image = tf.py_func(imread_from_opencv, [raw_img_filename, self.opencv_read_flags], tf.float32, name='raw_data_imread_opencv')
                 reference_image = tf.py_func(imread_from_opencv, [ref_img_filename, cv2.IMREAD_GRAYSCALE], tf.float32, name='ref_data_imread_opencv')
+                #add a third channel (to be compatible with raw_image rank when willing to concatenate
+                reference_image=tf.expand_dims(reference_image, -1)
+              elif self.use_alternative_imread == 'gdal':
+                # use gdal image reading methods WARNING, take care of the channels order that may change !!!
+                raw_image = tf.py_func(imread_from_gdal, [raw_img_filename], tf.float32, name='raw_data_imread_gdal')
+                reference_image = tf.py_func(imread_from_gdal, [ref_img_filename], tf.float32, name='ref_data_imread_gdal')
                 #add a third channel (to be compatible with raw_image rank when willing to concatenate
                 reference_image=tf.expand_dims(reference_image, -1)
             else:
@@ -385,8 +412,14 @@ class FileListProcessor_Semantic_Segmentation:
         @return the concatenated image of same 2D siae but of depth = raw.depth+ref.depth)
         '''
         with tf.name_scope('read_raw_ref_single_image'):
-            # use Opencv image reading methodcropss WARNING, take care of the channels order that may change !!!
-            raw_ref_image = tf.py_func(imread_from_opencv, [raw_img_filename, self.opencv_read_flags], tf.float32, name='raw_ref_data_imread_opencv')
+            if self.use_alternative_imread == 'opencv':
+              # use Opencv image reading methodcropss WARNING, take care of the channels order that may change !!!
+              raw_ref_image = tf.py_func(imread_from_opencv, [raw_img_filename, self.opencv_read_flags], tf.float32, name='raw_ref_data_imread_opencv')
+            elif self.use_alternative_imread == 'gdal':
+              # use GDAL image reading methodcropss WARNING, take care of the channels order that may change !!!
+              raw_ref_image = tf.py_func(imread_from_gdal, [raw_img_filename], tf.float32, name='raw_ref_data_imread_opencv')
+            else:
+              raise ValueError('Neither OpenCV nor GDAL selected to read data and ground truth from the same image')
             print('raw data channels='+str(self.single_image_raw_depth))
             print('dense semantic labels channels='+str(self.single_image_reference_depth))
             #concatenate both images in a single one
@@ -527,7 +560,7 @@ class FileListProcessor_Semantic_Segmentation:
             if self.apply_random_saturation != None:
                 single_image_channels=tf.image.random_contrast(single_image_channels, lower=1.0-self.apply_random_saturation, upper=1.0+self.apply_random_saturation)
             if self.apply_whitening:     # Subtract off the mean and divide by the variance of the pixels.
-                single_image_channels = tf.image.per_image_standardization(single_image_channels)
+                single_image_channels=tf.image.per_image_standardization(single_image_channels)
 
             if self.no_reference is False:#get back to the input+reference images concat
                 return tf.concat([tf.cast(single_image_channels, dtype=tf.float32), reference_img], axis=2)
@@ -689,7 +722,7 @@ class FileListProcessor_Semantic_Segmentation:
         apply_random_saturation: set None is not used, set >0 if saturation should be randomly adjusted by this factor
         apply_whitening: set True to whiten RAW DATA ONLY !!!
         batch_size_train: optionnal but well suited to optimize queue lenght to not limit training speed
-        use_opencv_imread: set False if data should be loaded from tensorflow image read methods (for now, jpeg and png only)
+        use_alternative_imread: set False if data should be loaded from tensorflow image read methods (for now, jpeg and png only)
         balance_classes_distribution: set False if no sample pop out should be applied
                 set True if some sample crops should be removed in order to get equally distributed classes
         classes_entropy_threshold: if balance_classes_distribution is True, then use this parameter in range [0,1]
@@ -711,7 +744,7 @@ class FileListProcessor_Semantic_Segmentation:
                     apply_random_saturation=0.5,
                     apply_whitening=True,
                     batch_size_train=50,
-                    use_opencv_imread=False,
+                    use_alternative_imread=False,
                     balance_classes_distribution=False,
                     classes_entropy_threshold=0.6,
                     opencv_read_flags=-1,#cv2.IMREAD_UNCHANGED=-1, #cv2.IMREAD_LOAD_GDAL | cv2.IMREAD_ANYDEPTH ):
@@ -730,7 +763,7 @@ class FileListProcessor_Semantic_Segmentation:
         self.apply_random_saturation=apply_random_saturation
         self.apply_whitening=apply_whitening
         self.batch_size_train=batch_size_train
-        self.use_opencv_imread=use_opencv_imread
+        self.use_alternative_imread=use_alternative_imread
         self.balance_classes_distribution=balance_classes_distribution
         self.classes_entropy_threshold=classes_entropy_threshold
         self.opencv_read_flags=opencv_read_flags
@@ -741,7 +774,12 @@ class FileListProcessor_Semantic_Segmentation:
             raise ValueError('Error when constructing DataProvider: image_area_coverage_factor must be above 0')
 
         #first read the first raw and reference images to get aspect ratio and depth
-        raw0=cv2.imread(filelist_raw_data[0],opencv_read_flags)
+        #FIXME : fast change to introduce gdal image loading, TO BE CLARIFIED ASAP !!!
+        if self.use_alternative_imread == 'gdal':
+          ds = gdal.Open(filelist_raw_data[0])
+          raw0=ds.ReadAsArray().transpose([1,2,0])
+        else:
+            raw0=cv2.imread(filelist_raw_data[0],opencv_read_flags)
         print('Read first raw image {filepath} of shape {shape}'.format(filepath=filelist_raw_data[0], shape=raw0.shape))
         self.single_image_raw_width = raw0.shape[0]
         self.single_image_raw_height = raw0.shape[1]

@@ -99,14 +99,14 @@ if not(processCommands.mode_test):
                                                                 patch_ratio_vs_input=patchSize,
                                                                 max_patches_per_image=patchesPerImage,
                                                                 image_area_coverage_factor=2.0,
-                                                                num_preprocess_threads=4,
+                                                                num_preprocess_threads=2,
                                                                 apply_random_flip_left_right=True,
                                                                 apply_random_flip_up_down=False,
                                                                 apply_random_brightness=0.5,
                                                                 apply_random_saturation=0.5,
                                                                 apply_whitening=True,
                                                                 batch_size_train=50,
-                                                                use_opencv_imread=False,
+                                                                use_alternative_imread=None,
                                                                 balance_classes_distribution=True,
                                                                 classes_entropy_threshold=0.6,
                                                                 field_of_view=0)
@@ -124,7 +124,7 @@ else:
                                                                 apply_random_saturation=None,
                                                                 apply_whitening=True,
                                                                 batch_size_train=1,
-                                                                use_opencv_imread=False,
+                                                                use_alternative_imread=None,
                                                                 balance_classes_distribution=False,
                                                                 classes_entropy_threshold=None,
                                                                 field_of_view=0)
@@ -169,7 +169,7 @@ data_provider.start(session=sess, coordinator=coord)
 #run one deep net iteration
 try:
 
-  for step in xrange(100000):
+  for step in xrange(10):
       #stop condition
       if coord.should_stop():
           break
@@ -183,11 +183,14 @@ try:
       print('Sample value range (min, max)=({minVal}, {maxVal})'.format(minVal=sample_minVal, maxVal=sample_maxVal))
       input_crop_norm=(input_crop-sample_minVal)*255.0/(sample_maxVal-sample_minVal)
       if allow_display is True:
-          cv2.imshow('input crop', cv2.cvtColor(input_crop_norm.astype(np.uint8), cv2.COLOR_RGB2BGR))
-          cv2.imshow('reference crop', result[:,:,3].astype(np.uint8)*int(255/nb_classes))
-          cv2.imshow('reference contours_disp', contours_disp[0].astype(np.uint8)*255)
+          cv2.imshow('input crop, step='+str(step), cv2.cvtColor(input_crop_norm.astype(np.uint8), cv2.COLOR_RGB2BGR))
+          cv2.imshow('reference crop, step='+str(step), result[:,:,3].astype(np.uint8)*int(255/nb_classes))
+          cv2.imshow('reference contours_disp, step='+str(step), contours_disp[0].astype(np.uint8)*255)
           cv2.waitKey(1000)
-
+  #loop ended, final pause before closing
+  if allow_display is True:
+    print('finished crop sample display, press a key to stop from an active opencv image show window')
+    cv2.waitKey()
 except Exception, e:
     # Report exceptions to the coordinator.
     coord.request_stop(e)
