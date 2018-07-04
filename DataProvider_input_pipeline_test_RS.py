@@ -48,7 +48,7 @@ if processCommands.labels_count:
 
 #get list of filenames
 print('Looking for files in '+str(raw_data_dir_train) +' from working folder '+os.getcwd())
-dataset_raw_train=DataProvider_input_pipeline.extractFilenames(raw_data_dir_train, '/*.tif')
+dataset_raw_train=DataProvider_input_pipeline.extractFilenames(raw_data_dir_train, '*.tif')
 
 def display_sentinel_image(input_img, mask_clouds_OPAQUE=True, mask_clouds_CIRRUS=True):
         input_rgb=input_img[:,:,1:4]

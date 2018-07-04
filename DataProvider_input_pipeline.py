@@ -863,8 +863,19 @@ def extract_feature_columns(data_dict, features_labels):
 
     return data_vectors
 
+def breakup(x, lookback_len):
+  ''' break a sequence into overlapping sub sequences
+  Arg:
+    x: the input sequence of size N steps of shape[batch_size]
+  Returns:
+    a stack of overlapping sub sequences
+  '''
+  #get the sequence length
+  N = tf.shape(x)[0]
+  windows = [tf.slice(x, [b], [lookback_len]) for b in xrange(0, N-lookback_len)]
+  return tf.stack(windows)
 
-def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_values, nblines_per_block, queue_capacity, shuffle_batches, device="/cpu:0"):
+def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_values, nblines_per_block, queue_capacity, shuffle_batches, device="/cpu:0", breakup_fact=1):
     ''' define a queue that prefetches 1D vectors coming from a set of csv files
         records that can have empty cells but default values must be specified to replace empty spaces
         @param files: the list of input csv files to read from
@@ -877,7 +888,7 @@ def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_va
     with tf.device(device),tf.name_scope('csv_file_line_blocks_read_enqueue'): # force input pipeline to be ran on the main cpu
         filename_queue = tf.train.string_input_producer(files)
         reader = tf.TextLineReader(skip_header_lines=1)
-        key, value = reader.read_up_to(filename_queue, num_records=nblines_per_block, name='read_lines')
+        key, value = reader.read_up_to(filename_queue, num_records=nblines_per_block*breakup_fact, name='read_lines')
         # Default values, in case of empty columns. Also specifies the type of the
         # decoded result.
         features = tf.decode_csv(
@@ -885,6 +896,13 @@ def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_va
         #stack all but first column in a single tensor
         timestamps=tf.cast(features[0], dtype=tf.string)
         raw_data_sample=tf.cast(tf.stack(features[1:], axis=1), dtype=tf.float32)
+
+        print("raw_data_sample="+str(raw_data_sample))
+        if breakup_fact>1:
+          raw_data_sample=breakup(raw_data_sample, lookback_len=nblines_per_block)
+          timestamps=breakup(timestamps, lookback_len=nblines_per_block)
+          print("BREAKEDUP raw_data_sample="+str(raw_data_sample))
+
         '''raw_data_sample = tf.Print(raw_data_sample, [raw_data_sample],
                'read lines = ', summarize=2, first_n=10)'''
         print('timestamps='+str(timestamps))
@@ -905,7 +923,10 @@ def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_va
 
         #enqueue data ONLY if the requested number of lines has been grabbed
         check_nblines_per_block_OK=tf.equal(tf.shape(key)[0],nblines_per_block)
-        conditionned_enqueue_op=tf.cond(check_nblines_per_block_OK, lambda: data_queue.enqueue([timestamps,raw_data_sample]), lambda:tf.no_op())
+        if breakup_fact==1:
+          conditionned_enqueue_op=tf.cond(check_nblines_per_block_OK, lambda: data_queue.enqueue([timestamps,raw_data_sample]), lambda:tf.no_op())
+        else:
+          conditionned_enqueue_op=tf.cond(check_nblines_per_block_OK, lambda: data_queue.enqueue_many([timestamps,raw_data_sample]), lambda:tf.no_op())
 
         #threading
         thread_enqueue_data = tf.train.QueueRunner( data_queue,

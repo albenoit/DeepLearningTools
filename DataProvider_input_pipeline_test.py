@@ -48,8 +48,8 @@ if processCommands.labels_count:
     process_labels_histogram = True
 
 #get list of filenames
-dataset_raw_train=DataProvider_input_pipeline.extractFilenames(raw_data_dir_train, '/*.png')
-dataset_references_train=DataProvider_input_pipeline.extractFilenames(reference_data_dir_train, '/*labelIds.png')
+dataset_raw_train=DataProvider_input_pipeline.extractFilenames(raw_data_dir_train, '*.png')
+dataset_references_train=DataProvider_input_pipeline.extractFilenames(reference_data_dir_train, '*labelIds.png')
 def display_sentinel_image(input_img, mask_clouds_OPAQUE=True, mask_clouds_CIRRUS=True):
         input_rgb=input_img[:,:,1:4]
         if mask_clouds_OPAQUE == True and mask_clouds_CIRRUS == True:
