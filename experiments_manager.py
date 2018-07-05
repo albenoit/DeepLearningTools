@@ -752,6 +752,16 @@ def model_fn(features, labels, mode, params):
                                  summary_writer=embeddings_summary_writer)
                 evaluation_hooks=[eval_finalize_hook]
 
+                if hasattr(usersettings, 'get_validation_summaries'):
+                  with tf.name_scope('eval_addon_summaries'):
+                    eval_addon_summaries, save_steps=usersettings.get_validation_summaries(inputs=features_fov, model_outputs_dict=model_outputs_fov, labels=labels)
+                  eval_summary_hook = tf.train.SummarySaverHook(
+                                save_steps=save_steps,
+                                output_dir= os.path.join(sessionFolder,embeddingsFolder,'eval_addon_summaries'),
+                                summary_op=tf.summary.merge(eval_addon_summaries, 'eval_addon_summaries'))
+                  # Add it to the evaluation_hook list
+                  evaluation_hooks.append(eval_summary_hook)
+
                 # smoothed parameters load eval hook
                 class LoadEMAHook(tf.train.SessionRunHook):
                   def __init__(self, model_dir):

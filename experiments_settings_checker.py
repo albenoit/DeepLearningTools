@@ -86,5 +86,11 @@ class ExperimentsSettingsChecker(object):
             except Exception, e:
                 print('OPTIONNAL argument could be added: '+str(e))
 
+            try:
+                self.has('save_model_variables_to_pandas', 'add the following function that returns the tuple (list of additionnal summaries, INTEGER) to log each INTEGER steps the specified validation summary results per training epoch: eval_addon_summaries=usersettings.get_validation_summaries(inputs, model_outputs_dict, labels) ')
+            except Exception, e:
+                print('OPTIONNAL argument could be added: '+str(e))
+
+
             print('*** Parameters check ended successfuly')
             print('******************************************************')
