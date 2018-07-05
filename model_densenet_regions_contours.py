@@ -243,9 +243,9 @@ def model(  data,
 
         with tf.variable_scope('contours_output'):
             if output_only_inputs_last_decoding_block is True:
-                logits_semantic_contours = conv2d(decoding_feature_maps, n_outputs, 1)
+                logits_semantic_contours = conv2d(decoding_feature_maps, 2, 1)
             else:
-                logits_semantic_contours = conv2d(tf.concat([decoding_feature_maps, feature_maps_in], axis=3), n_outputs, 1)
+                logits_semantic_contours = conv2d(tf.concat([decoding_feature_maps, feature_maps_in], axis=3), 2, 1)
 
     print('logits_semantic shape='+str(logits_semantic_regions.get_shape().as_list()))
     print('Last_encoding_feature_maps out shape = '+str(last_encoding_feature_maps.get_shape().as_list()))

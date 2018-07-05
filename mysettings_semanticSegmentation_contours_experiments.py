@@ -166,6 +166,9 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     cross_entropy_segmentation_labels_loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits_semantic_crops_labels, labels=semantic_labels))
     cross_entropy_segmentation_contours_loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits_semantic_crops_contours, labels=semantic_contours))
 
+    tf.summary.scalar('semantic_areas_loss', cross_entropy_segmentation_labels_loss)
+    tf.summary.scalar('semantic_contours_loss', cross_entropy_segmentation_contours_loss)
+
     return  cross_entropy_segmentation_labels_loss+cross_entropy_segmentation_contours_loss+weights_weight_decay*weights_loss
 
 def get_validation_summaries(inputs, model_outputs_dict, labels):
@@ -180,7 +183,7 @@ def get_validation_summaries(inputs, model_outputs_dict, labels):
     labels_regions=tf.squeeze(tf.slice(labels, begin=[0,0,0,0], size=[-1,-1,-1,1]), squeeze_dims=-1)
     labels_contours=tf.squeeze(tf.slice(labels, begin=[0,0,0,1], size=[-1,-1,-1,1]), squeeze_dims=-1)
     semantic_segm_argmax_map=tf.cast(tf.argmax(model_outputs_dict['logits_semantic_regions_map'],3, name='argmax_image'), tf.int32)
-    semantic_contours_map=tf.cast(tf.argmax(model_outputs_dict['logits_semantic_contours_map'],3, name='argmax_image'), tf.int32)
+    semantic_segm_argmax_contours_map=tf.cast(tf.argmax(model_outputs_dict['logits_semantic_contours_map'],3, name='argmax_image'), tf.int32)
 
     with tf.name_scope('image_summaries'):
         raw_rgb_min= tf.reduce_min(inputs, axis=[1,2,3], keep_dims=True)
@@ -190,7 +193,7 @@ def get_validation_summaries(inputs, model_outputs_dict, labels):
         reference_images_crops_regions_display=tf.expand_dims(tf.saturate_cast((labels_regions*255)/nb_classes, dtype=tf.uint8),-1)
         reference_images_crops_contours_display=tf.expand_dims(tf.saturate_cast(labels_contours*255, dtype=tf.uint8),-1)
         semantic_segm_argmax_map_crops_display=tf.saturate_cast(tf.expand_dims((semantic_segm_argmax_map*255)/nb_classes,-1), dtype=tf.uint8)
-        semantic_contours_map_crops_display=tf.saturate_cast(tf.expand_dims(semantic_contours_map*255,-1), dtype=tf.uint8)
+        semantic_contours_map_crops_display=tf.saturate_cast(tf.expand_dims(semantic_segm_argmax_contours_map*255,-1), dtype=tf.uint8)
         print('*********reference shape='+str(reference_images_crops_regions_display.get_shape().as_list()))
         return ([tf.summary.image("input", raw_images_display),
                 tf.summary.image("references_center_crop_regions", reference_images_crops_regions_display),
