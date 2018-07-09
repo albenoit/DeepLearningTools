@@ -167,25 +167,6 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
 
     return reconstruction_loss+weights_weight_decay*weights_loss #+reconstruction_from_code_loss
 
-def get_validation_summaries(inputs, predictions, labels, embedding_code):
-    ''' add here (if required) some summaries to be applied on the validation dataset
-    FIXME : to be updated ones validation image summaries become available in future Tensorflow versions
-    '''
-    labels=tf.squeeze(labels, squeeze_dims=-1)
-    semantic_segm_argmax_map=tf.cast(tf.argmax(predictions,3, name='argmax_image'), tf.int32)
-
-    with tf.name_scope('image_summaries'):
-        raw_rgb_min= tf.reduce_min(inputs, axis=[1,2,3], keep_dims=True)
-        raw_rgb_max= tf.reduce_max(inputs, axis=[1,2,3], keep_dims=True)
-        raw_images_rgb_0_1=(inputs-raw_rgb_min)/(raw_rgb_max-raw_rgb_min)
-        raw_images_display=tf.saturate_cast(raw_images_rgb_0_1*255.0, dtype=tf.uint8)
-        reference_images_crops_display=tf.expand_dims(tf.saturate_cast((labels*255)/nb_classes, dtype=tf.uint8),-1)
-        semantic_segm_argmax_map_crops_display=tf.saturate_cast(tf.expand_dims((semantic_segm_argmax_map*255)/nb_classes,-1), dtype=tf.uint8)
-        print('*********reference shape='+str(reference_images_crops_display.get_shape().as_list()))
-        return [tf.summary.image("input", raw_images_display),
-                tf.summary.image("references_center_crop", reference_images_crops_display),
-                tf.summary.image("predictions", semantic_segm_argmax_map_crops_display)
-               ]
 
 def get_eval_metric_ops(inputs, model_outputs_dict, labels):
     '''Return a dict of the evaluation Ops.

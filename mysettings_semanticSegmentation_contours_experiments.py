@@ -14,7 +14,7 @@ workingFolder='experiments/semantic_segmentation_contours'
 tensorflow_server_address='127.0.0.1'
 tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
-serving_client_timeout_int_secs=1#timeout limit when a client requests a served model
+serving_client_timeout_int_secs=5#timeout limit when a client requests a served model
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='Cityscapes_'
 
