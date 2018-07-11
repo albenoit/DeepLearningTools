@@ -14,7 +14,7 @@ Several ideas are put together:
 -some tensorflow-serving client codes to reuse the trained model on single or streaming data
 
 
-#Machine Setup (tested with tensorflow 1.4.1)
+#Machine Setup (tested with tensorflow from 1.4.1 to 1.8)
 1. install python 2.7 and python pip
 2. install tensorflow and tensorflow serving using pip : pip install tensorflow-gpu tensorflow-serving-api
 Note that the first versions of the dependency lib grpcio may bring some troubles when starting the tensorflow server.
@@ -132,21 +132,24 @@ tf.app.flags.DEFINE_boolean("commands",False, "Display some command examples")
 tf.app.flags.DEFINE_string("usersettings",'mysettings_1D_experiments.py', "filename of the settings file dedicated to some experiment(s)")
 tf.app.flags.DEFINE_integer("predict_stream",0,"this value number of predictions, infinite loop if <0")
 tf.app.flags.DEFINE_boolean("restart_interrupted", False, "Set True to restart an interrupted session, model_dir option should be set")
+tf.app.flags.DEFINE_string("debug_server_addresses", "127.0.0.1:2333", "Set here the IP:port to specify where to reach the tensorflow debugger")
 
-def loadModel():
+def loadModel(sessionFolder):
     ''' basic method to load the model targeted by usersettings.model_file
     '''
+    model_path=os.path.join(sessionFolder,usersettings.model_file)
     try:
-        model_def=imp.load_source('model_def', usersettings.model_file)
+        model_def=imp.load_source('model_def', model_path)
     except Exception,e:
         raise ValueError('Failed to load model file : '+str(usersettings.model_file)+str(e))
     model=model_def.model
 
-    print('loaded model file {file} result={load_res}'.format(file=usersettings.model_file, load_res=model_def))
+    print('loaded model file {file}'.format(file=model_path))
     return model
 
 # Define and run experiment ###############################
 def run_experiment(argv=None):
+    print('Running an experiment. argv='+str(argv))
     """Run the training experiment."""
     nbIterationPerEpoch_train=usersettings.nb_train_samples/(usersettings.batch_size)#len(dataset_raw_train)*patchesPerImage/batch_size
     nbIterationPerEpoch_test=usersettings.nb_test_samples/(usersettings.batch_size)
@@ -166,6 +169,14 @@ def run_experiment(argv=None):
         nbIterationPerEpoch_train=nbIterationPerEpoch_train,
         debug=usersettings.display_model_layers_info
         )
+    #add additionnal hyperparams coming from argv
+    if argv is not None:
+      if  isinstance(argv[0], dict):
+        for key, val in argv[0].iteritems():
+          print('Adding hyperparameter (key,val):'+str((key,val)))
+          params.add_hparam(name=key,value=val)
+
+
     #Session hardware configuration :
     gpu_options=tf.GPUOptions(allow_growth=True)
     #activate XLA JIT level 1 by default
@@ -173,7 +184,7 @@ def run_experiment(argv=None):
     graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.OFF#ON_1#OFF
     sessionConfig=tf.ConfigProto(
                                 allow_soft_placement=True,
-                                log_device_placement=FLAGS.debug,
+                                log_device_placement=params.debug_sess,
                                 gpu_options=gpu_options,
                                 graph_options=graph_options
                                 )
@@ -186,7 +197,7 @@ def run_experiment(argv=None):
                                 session_config=sessionConfig,
                                 save_summary_steps=summary_steps_period,
                                 save_checkpoints_steps=nbIterationPerEpoch_train,
-                                model_dir=sessionFolder
+                                model_dir=params.sessionFolder
                                             )
 
     '''TODO: have a look at :
@@ -219,6 +230,8 @@ def experiment_fn(run_config, params):
     # You can change a subset of the run_config properties as
     #run_config = run_config.replace(save_checkpoints_steps=params.min_eval_frequency)
 
+    print('Starting experiment with Hyper parameters:',str(params))
+
     # Define the mnist classifier
     estimator = get_estimator(run_config, params)
     with tf.variable_scope('train_val_input_pipeline'),tf.device('/cpu:0'):
@@ -243,7 +256,7 @@ def experiment_fn(run_config, params):
     steps_counter_hook=tf.train.StepCounterHook(
                                                 every_n_steps=10,
                                                 every_n_secs=None,
-                                                output_dir=sessionFolder,
+                                                output_dir=params.sessionFolder,
                                                 summary_writer=None
                                                 )
 
@@ -258,13 +271,13 @@ def experiment_fn(run_config, params):
     )
     train_monitors=[steps_counter_hook]
     eval_hooks=None
-    if FLAGS.debug:
-      debughook=tf_debug.TensorBoardDebugHook("alben:2333",
+    if params.debug_sess:
+      debughook=tf_debug.TensorBoardDebugHook(params.debug_server_addresses,
                                             send_traceback_and_source_code=False,
                                             log_usage=False)
       #add debug hook to train and eval monitors
       eval_hooks=[debughook]
-      train_monitors+=debughook
+      train_monitors.append(debughook)
 
     # Define the experiment
     if train_input_hook is not None:
@@ -342,7 +355,7 @@ def model_fn(features, labels, mode, params):
     #FIXME currently not able to put model on a GPU... variables saving issue
     model_scope='model'
     with tf.device(model_placement), tf.variable_scope(model_scope):
-        model=loadModel()
+        model=loadModel(params.sessionFolder)
         model_outputs_dict=model(   data=features,
                                     n_outputs=usersettings.nb_classes,
                                     hparams=params, #hyperparameters that may control model settings
@@ -502,7 +515,7 @@ def model_fn(features, labels, mode, params):
                         central_value= tf.slice( feature_map,
                                       begin=[0]+central_data_idx+[0],
                                       size=[-1]+[1]*xdimensions+[-1])
-                        print('---> central patch VALUE shape='+str(central_value.get_shape().as_list()))
+                        print('---> central patch VALUE shape='+str(central_value))
                         return central_value
 
                     model_outputs_center_val_dict={output_key: get_feature_central_pixel(output_feature, output_key) for output_key,output_feature in model_outputs_dict.items()}
@@ -677,7 +690,7 @@ def model_fn(features, labels, mode, params):
                                                         reduction_indices=None
                                                     )
                         metadata_path='metadata.tsv'
-                        metadata_path_abs=os.path.join(sessionFolder,embeddingsFolder, metadata_path)
+                        metadata_path_abs=os.path.join(params.sessionFolder,embeddingsFolder, metadata_path)
                         write_medatata_file=tf.write_file(
                                                     filename=metadata_path_abs,
                                                     contents=tsv_format_labels,
@@ -685,7 +698,7 @@ def model_fn(features, labels, mode, params):
                                                     )
                         save_embeddings_op.append(write_medatata_file)
                         from tensorflow.contrib.tensorboard.plugins import projector
-                        embeddings_summary_writer = tf.summary.FileWriter(os.path.join(sessionFolder,embeddingsFolder))
+                        embeddings_summary_writer = tf.summary.FileWriter(os.path.join(params.sessionFolder,embeddingsFolder))
                         config = projector.ProjectorConfig()
 
                         # add multiple embeddings.
@@ -720,7 +733,7 @@ def model_fn(features, labels, mode, params):
                                 print('Saving all model parameters to pandas file...')
                                 print('vars='+str(self._vars))
                                 model_variables=pd.DataFrame({var.name:[session.run(var)] for var in self._vars})
-                                model_variables.to_pickle(os.path.join(sessionFolder,'model_parameters.bz2'))
+                                model_variables.to_pickle(os.path.join(params.sessionFolder,'model_parameters.bz2'))
                                 print('==>Values='+str(model_variables))
 
                             if self._final_ops is not None:
@@ -737,7 +750,7 @@ def model_fn(features, labels, mode, params):
                                     #force summary write to file
                                     self._summary_writer.flush()
                                 print('Saving embeddings in folder : '+str(embeddingsFolder))
-                                self._saver.save(session,os.path.join(sessionFolder,embeddingsFolder,'embedding_values'))
+                                self._saver.save(session,os.path.join(params.sessionFolder,embeddingsFolder,'embedding_values'))
                                 print('**** EVAL SESSION FINISHED ****')
 
                 #get all model variables
@@ -757,7 +770,7 @@ def model_fn(features, labels, mode, params):
                     eval_addon_summaries, save_steps=usersettings.get_validation_summaries(inputs=features_fov, model_outputs_dict=model_outputs_fov, labels=labels)
                   eval_summary_hook = tf.train.SummarySaverHook(
                                 save_steps=save_steps,
-                                output_dir= os.path.join(sessionFolder,embeddingsFolder,'eval_addon_summaries'),
+                                output_dir= os.path.join(params.sessionFolder,embeddingsFolder,'eval_addon_summaries'),
                                 summary_op=tf.summary.merge(eval_addon_summaries, 'eval_addon_summaries'))
                   # Add it to the evaluation_hook list
                   evaluation_hooks.append(eval_summary_hook)
@@ -778,7 +791,7 @@ def model_fn(features, labels, mode, params):
                     tf.logging.info('********** Reloading EMA... ************')
                     self._load_ema(sess)
                   if usersettings.predict_using_smoothed_parameters is True:
-                    evaluation_hooks=eval_finalize_hook+[LoadEMAHook(FLAGS.model_dir)]
+                    evaluation_hooks=eval_finalize_hook+[LoadEMAHook(params.sessionFolder)]
 
     with tf.name_scope('model_outputs_postprocessing'):
         exported_outputs=usersettings.model_outputs_postprocessing_for_serving(model_outputs_dict)
@@ -980,6 +993,20 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None):
         filename: the settings file, if restarting an interrupted training session, you should target the experiments_settings.py copy available in the experiment folder to restart"
         restart_from_sessionFolder: [OPTIONNAL] set the  session folder of a previously interrupted training session to restart
     '''
+
+    if restart_from_sessionFolder is not None:
+      if os.path.exists(restart_from_sessionFolder):
+        print('Attempting to restart a previously ran training job...')
+        sessionFolder=restart_from_sessionFolder
+        #target the initial experiments settings file
+        filename=os.path.join(restart_from_sessionFolder, settingsFile_saveName)
+        if os.path.exists(filename):
+          raise ValueError('Could not find experiment_settings.py file in the experiment folder:'+str(sessionFolder))
+      else:
+        raise ValueError('Could not restart interrupted training session, working folder not found:'+str(model_dir))
+    else:
+      print('Starting a new experiment')
+
     print('Trying to load experiments settings file : '+str(filename))
     try:
         usersettings=imp.load_source('settings', filename)
@@ -995,15 +1022,9 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None):
         os.environ["CUDA_VISIBLE_DEVICES"] = str(usersettings.used_gpu_IDs)[1:-1]
 
     model_name=usersettings.model_file.split('.')[0]
-    #manage the working folder
+    #manage the working folder in the case of a new experiment
     workingFolder=usersettings.workingFolder
-    if restart_from_sessionFolder is not None:
-      if os.path.exists(restart_from_sessionFolder):
-        print('Attempting to restart a previoulsly run training job...')
-        sessionFolder=restart_from_sessionFolder
-      else:
-        raise ValueError('Could not restart interrupted training session, working folder not found:'+str(model_dir))
-    else:
+    if restart_from_sessionFolder is None:
       sessionFolder=os.path.join(workingFolder, usersettings.session_name+'_'+datetime.datetime.now().strftime("%Y-%m-%d--%H:%M:%S"))
     return usersettings, sessionFolder, model_name
 
@@ -1061,5 +1082,5 @@ if __name__ == "__main__":
           shutil.copyfile(os.path.join(scripts_WD, FLAGS.usersettings), settings_copy_fullpath)
         tf.app.run(
             main=run_experiment,
-            argv=None
+            argv=[{'debug_server_addresses':FLAGS.debug_server_addresses, 'sessionFolder':sessionFolder, 'model_name':model_name, 'debug_sess':FLAGS.debug}]
     )
