@@ -124,15 +124,15 @@ tf.logging.set_verbosity(tf.logging.DEBUG)
 # Set default flags for the output directories
 FLAGS = tf.app.flags.FLAGS
 #tf.app.flags.DEFINE_string("settings_file",FLAGS.usersettings,"settings file to load")
-tf.app.flags.DEFINE_string('model_dir', None,'Output directory for model and training stats.')
+tf.app.flags.DEFINE_string ('model_dir', None,'Output directory for model and training stats.')
 tf.app.flags.DEFINE_boolean("debug",False,"activate debug information display (ops device placement, some buffer sizes, etc.)")
 tf.app.flags.DEFINE_boolean("predict", False, "Switch to prediction mode")
 tf.app.flags.DEFINE_boolean("start_server",False,"start the tensorflow server on the machine to run predictions")
 tf.app.flags.DEFINE_boolean("commands",False, "Display some command examples")
-tf.app.flags.DEFINE_string("usersettings",'mysettings_1D_experiments.py', "filename of the settings file dedicated to some experiment(s)")
+tf.app.flags.DEFINE_string ("usersettings",'mysettings_1D_experiments.py', "filename of the settings file dedicated to some experiment(s)")
 tf.app.flags.DEFINE_integer("predict_stream",0,"this value number of predictions, infinite loop if <0")
 tf.app.flags.DEFINE_boolean("restart_interrupted", False, "Set True to restart an interrupted session, model_dir option should be set")
-tf.app.flags.DEFINE_string("debug_server_addresses", "127.0.0.1:2333", "Set here the IP:port to specify where to reach the tensorflow debugger")
+tf.app.flags.DEFINE_string ("debug_server_addresses", "127.0.0.1:2333", "Set here the IP:port to specify where to reach the tensorflow debugger")
 
 def loadModel(sessionFolder):
     ''' basic method to load the model targeted by usersettings.model_file
@@ -1000,7 +1000,11 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None):
         sessionFolder=restart_from_sessionFolder
         #target the initial experiments settings file
         filename=os.path.join(restart_from_sessionFolder, settingsFile_saveName)
+        print('From working folder'+str(os.getcwd()))
+        print('looking for '+str(filename))
         if os.path.exists(filename):
+          print('Found')
+        else:
           raise ValueError('Could not find experiment_settings.py file in the experiment folder:'+str(sessionFolder))
       else:
         raise ValueError('Could not restart interrupted training session, working folder not found:'+str(model_dir))
@@ -1062,7 +1066,7 @@ if __name__ == "__main__":
         print('Current working directory = '+os.getcwd())
         do_inference(usersettings.tensorflow_server_address, usersettings.tensorflow_server_port, model_name, 0, FLAGS.predict_stream)
 
-    elif FLAGS.commands is True:
+    elif FLAGS.commands is True or FLAGS.commands is True:
         print('Here are some command examples')
         print('1. train a model (once the mysettings_1D_experiments.py is set):')
         print('-> python experiments_manager.py --usersettings=mysettings_1D_experiments.py')
