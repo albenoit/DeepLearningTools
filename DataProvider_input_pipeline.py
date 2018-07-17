@@ -913,7 +913,7 @@ def breakup(x, lookback_len):
   windows = [tf.slice(x, [b], [lookback_len]) for b in xrange(0, N-lookback_len)]
   return tf.stack(windows)
 
-def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_values, nblines_per_block, queue_capacity, shuffle_batches, device="/cpu:0", breakup_fact=1):
+def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_values, nblines_per_block, queue_capacity, shuffle_batches, na_value_string='N/A', labels_cols_nb=1, device="/cpu:0", breakup_fact=1):
     ''' define a queue that prefetches 1D vectors coming from a set of csv files
         records that can have empty cells but default values must be specified to replace empty spaces
         @param files: the list of input csv files to read from
@@ -921,6 +921,8 @@ def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_va
         @param record_defaults_values: the list of default values, for example: [['default_txt'],[1],[1.0]]
         @param nblines_per_block:the number of lines to read at a time : this will enable to dequeue this number lines as a single datablock
         @param queue_capacity: the number of sample slots available in the queue
+        @param na_value_string: the string used in the csv files to say 'abnormal'/'undefined' value
+        @param labels_cols_nb: the number of FIRST columns that should be used to generate labels (say if start_date and stop_date exist, this would let this parameter to 2)
         @param device: the device where to place the data pipeline
     '''
     with tf.device(device),tf.name_scope('csv_file_line_blocks_read_enqueue'): # force input pipeline to be ran on the main cpu
@@ -930,12 +932,15 @@ def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_va
         # Default values, in case of empty columns. Also specifies the type of the
         # decoded result.
         features = tf.decode_csv(
-            value, record_defaults=record_defaults_values, field_delim=csv_field_delim) #keep all the the first column (timestamp)
+            value, record_defaults=record_defaults_values, field_delim=csv_field_delim, na_value=na_value_string) #keep all the the first column (timestamp)
         #stack all but first column in a single tensor
-        timestamps=tf.cast(features[0], dtype=tf.string)
-        raw_data_sample=tf.cast(tf.stack(features[1:], axis=1), dtype=tf.float32)
+        print('FileListProcessor_csv_time_series: features='+str(features))
 
-        print("raw_data_sample="+str(raw_data_sample))
+        timestamplabels=[tf.cast(features[i], dtype=tf.string) for i in range(labels_cols_nb)]
+        timestamps=tf.string_join(timestamplabels)
+        raw_data_sample=tf.cast(tf.stack(features[labels_cols_nb:], axis=1), dtype=tf.float32)
+
+        print("FileListProcessor_csv_time_series: raw_data_sample="+str(raw_data_sample))
         if breakup_fact>1:
           raw_data_sample=breakup(raw_data_sample, lookback_len=nblines_per_block)
           timestamps=breakup(timestamps, lookback_len=nblines_per_block)
@@ -943,7 +948,7 @@ def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_va
 
         '''raw_data_sample = tf.Print(raw_data_sample, [raw_data_sample],
                'read lines = ', summarize=2, first_n=10)'''
-        print('timestamps='+str(timestamps))
+        print('FileListProcessor_csv_time_series: timestamps/labels='+str(timestamps))
         #print('features='+str(features))
         #print('raw_data_sample='+str(raw_data_sample))
         #setup a data queue that will prefetch the data
@@ -978,7 +983,7 @@ def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_va
         reset_ops=[reader.reset()]
     return data_queue, reset_ops
 
-def FileListProcessor_csv_lines(files, csv_field_delim, queue_capacity, shuffle_batches, batch_size, features_labels, device="/cpu:0", debug=False):
+def FileListProcessor_csv_lines(files, csv_field_delim, queue_capacity, shuffle_batches, batch_size, features_labels, na_value_string='N/A', device="/cpu:0", debug=False):
     ''' inspired by the official iris tutorial and related blog
         https://developers.googleblog.com/2017/12/
         define a queue that prefetches 1D vectors coming from a set of csv files
@@ -997,6 +1002,8 @@ def FileListProcessor_csv_lines(files, csv_field_delim, queue_capacity, shuffle_
         ---'vocabulary_list' if column is categorial and should be one hot encoded according to the specified vocabulary
         ---'buckets_boundaries' if column numeric but should be should be one hot encoded according to the specified boundarie values
 
+
+        @param na_value_string: the string used in the csv files to say 'abnormal'/'undefined' value
         @param device: the device where to place the data pipeline
     '''
 
@@ -1004,7 +1011,7 @@ def FileListProcessor_csv_lines(files, csv_field_delim, queue_capacity, shuffle_
         def decode_csv(line):
             if debug is True:
                 line=tf.Print(line,[line], message='RAW csv line=')
-            parsed_line = tf.decode_csv(line, record_defaults=features_labels['all_cols']['record_defaults'], field_delim=csv_field_delim)
+            parsed_line = tf.decode_csv(line, record_defaults=features_labels['all_cols']['record_defaults'], field_delim=csv_field_delim, na_value=na_value_string)
             features = dict(zip(features_labels['all_cols']['names'], parsed_line))
             unused_cols = set(features_labels['all_cols']['names']) - {col['name'] for col in features_labels['data_cols']['names_opt_categories_or_buckets']} \
                                                                     - {col for col in features_labels['labels_cols']['names']}
