@@ -90,7 +90,7 @@ raw_data_dir_val=(raw_data_dir_val_, reference_data_dir_val_)
 number_of_crops_per_image=100
 nb_train_samples=nb_train_images*number_of_crops_per_image# number of images * number of crops per image
 nb_test_samples=7000#nb_val_images*number_of_crops_per_image
-batch_size=2
+batch_size=3
 nb_classes=34
 
 ####################################################
