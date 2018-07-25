@@ -181,7 +181,10 @@ def run_experiment(argv=None):
     gpu_options=tf.GPUOptions(allow_growth=True)
     #activate XLA JIT level 1 by default
     graph_options=tf.GraphOptions()
-    graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.OFF#ON_1#OFF
+    if hasattr(usersettings,'XLA_FLAG'):
+      graph_options.optimizer_options.global_jit_level = usersettings.XLA_FLAG
+    else:
+      graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.OFF#ON_1#OFF
     sessionConfig=tf.ConfigProto(
                                 allow_soft_placement=True,
                                 log_device_placement=params.debug_sess,
@@ -347,9 +350,12 @@ def model_fn(features, labels, mode, params):
 
     #FIXME for now tensorflow_server only works on CPU so using GPU only for training and validation
     model_placement="/cpu:0"
-    if mode != ModeKeys.INFER:
+    if mode != ModeKeys.INFER and len(usersettings.used_gpu_IDs)>0:
         model_placement="/gpu:0"
-
+        print('**** model placed on GPU')
+    else:
+        print('**** model placed on CPU')
+        
     with tf.name_scope("data_preprocess"):
         features=usersettings.data_preprocess(features, model_placement)
     #FIXME currently not able to put model on a GPU... variables saving issue
@@ -820,7 +826,7 @@ def get_train_op_fn(loss, params):
     print('Creating solver...')
     with tf.name_scope('optimizer'):
         if usersettings.num_epochs_per_decay>0 and usersettings.learning_rate_decay_factor>0:
-
+            #TODO: check for cold epoch/warmup/exponential learning rate profiles : https://cloud.google.com/tpu/docs/inception-v3-advanced#exponential_moving_average
             with tf.name_scope('learning_rate_decay'):
                 # Calculate the learning rate schedule.
                 decay_steps = int(params.nbIterationPerEpoch_train * usersettings.num_epochs_per_decay)
