@@ -38,6 +38,8 @@ Then, connect to the processing node and type in command line 'nvidia-smi'
 to check which gpu is free (very few used memory and GPU )
 '''
 used_gpu_IDs=[0]
+#set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
+XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
 #-> define here the used model under variable 'model'
 #model_file='model_densenet.py'
