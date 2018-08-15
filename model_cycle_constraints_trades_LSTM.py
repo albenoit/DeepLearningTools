@@ -33,7 +33,7 @@ def RNN_layer(X, n_units, num_steps, is_training, layer_name):
                                        state_keep_prob=1.0,#dropoutrate,
                                        variational_recurrent=True,#if True, the same dropout mask is applied at every step, as described in Y. Gal, Z Ghahramani. "A Theoretically Grounded Application of Dropout in Recurrent Neural Networks". https://arxiv.org/abs/1512.05287
                                        dtype=tf.float32)
-    '''
+    '''  
     outputs, last_states = tf.nn.dynamic_rnn(
         cell=cell,
         dtype=tf.float32,

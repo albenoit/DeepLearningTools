@@ -17,12 +17,6 @@ serving_client_timeout_int_secs=5#timeout limit when a client requests a served 
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='Cityscapes_'
 
-#-> allow X window displays (for image and graph display purpose)
-allow_display=True
-
-#-> activate session profiling to observe ressource use and timings
-do_trace_computation=True
-
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
@@ -49,11 +43,6 @@ input_data_name='input'
 model_head_embedding_name='code'
 model_head_prediction_name=tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY
 served_head=model_head_prediction_name #define here the output that will be provided by tensorflow-server
-
-#-> define the training strategy depending on the computing architecture
-#---> "continuous_train_and_eval"-> single machine
-#---> "train_and_evaluate" -> multiple machines/distributed training/evaluation
-train_val_schedule_strategy="continuous_train_and_eval"
 
 #-> set the number of summaries store per training epoch (more=more precise BUT higer cost)
 nb_summary_per_train_epoch=4

@@ -30,12 +30,6 @@ save_model_variables_to_pandas=True
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='TCN_MSE_LSTM'
 
-#-> allow X window displays (for image and graph display purpose)
-allow_display=True
-
-#-> activate session profiling to observe ressource use and timings
-do_trace_computation=True
-
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
@@ -46,6 +40,8 @@ Then, connect to the processing node and type in command line 'nvidia-smi'
 to check which gpu is free (very few used memory and GPU )
 '''
 used_gpu_IDs=[0]
+#set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
+XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
 #-> define here the used model under variable 'model'
 #model_file='model_densenet.py'
@@ -59,11 +55,6 @@ model_head_prediction_name=tf.saved_model.signature_constants.DEFAULT_SERVING_SI
 #->define here the output that will be provided by tensorflow-server
 served_head=model_head_prediction_name
 
-#-> define the training strategy depending on the computing architecture
-#---> "continuous_train_and_eval"-> single machine
-#---> "train_and_evaluate" -> multiple machines/distributed training/evaluation
-train_val_schedule_strategy="continuous_train_and_eval"
-
 #-> set the number of summaries store per training epoch (more=more precise BUT higer cost)
 nb_summary_per_train_epoch=4
 
@@ -75,7 +66,7 @@ random_seed=42
 
 # learning rate decaying parameters
 nbEpoch=300
-weights_weight_decay=0.0001
+weights_weight_decay=0.01
 initial_learning_rate=0.0001
 num_epochs_per_decay=150 #number of epoch keepng the same learning rate
 learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
@@ -84,13 +75,13 @@ predict_using_smoothed_parameters=False#set True to use trained parameters value
 
 #set here paths to your data used for train, val
 #-> a first set of data
-raw_data_dir_train = '/home/alben/workspace/Datasets/Trading/train_sin'
-raw_data_dir_val = '/home/alben/workspace/Datasets/Trading/val_sin'
+raw_data_dir_train = '/home/alben/workspace/Datasets/Trading/train'
+raw_data_dir_val = '/home/alben/workspace/Datasets/Trading/val'
 raw_data_filename_extension='*.txt'
 csv_field_delim='\t'
 nb_train_samples=500 #manually adjust here the number of temporal items out of the temporal block size
 nb_test_samples=10000
-batch_size=1
+batch_size=10
 MC_repeats=40
 nb_classes=2
 time_series_length=29#field_of_view
@@ -213,6 +204,7 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     #print('loss_F='+str(loss_F))
     totalLoss=loss_F
     #totalLoss=tf.Print(loss_F,[loss_F], 'loss')
+    tf.summary.scalar('task_weights_loss_ratio', weights_loss/loss_F)
     return totalLoss+weights_weight_decay*weights_loss
 
 def get_eval_metric_ops(inputs, model_outputs_dict, labels):
@@ -348,7 +340,7 @@ class Client_IO:
         #self.inputdata=np.genfromtxt(os.path.join(raw_data_dir_val,'CAC_norm.txt'), delimiter=csv_field_delim)
         self.inputdata=pd.read_csv(os.path.join(raw_data_dir_train,'CAC_norm.txt'), delimiter=csv_field_delim).as_matrix()
         #print('Read text data, shape='+str(self.inputdata.shape))
-        self.neighborhood_range=3
+        self.neighborhood_range=2
         self.current_time_idx=self.neighborhood_range*time_series_length+field_of_view
         #prepare plots
         self.fig, self.ax = plt.subplots()
