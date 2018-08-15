@@ -49,7 +49,6 @@ class ExperimentsSettingsChecker(object):
             self.has('workingFolder', 'a string that specifies the parent pathname where the training procedure data is being stored')
 
             #train and validation flags and functions
-            self.has('train_val_schedule_strategy', 'the strategy for training and validation cycles, according to Tensorflow doc, set  \'continuous_train_and_eval\' when running on a single GPU or \'train_and_evaluate\' when multiple machines/GPUs are available simultaneously ')
             self.has('predict_using_smoothed_parameters', 'a boolean that if True (not yet working, prefer False) applies exponential moving average updates on the saved models used for validation and prediction.')
             self.has('get_total_loss', 'function that receives parameters [inputs, model_outputs_dict, labels, weights_loss] that must return a graph node that represents the optimisation loss. This node will be drawn on the tensorboard as the \'loss\' variable.')
             self.has('get_eval_metric_ops', 'function that receives parameters [inputs, model_outputs_dict, labels] and that returns a dictionnary of tf.metrics')

@@ -229,13 +229,24 @@ def getEvalSpecs(params, global_hooks):
     if eval_input_hook is not None:
       eval_hooks.append(eval_input_hook)
 
-  #specify an exporter to generate a new served model after each val session
-  exporter = tf.estimator.LatestExporter(
-      name='Servo',
-      serving_input_receiver_fn=usersettings.get_input_pipeline_serving,
-      assets_extra=None,
-      as_text=False,
-      exports_to_keep=5
+  #specify model exporters to generate served models after each val session
+  exporters = []
+  #-> an exporter for intermediate models along training
+  exporters.append(tf.estimator.LatestExporter(
+        name='latest_models',
+        serving_input_receiver_fn=usersettings.get_input_pipeline_serving,
+        assets_extra=None,
+        as_text=False,
+        exports_to_keep=5
+        )
+      )
+  #-> a final exporter at the end of the training
+  exporters.append(tf.estimator.LatestExporter(
+        name='final_model',
+        serving_input_receiver_fn=usersettings.get_input_pipeline_serving,
+        assets_extra=None,
+        as_text=False,
+        )
       )
   '''TODO : when possible, move to thus one available in tf 1.10:
   tf.estimator.BestExporter(#choosing here to only export better models
@@ -252,17 +263,17 @@ def getEvalSpecs(params, global_hooks):
                                 steps=params.nbIterationPerEpoch_val,
                                 name=None,
                                 hooks=eval_hooks,
-                                exporters=exporter,
+                                exporters=exporters,
                                 start_delay_secs=120,
                                 throttle_secs=60)
 
 def getSessionConfig(params):
   '''
-  defines the session configuration at the hardware level (GPU options, etc.)
+  defines the session configuration (GPU, summary options, etc.)
   Args:
     params: general parameters dictionnary
   Returns:
-    a configured tf.ConfigProto object instance
+    a configured tf.estimator.RunConfig object instance
   '''
   gpu_options=tf.GPUOptions(allow_growth=True)
   #activate XLA JIT level 1 by default
@@ -277,7 +288,26 @@ def getSessionConfig(params):
                               gpu_options=gpu_options,
                               graph_options=graph_options
                               )
-  return sessionConfig
+
+  # Set the run_config and the directory to save the model and stats
+  summary_steps_period=1 #by default, log each step
+  if usersettings.nb_summary_per_train_epoch>0:
+    summary_steps_period=int(params.nbIterationPerEpoch_train/usersettings.nb_summary_per_train_epoch)
+  run_config =tf.estimator.RunConfig(
+                              model_dir=params.sessionFolder,
+                              tf_random_seed=usersettings.random_seed,
+                              save_summary_steps=summary_steps_period,
+                              save_checkpoints_steps=params.nbIterationPerEpoch_train,
+                              save_checkpoints_secs=None,
+                              session_config=sessionConfig,
+                              keep_checkpoint_max=5,
+                              keep_checkpoint_every_n_hours=10000,
+                              log_step_count_steps=100,
+                              train_distribute=None,
+                              #TODO, activate when tf 1.10 available : device_fn=None
+                              )
+
+  return run_config
 
 # Define and run experiment ###############################
 def run_experiment(argv=None):
@@ -313,32 +343,20 @@ def run_experiment(argv=None):
   eval_spec = getEvalSpecs(params, globalHooks)
 
   #specify session hardware configuration :
-  sessionConfig=getSessionConfig(params)
-
-  # Set the run_config and the directory to save the model and stats
-  summary_steps_period=1 #by default, log each step
-  if usersettings.nb_summary_per_train_epoch>0:
-    summary_steps_period=int(params.nbIterationPerEpoch_train/usersettings.nb_summary_per_train_epoch)
-  run_config = tf.estimator.RunConfig(
-                              model_dir=params.sessionFolder,
-                              tf_random_seed=usersettings.random_seed,
-                              save_summary_steps=summary_steps_period,
-                              save_checkpoints_steps=params.nbIterationPerEpoch_train,
-                              save_checkpoints_secs=None,
-                              session_config=sessionConfig,
-                              keep_checkpoint_max=5,
-                              keep_checkpoint_every_n_hours=10000,
-                              log_step_count_steps=100,
-                              train_distribute=None,
-                              #TODO, actuvate when tf 1.10 available : device_fn=None
-                              )
+  run_config =getSessionConfig(params)
 
   # Define the estimator
-  estimator = tf.estimator.Estimator(
-      model_fn=model_fn,
-      params=params,
-      config=run_config
-  )
+  estimator = None
+  if hasattr(usersettings, 'premade_estimator'):
+    print('Using a premade estimator')
+    raise ValueError('TODO')
+  else:
+    print('Using a custom estimator')
+    estimator = tf.estimator.Estimator(
+        model_fn=model_fn,
+        params=params,
+        config=run_config
+    )
 
   #start the train/val/export session
   tf.estimator.train_and_evaluate(
@@ -1073,9 +1091,13 @@ if __name__ == "__main__":
         print('### START TENSORFLOW SERVER MODE ###')
         usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName))
 
+        #target the served models folder
+        model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/final_model')
+        if not(os.path.exists(model_folder)):
+          model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/latest_models')
         tensorflow_start_cmd="tensorflow_model_server --port={port} --model_name={model} --model_base_path={model_dir}".format(port=usersettings.tensorflow_server_port,
                                                                                                                 model=model_name,
-                                                                                                                model_dir=os.path.join(scripts_WD,FLAGS.model_dir,'export/Servo'))
+                                                                                                                model_dir=model_folder)
 
         print('Starting tensorflow server with command :'+tensorflow_start_cmd)
         os.system(tensorflow_start_cmd)
