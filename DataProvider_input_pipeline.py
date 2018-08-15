@@ -612,7 +612,7 @@ class FileListProcessor_Semantic_Segmentation:
 
         if self.image_pairs_raw_ref_input:
             self.queue_filenames=tf.train.slice_input_producer([self.filelist_raw_data, self.filelist_reference_data],
-                                        num_epochs=number_of_epoch,
+                                        num_epochs=1,
                                         shuffle=self.shuffle_samples,
                                         seed=None,
                                         capacity=self.num_preprocess_threads,
@@ -622,7 +622,7 @@ class FileListProcessor_Semantic_Segmentation:
             raw_sample=self.__load_raw_ref_images(raw_img_filename=self.queue_filenames[0], ref_img_filename=self.queue_filenames[1])
         else: #raw and ref data in the same image of only raw data use cases
             self.queue_filenames=tf.train.input_producer(self.filelist_raw_data,# self.filelist_raw_data],,
-                                        num_epochs=number_of_epoch,
+                                        num_epochs=1,
                                         shuffle=self.shuffle_samples,
                                         seed=None,
                                         capacity=self.num_preprocess_threads,
