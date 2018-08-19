@@ -13,6 +13,11 @@ tensorflow_server_address='127.0.0.1'
 tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
 serving_client_timeout_int_secs=1#timeout limit when a client requests a served model
+input_data_name='input'
+model_head_prediction_name=tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY#'prediction'
+#->define here the output that will be provided by tensorflow-server
+from tensorflow.python.saved_model import signature_constants
+served_head="predict"#signature_constants.REGRESS_OUTPUTS#signature_constants.REGRESS_METHOD_NAME
 
 '''if save_model_variables_to_pandas=True, then force to save all model variables to a pandas dataframe file named 'model_parameters.bz2'
 To load them later, do (update the path to your experiment):
@@ -21,8 +26,10 @@ a=pandas.read_pickle('experiments/curves_fitting/my_test_2018-02-12--17:48:17/mo
 '''
 save_model_variables_to_pandas=True
 
+display_model_layers_info=False#do not output ops and vars placement on console
+
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
-session_name='my_test'
+session_name='premade_estimator'
 
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
@@ -37,23 +44,23 @@ used_gpu_IDs=[0]
 #set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
 XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
-#-> define here the used model under variable 'model'
-#model_file='model_densenet.py'
-model_file='model_curve_fitting.py'
-field_of_view=20#unused
-display_model_layers_info=False
-#-> define here a string name used for the train, eval and served models
-input_data_name='input'
-model_head_embedding_name='code'
-model_head_prediction_name=tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY#'prediction'
-#->define here the output that will be provided by tensorflow-server
-served_head=model_head_prediction_name
+nb_classes=1
 
+premade_estimator=tf.estimator.DNNRegressor(hidden_units=[10],
+                feature_columns=[tf.feature_column.numeric_column('x')],
+                label_dimension=1,
+                weight_column=None,
+                #label_vocabulary=None,
+                optimizer='Adagrad',
+                activation_fn=tf.nn.relu,
+                dropout=None,
+                input_layer_partitioner=None,
+                config=None,
+                warm_start_from=None,
+                loss_reduction=tf.losses.Reduction.SUM
+            )
 #-> set the number of summaries store per training epoch (more=more precise BUT higer cost)
 nb_summary_per_train_epoch=4
-
-#define image patches extraction parameters
-patchSize=224
 
 #random seed used to init weights, etc. Use an integer value to make experiments reproducible
 random_seed=42
@@ -74,8 +81,6 @@ raw_data_filename_extension=None
 nb_train_samples=1000 #manually adjust here the number of temporal items out of the temporal block size
 nb_test_samples=1000
 batch_size=200
-nb_classes=10
-reference_labels=['values']
 
 def numpycurve(x):
     sigma=1.0
@@ -106,81 +111,6 @@ def target_curve(x):
         return numpycurve(x)
 
     raise ValueError('Unsupported data type')
-
-####################################################
-## Define here use case specific metrics, loss, etc.
-#with tf.name_scope("loss"):
-def data_preprocess(features, model_placement):
-    ''' define here the chosen data preprocessing that will be applied
-    all the time, for training, validation and serving
-    Manually specify here on which device this preprocessing should be done.
-    For convenience, the placement of the model that follows this step is also provided
-    so that you may want to place it on the same device.
-    Args:
-        features: the input data that is being processed
-        model_placement: the device where the following model will be placed
-    Returns:
-       the preprocessed data
-    '''
-    # no preprocessing
-    return features
-
-def model_outputs_postprocessing_for_serving(model_outputs_dict):
-    ''' define here the post-processings to be applied to each of the model outputs when used withtensorflow serving
-        WARNING, in case of multiple outputs, ONE of them must be named as the
-        default serving output: tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY
-    Args:
-        model_outputs_dict: the original model outputs dictionary
-    Returns:
-       the postprocessed outputs dictionnary
-    '''
-    #in this use case, we have two outputs:
-    #->  code that is kept as is
-    #->  semantic map logits from which we extract the most probable class index for each pixel
-    postprocessed_outputs={model_head_embedding_name:model_outputs_dict['code'],
-                           model_head_prediction_name:model_outputs_dict['prediction'],
-                           }
-    return postprocessed_outputs
-
-def getOptimizer(loss, learning_rate, global_step):
-    '''define here the specific optimizer to be used
-    '''
-    return tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
-
-def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
-    '''a specific loss for data reconstruction when dealing with autoencoders
-    Args:
-        inputs: the input data samples batch
-        model_outputs_dict: the dictionnay of model outputs, field names must comply with the ones defined in the model_file
-        labels: the reference data / ground truth if available
-        weights_loss: the model weights loss that may be used for regularization
-    '''
-    reconstruction_loss=tf.losses.mean_squared_error(
-                                model_outputs_dict['prediction'],
-                                labels,
-                                weights=1.0,
-                                scope=None,
-                                loss_collection=tf.GraphKeys.LOSSES,
-                                #reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS
-                                )
-
-    return reconstruction_loss#+weights_weight_decay*weights_loss
-
-def get_eval_metric_ops(inputs, model_outputs_dict, labels):
-    '''Return a dict of the evaluation Ops.
-    Args:
-        inputs: the input data samples batch
-        model_outputs_dict: the dictionnay of model outputs, field names must comply with the ones defined in the model_file
-        labels: the reference data / ground truth if available
-    Returns:
-        Dict of metric results keyed by name.
-    '''
-    return {
-            'MSE': tf.metrics.mean_squared_error(
-                labels=labels,
-                predictions=model_outputs_dict['prediction'],
-                name='mean_squared_error'),
-            }
 
 '''Define here the input pipelines :
 -1. a common function for train and validation modes
@@ -268,7 +198,7 @@ class Client_IO:
             Args:
             result: a PredictResponse object that contains the request result
         '''
-        response = np.array(result.outputs[served_head].float_val)
+        response = np.array(result.outputs['predictions'].float_val)
         if self.debugMode is True:
             print('request shape='+str(self.x.shape))
             print('Answer shape='+str(response.shape))

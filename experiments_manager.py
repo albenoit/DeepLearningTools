@@ -234,7 +234,7 @@ def getEvalSpecs(params, global_hooks):
         )
       )
   #-> a final exporter at the end of the training
-  exporters.append(tf.estimator.LatestExporter(
+  exporters.append(tf.estimator.FinalExporter(
         name='final_model',
         serving_input_receiver_fn=usersettings.get_input_pipeline_serving,
         assets_extra=None,
@@ -312,7 +312,7 @@ def run_experiment(argv=None):
     nbIterationPerEpoch_val=getIterationsPerEpoch('val'),
     learning_rate=usersettings.initial_learning_rate,
     n_classes=usersettings.nb_classes,
-    debug=usersettings.display_model_layers_info
+    debug=usersettings.display_model_layers_info #can be forced to True if script option --debug is provided
     )
   #add additionnal hyperparams coming from argv
   if argv is not None:
@@ -325,7 +325,7 @@ def run_experiment(argv=None):
   globalHooks=[]
   if params.debug_sess:
     globalHooks.append(tf_debug.TensorBoardDebugHook(params.debug_server_addresses,
-                                          send_traceback_and_source_code=False,
+                                          send_traceback_and_source_code=True,
                                           log_usage=False)
                       )
 
@@ -342,7 +342,9 @@ def run_experiment(argv=None):
   estimator = None
   if hasattr(usersettings, 'premade_estimator'):
     print('Using a premade estimator')
-    raise ValueError('TODO')
+    #raise ValueError('TODO')
+    estimator=usersettings.premade_estimator
+    #estimator.model_dir=params.sessionFolder
   else:
     print('Using a custom estimator')
     estimator = tf.estimator.Estimator(
@@ -648,8 +650,9 @@ def model_fn(features, labels, mode, params):
                                                                         collections=[tf.GraphKeys.LOCAL_VARIABLES],
                                                                         name=name)
                         #-> define the final assign op that dequeues all the sample and store into the buffer
-                        assign_samples=whole_samples_to_store.assign(samples_saving_queue.dequeue_many(stored_embedding_samples))#flatten_raw_images)
-                        #-> define a histogram on this buffer for monitoring purpose
+                        assign_samples=whole_samples_to_store.assign(samples_saving_queue.dequeue_up_to(stored_embedding_samples))#flatten_raw_images)
+                        assign_samples=tf.Print(assign_samples,[samples_saving_queue.size()], message="###################################################### Samples queue AFTER dequeue")#-> define a histogram on this buffer for monitoring purpose
+                        assign_samples=tf.Print(assign_samples,[assign_samples, samples_saving_queue.size()], message="###################################################### Samples queue AFTER dequeue")#-> define a histogram on this buffer for monitoring purpose
                         samples_hist=tf.summary.histogram(name+'_values',whole_samples_to_store)
 
                         return {'variable_buffer':whole_samples_to_store,
@@ -695,7 +698,7 @@ def model_fn(features, labels, mode, params):
                     '''
                     #create a metadata file to store the ground truth labels in
                     with tf.variable_scope('labels_to_metadata_file'):
-                        labels_tsv_input=labels_queue.dequeue_many(stored_embedding_samples)
+                        labels_tsv_input=labels_queue.dequeue_up_to(stored_embedding_samples)
                         label_names=usersettings.reference_labels#label_names=['pixel_labels', 'code_labels'] #default labels that should be overiden by usersettings.reference_labels
                         print('declared labels in settings file='+str(label_names))
                         print('labels_tsv_input just dequeud:'+str(labels_tsv_input))
@@ -779,6 +782,7 @@ def model_fn(features, labels, mode, params):
 
                             if self._final_ops is not None:
                                 print('Saving embeddings and summaries')
+                                print('This step may LOCK if nb_test_samples if larger than one epoch on the validation dataset')
                                 for op in self._final_ops:
                                     print('Running '+str(op))
                                     session.run(op)
@@ -1066,12 +1070,35 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None):
         print('Forcing system to only focus on the target GPU {gpuID} thus avoiding memory allocation issues on the other GPUs'.format(gpuID=usersettings.used_gpu_IDs))
         os.environ["CUDA_VISIBLE_DEVICES"] = str(usersettings.used_gpu_IDs)[1:-1]
 
-    model_name=usersettings.model_file.split('.')[0]
+    if hasattr(usersettings, 'model_file'):
+      model_name=usersettings.model_file.split('.')[0]
+    else:
+      model_name='premade_estimator'
     #manage the working folder in the case of a new experiment
     workingFolder=usersettings.workingFolder
     if restart_from_sessionFolder is None:
       sessionFolder=os.path.join(workingFolder, usersettings.session_name+'_'+datetime.datetime.now().strftime("%Y-%m-%d--%H:%M:%S"))
     return usersettings, sessionFolder, model_name
+
+def get_served_model_info(one_model_path, expected_model_name):
+  ''' basic function that checks served model behaviors
+  Args:
+  one_model_path: the path to a servable model directory
+  expected_model_name: the model name that is expected to be found on the server
+  Returns:
+    Nothing for now
+  '''
+  import subprocess
+  #get the first subfolder of the served models directory
+  served_model_info_cmd='saved_model_cli show --dir {target_model} --tag_set serve'.format(target_model=one_model_path)
+  print('Checking served model available signatures using command '+served_model_info_cmd)
+  cmd_result=subprocess.check_output(served_model_info_cmd.split())
+  print('You may add option \' --signature_def SIGNATURE_DEF_NAME\' to get details on inputs and outputs of the model')
+  print('Answer='+str(cmd_result))
+  if expected_model_name in cmd_result:
+    print('Target model {target} name found in the command answer'.format(target=expected_model_name))
+  else:
+    raise ValueError('Target model {target} name NOT found in the command answer'.format(target=expected_model_name))
 
 # Run script ##############################################
 if __name__ == "__main__":
@@ -1082,12 +1109,33 @@ if __name__ == "__main__":
         raw_input('Running in debug mode. Press Enter to continue...')
     if FLAGS.start_server is True:
         print('### START TENSORFLOW SERVER MODE ###')
+
         usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName))
 
         #target the served models folder
         model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/final_model')
         if not(os.path.exists(model_folder)):
           model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/latest_models')
+        print('Considering served model parent directory:'+model_folder)
+        #check if at least one served model exists in the target models directory
+        try:
+          #check served model existance
+          if not(os.path.exists(model_folder)):
+            raise ValueError('served models directory not found : '+model_folder)
+          #look for a model in the directory
+          one_model=next(os.walk(model_folder))[1][0]
+          one_model_path=os.path.join(model_folder, one_model)
+          if not(os.path.exists(one_model_path)):
+            raise ValueError('served models directory not found : '+one_model_path)
+          print('Found at least one servable model directory '+str(one_model_path))
+
+          # print servable informations
+          #propose some commands to get information on the served model
+          print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAM, you can then add option --signature_def MODEL_NAME')
+        except Exception, e:
+          raise ValueError('Could not find servable model, error='+str(e.message))
+
+        get_served_model_info(one_model_path, usersettings.served_head)
         tensorflow_start_cmd="tensorflow_model_server --port={port} --model_name={model} --model_base_path={model_dir}".format(port=usersettings.tensorflow_server_port,
                                                                                                                 model=model_name,
                                                                                                                 model_dir=model_folder)
@@ -1097,6 +1145,8 @@ if __name__ == "__main__":
 
     elif FLAGS.predict is True or FLAGS.predict_stream !=0:
         print('### PREDICT MODE, interacting with a tensorflow server ###')
+        print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAM, you can then add option --signature_def MODEL_NAME')
+
         usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName))
 
         #FIXME errors reported on gRPC: https://github.com/grpc/grpc/issues/13752 ... stay tuned, had to install a specific gpio version (pip install grpcio==1.7.3)
@@ -1126,7 +1176,8 @@ if __name__ == "__main__":
         if not FLAGS.restart_interrupted:
           os.makedirs(sessionFolder)
           os.makedirs(os.path.join(sessionFolder,embeddingsFolder))
-          shutil.copyfile(os.path.join(scripts_WD, usersettings.model_file), os.path.join(sessionFolder, usersettings.model_file))
+          if hasattr(usersettings, 'model_file'):
+            shutil.copyfile(os.path.join(scripts_WD, usersettings.model_file), os.path.join(sessionFolder, usersettings.model_file))
           settings_copy_fullpath=os.path.join(sessionFolder, settingsFile_saveName)
           shutil.copyfile(os.path.join(scripts_WD, FLAGS.usersettings), settings_copy_fullpath)
         tf.app.run(
