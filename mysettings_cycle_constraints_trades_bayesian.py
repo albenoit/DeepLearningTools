@@ -79,7 +79,7 @@ raw_data_dir_train = '/home/alben/workspace/Datasets/Trading/train'
 raw_data_dir_val = '/home/alben/workspace/Datasets/Trading/val'
 raw_data_filename_extension='*.txt'
 csv_field_delim='\t'
-nb_train_samples=500 #manually adjust here the number of temporal items out of the temporal block size
+nb_train_samples=117234 #manually adjust here the number of temporal items out of the temporal block size
 nb_test_samples=10000
 batch_size=10
 MC_repeats=40
@@ -293,7 +293,7 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
             timestamps_start_stop=tf.stack([timestamps[:,1],timestamps[:,-1]],1)
             #raw_input('timestamps_start_stop='+str(timestamps_start_stop))
         return single_period_data_block_raw, timestamps_start_stop
-    return input_fn, None
+    return input_fn, None#iterator_initializer_hook
 
 '''
 ################################################################################
