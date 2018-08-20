@@ -1026,7 +1026,7 @@ def FileListProcessor_csv_lines(files, csv_field_delim, queue_capacity, shuffle_
            .skip(1)  # Skip header row
            .map(decode_csv, num_parallel_calls=4)  # Decode each line in a multi thread mode (asynchronous reading)
            .cache() # Warning: Caches entire dataset, can cause out of memory
-           .repeat(None)    # Repeats dataset this # times
+           .repeat(1)    # Repeats dataset only one time (one epoch) thus allowing to automatically switch between train and eval steps
            .batch(batch_size)
            .prefetch(5*batch_size)  # Make sure you always have 1 batch ready to serve
         )
