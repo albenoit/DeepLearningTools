@@ -26,12 +26,6 @@ save_model_variables_to_pandas=True
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='concrete_dropout'
 
-#-> allow X window displays (for image and graph display purpose)
-allow_display=True
-
-#-> activate session profiling to observe ressource use and timings
-do_trace_computation=True
-
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
@@ -42,6 +36,8 @@ Then, connect to the processing node and type in command line 'nvidia-smi'
 to check which gpu is free (very few used memory and GPU )
 '''
 used_gpu_IDs=[0]
+#set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
+XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
 #-> define here the used model under variable 'model'
 #model_file='model_densenet.py'
@@ -55,11 +51,6 @@ model_head_prediction_name=tf.saved_model.signature_constants.DEFAULT_SERVING_SI
 #->define here the output that will be provided by tensorflow-server
 served_head=model_head_prediction_name
 
-#-> define the training strategy depending on the computing architecture
-#---> "continuous_train_and_eval"-> single machine
-#---> "train_and_evaluate" -> multiple machines/distributed training/evaluation
-train_val_schedule_strategy="continuous_train_and_eval"
-
 #-> set the number of summaries store per training epoch (more=more precise BUT higer cost)
 nb_summary_per_train_epoch=4
 
@@ -67,7 +58,7 @@ nb_summary_per_train_epoch=4
 patchSize=224
 
 #random seed used to init weights, etc. Use an integer value to make experiments reproducible
-random_seed=None
+random_seed=42
 
 # learning rate decaying parameters
 nbEpoch=300
@@ -171,11 +162,16 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     '''
     # computing the heteroscedastic loss
     precision = tf.exp(-model_outputs_dict['log_var'])
+    """regularization losses:
+    #reminder : on the dropout regularization side, one wants to MAXIMIZE the entropy of the Bernoulli random variable with probability 1-p
+    ==> then this loss will be negative
+    """
     reg_losses = tf.reduce_sum(tf.losses.get_regularization_losses())
-    loss= tf.reduce_sum(precision * (labels - model_outputs_dict['prediction'])**2. + model_outputs_dict['log_var'] + reg_losses)#, -1)
+    loss= tf.reduce_sum(precision * tf.square(labels - model_outputs_dict['prediction']) + model_outputs_dict['log_var']) + reg_losses#, -1)
     print('loss='+str(loss))
     tf.summary.scalar('ELBO', -0.5*loss)
     tf.summary.scalar('precision', tf.reduce_mean(precision))
+    tf.summary.scalar('reg_losses', reg_losses)
 
     '''https://arxiv.org/pdf/1601.00670.pdf :
     The ELBO is the negative KLdivergence plus log(p(x), which is a constant with respect to q(z).
@@ -239,7 +235,6 @@ def get_input_pipeline_serving():
 
     return tf.estimator.export.ServingInputReceiver(
         serialized_tf_example, {input_data_name: serialized_tf_example})
-
 
 def logsumexp(a):
     a_max = a.max(axis=0)
@@ -340,7 +335,7 @@ class Client_IO:
         #self.ax2.scatter(X_val, ymax, c='b', alpha=0.2, lw=0)
         self.ax2.set_title('Prediction mean and epistemic uncertainty levels ')
         ymin_a, ymax_a = np.min(mean_MC - aleatoric_uncertainties, axis=1), np.max(mean_MC + aleatoric_uncertainties, axis=1)
-        #self.ax3.fill_between(X_val, ymin_a,ymax_a,color='skyblue',alpha=0.5, label='epistemic uncertainty')
+        self.ax3.fill_between(X_val, ymin_a,ymax_a,color='skyblue',alpha=0.5, label='epistemic uncertainty')
         self.ax3.scatter(X_val, Y_target, c='r', lw=1, label='Noisy target')
         self.ax3.scatter(X_val, mean_MC, c='g', alpha=0.2, lw=0, label='MC mean')
         self.ax3.legend()#self.ax2.scatter(X_val, ymin, c='b', alpha=0.2, lw=0)

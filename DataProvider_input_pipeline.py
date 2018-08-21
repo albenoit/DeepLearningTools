@@ -612,7 +612,7 @@ class FileListProcessor_Semantic_Segmentation:
 
         if self.image_pairs_raw_ref_input:
             self.queue_filenames=tf.train.slice_input_producer([self.filelist_raw_data, self.filelist_reference_data],
-                                        num_epochs=number_of_epoch,
+                                        num_epochs=None,
                                         shuffle=self.shuffle_samples,
                                         seed=None,
                                         capacity=self.num_preprocess_threads,
@@ -622,7 +622,7 @@ class FileListProcessor_Semantic_Segmentation:
             raw_sample=self.__load_raw_ref_images(raw_img_filename=self.queue_filenames[0], ref_img_filename=self.queue_filenames[1])
         else: #raw and ref data in the same image of only raw data use cases
             self.queue_filenames=tf.train.input_producer(self.filelist_raw_data,# self.filelist_raw_data],,
-                                        num_epochs=number_of_epoch,
+                                        num_epochs=None,
                                         shuffle=self.shuffle_samples,
                                         seed=None,
                                         capacity=self.num_preprocess_threads,
@@ -926,7 +926,7 @@ def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_va
         @param device: the device where to place the data pipeline
     '''
     with tf.device(device),tf.name_scope('csv_file_line_blocks_read_enqueue'): # force input pipeline to be ran on the main cpu
-        filename_queue = tf.train.string_input_producer(files)
+        filename_queue = tf.train.string_input_producer(files, num_epochs=None)
         reader = tf.TextLineReader(skip_header_lines=1)
         key, value = reader.read_up_to(filename_queue, num_records=nblines_per_block*breakup_fact, name='read_lines')
         # Default values, in case of empty columns. Also specifies the type of the
@@ -1026,7 +1026,7 @@ def FileListProcessor_csv_lines(files, csv_field_delim, queue_capacity, shuffle_
            .skip(1)  # Skip header row
            .map(decode_csv, num_parallel_calls=4)  # Decode each line in a multi thread mode (asynchronous reading)
            .cache() # Warning: Caches entire dataset, can cause out of memory
-           .repeat(None)    # Repeats dataset this # times
+           .repeat(1)    # Repeats dataset only one time (one epoch) thus allowing to automatically switch between train and eval steps
            .batch(batch_size)
            .prefetch(5*batch_size)  # Make sure you always have 1 batch ready to serve
         )

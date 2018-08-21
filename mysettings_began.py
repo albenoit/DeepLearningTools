@@ -22,12 +22,6 @@ serving_client_timeout_int_secs=1#timeout limit when a client requests a served 
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='BEGAN_'
 
-#-> allow X window displays (for image and graph display purpose)
-allow_display=True
-
-#-> activate session profiling to observe ressource use and timings
-do_trace_computation=True
-
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
@@ -38,6 +32,8 @@ Then, connect to the processing node and type in command line 'nvidia-smi'
 to check which gpu is free (very few used memory and GPU )
 '''
 used_gpu_IDs=[0]
+#set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
+XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
 #-> define here the used model under variable 'model'
 #model_file='model_densenet.py'
@@ -54,26 +50,21 @@ model_head_generator_name=tf.saved_model.signature_constants.DEFAULT_SERVING_SIG
 model_head_prediction_name='energy'
 served_head=model_head_generator_name #define here the output that will be provided by tensorflow-server
 
-#-> define the training strategy depending on the computing architecture
-#---> "continuous_train_and_eval"-> single machine
-#---> "train_and_evaluate" -> multiple machines/distributed training/evaluation
-train_val_schedule_strategy="continuous_train_and_eval"
-
 #-> set the number of summaries store per training epoch (more=more precise BUT higer cost)
-nb_summary_per_train_epoch=-1
+nb_summary_per_train_epoch=4
 summary_fake_samples_max_number=3
 
 #define image patches extraction parameters
 patchSize=28
 
 #random seed used to init weights, etc. Use an integer value to make experiments reproducible
-random_seed=None
+random_seed=41
 
 # learning rate decaying parameters
-nbEpoch=100
+nbEpoch=1000
 weights_weight_decay=0.0001
 initial_learning_rate=1e-5
-num_epochs_per_decay=100 #FIXME, initial value = 3000 #number of epoch keepng the same learning rate
+num_epochs_per_decay=100 #FIXME, initial value = 3000 #number of epoch keeping the same learning rate
 learning_rate_decay_factor=0.95 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
 predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
@@ -83,8 +74,8 @@ mnist_loc='datasamples/mnist/'
 raw_data_dir_train=mnist_loc
 raw_data_dir_val=mnist_loc
 mnist = input_data.read_data_sets(mnist_loc, one_hot=False)
-nb_train_samples=64#mnist.train.num_examples #nb_train_images*number_of_crops_per_image# number of images * number of crops per image
-nb_test_samples=64#mnist.test.num_examples#to be adjusted for testing
+nb_train_samples=mnist.train.num_examples #nb_train_images*number_of_crops_per_image# number of images * number of crops per image
+nb_test_samples=mnist.test.num_examples#to be adjusted for testing
 embedding_samples_stored_number=nb_test_samples
 batch_size=32
 nb_classes=64 #here, this will correspond to the generator code size
@@ -223,14 +214,6 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     tf.summary.scalar('convergence_measure', convergence_measure),
     tf.summary.scalar('k', k),
 
-    # sparse-step summary
-    G_fake_samples = model_outputs_dict['generator_fake_samples']
-    tf.summary.image('fake_sample', G_fake_samples, max_outputs=summary_fake_samples_max_number)
-    tf.summary.histogram('G_hist', G_fake_samples) # for checking out of bound
-    # histogram all varibles
-    # for var in tf.trainable_variables():
-    #     tf.summary.histogram(var.op.name, var)
-
     return convergence_measure
 
 def get_eval_metric_ops(inputs, model_outputs_dict, labels):
@@ -257,6 +240,21 @@ def get_eval_metric_ops(inputs, model_outputs_dict, labels):
             'model_loss/convergence_measure': tf.metrics.mean_tensor (
                         values=convergence_measure),
             }
+
+def get_validation_summaries(inputs, model_outputs_dict, labels):
+    ''' add here (if required) some summaries to be applied on the validation dataset
+    Args:
+        inputs: the input data samples batch
+        model_outputs_dict: the dictionnay of model outputs, field names must comply withthe ones defined in the model_file
+        labels: the reference data / ground truth if available
+    Returns:
+        a list of summaries
+    '''
+    with tf.name_scope('eval_summaries_addon'):
+      G_fake_samples = model_outputs_dict['generator_fake_samples']
+      return ([tf.summary.image('fake_sample', G_fake_samples, max_outputs=summary_fake_samples_max_number)
+              tf.summary.histogram('G_hist', G_fake_samples)] # for checking out of bound
+              , nb_test_samples/4)
 
 '''Define here the input pipelines :
 -1. a common function for train and validation modes
@@ -309,7 +307,7 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
             labels_placeholder = tf.placeholder(
                 labels.dtype, labels.shape)
             # Build dataset iterator
-            dataset = tf.contrib.data.Dataset.from_tensor_slices(
+            dataset = tf.data.Dataset.from_tensor_slices(
                 (images_placeholder, labels_placeholder))
             dataset = dataset.repeat(None)  # Infinite iterations
             dataset = dataset.shuffle(buffer_size=10000)
@@ -348,7 +346,7 @@ def get_input_pipeline_train_val_(batch_size, raw_data_files_folder, shuffle_bat
         labels=mnist.test.labels
 
     #create a dataset from the image and related labels arrays
-    dataset = tf.contrib.data.Dataset.from_tensor_slices((images, labels))
+    dataset = tf.data.Dataset.from_tensor_slices((images, labels))
     # Create batches of data
     dataset = dataset.batch(batch_size)
     # Create an iterator, to go over the dataset

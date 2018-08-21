@@ -1,13 +1,13 @@
 """
 #What's that ?
-A set of script that demonstrate the use of Tensorflow experiments and estimators on 1D data
+A set of script that demonstrate the use of Tensorflow experiments and estimators on different data types for various tasks
 @brief : the main script that enables training, validation and serving Tensorflow based models merging all needs in a
 single script to train, evaluate, export and serve.
 taking large inspirations of official tensorflow demos.
 @author : Alexandre Benoit, LISTIC lab, FRANCE
 
 Several ideas are put together:
--experiments and estimators to manage training, valiation and export in a easier way (but experiments are still in the contrib module so subject to strong changes)
+-estimators to manage training, valiation and export in a easier way
 -using moving averages to store parameters with values smoothed along the last training steps (FIXME : ensure those values are used for real by the estimator, actually the graph shows 2 parameter savers...).
 -visualization including embeddings projections to observe some data projections on the TensorBoard
 -tensorflow-serving api use to serve the model and dynamically load updated models
@@ -70,7 +70,7 @@ As a reminder, here are the functions prototypes:
             n_outputs, #dimension of the embedding code
             hparams,  #external parameters that may be used to setup the model
             mode), #mode set to switch between train, validate and inference mode
-            wrt tensorflow.contrib.learn.ModeKeys values
+            wrt tf.estimator.tf.estimator.ModeKeys values
           => the model must return a dictionary of output tensors
 -def data_preprocess(features, model_placement)
 -def postprocessing_before_export_code(code)
@@ -87,10 +87,9 @@ As a reminder, here are the functions prototypes:
 ---def decodeResponse(self, result):
 ---def finalize():
 
-Some examples of such functions are put in the REAME.md and in the versionned mysettings_xxx.py demos
+Some examples of such functions are put in the README.md and in the versionned mysettings_xxx.py demos
 
-This demo relies on Tensorflow 1.4.1 and makes use of the Experiment and Estimator
-available in the contrib module that is expected to evolve along tensorflow versions.
+This demo relies on Tensorflow 1.4.1 and makes use of Estimators
 Look at https://github.com/GoogleCloudPlatform/cloudml-samples/blob/master/census/tensorflowcore/trainer/model.py
 Look at some general guidelines on Tenforflow here https://github.com/vahidk/EffectiveTensorflow
 Look at the related webpages : http://python.usyiyi.cn/documents/effective-tf/index.html
@@ -106,11 +105,9 @@ import tensorflow as tf
 import numpy as np
 import pandas as pd
 import imp
+import copy
 from tensorflow.examples.tutorials.mnist import input_data as mnist_data
 from tensorflow.contrib import slim
-from tensorflow.contrib.learn import ModeKeys
-from tensorflow.contrib.learn import learn_runner
-
 from tensorflow.python import debug as tf_debug
 
 global usersettings
@@ -135,204 +132,248 @@ tf.app.flags.DEFINE_boolean("restart_interrupted", False, "Set True to restart a
 tf.app.flags.DEFINE_string ("debug_server_addresses", "127.0.0.1:2333", "Set here the IP:port to specify where to reach the tensorflow debugger")
 
 def loadModel(sessionFolder):
-    ''' basic method to load the model targeted by usersettings.model_file
-    '''
-    model_path=os.path.join(sessionFolder,usersettings.model_file)
-    try:
-        model_def=imp.load_source('model_def', model_path)
-    except Exception,e:
-        raise ValueError('Failed to load model file : '+str(usersettings.model_file)+str(e))
-    model=model_def.model
+  ''' basic method to load the model targeted by usersettings.model_file
+  '''
+  model_path=os.path.join(sessionFolder,usersettings.model_file)
+  try:
+    model_def=imp.load_source('model_def', model_path)
+  except Exception,e:
+    raise ValueError('Failed to load model file : '+str(usersettings.model_file)+str(e))
+  model=model_def.model
 
-    print('loaded model file {file}'.format(file=model_path))
-    return model
+  print('loaded model file {file}'.format(file=model_path))
+  return model
 
-# Define and run experiment ###############################
-def run_experiment(argv=None):
-    print('Running an experiment. argv='+str(argv))
-    """Run the training experiment."""
-    nbIterationPerEpoch_train=usersettings.nb_train_samples/(usersettings.batch_size)#len(dataset_raw_train)*patchesPerImage/batch_size
-    nbIterationPerEpoch_test=usersettings.nb_test_samples/(usersettings.batch_size)
-    print('One TRAIN epoch performed in {iterations} iterations'.format(iterations=nbIterationPerEpoch_train))
-    print('One TEST epoch performed in {iterations} iterations'.format(iterations=nbIterationPerEpoch_test))
-    if nbIterationPerEpoch_train==0:
-        raise ValueError('usersettings.nb_train_samples is too low v.s. batch_size, check those values')
-    if nbIterationPerEpoch_test==0:
-        raise ValueError('usersettings.nb_test_samples is too low v.s. batch_size, check those values')
-    # Define model parameters
-    params = tf.contrib.training.HParams(
-        learning_rate=usersettings.initial_learning_rate,
-        n_classes=usersettings.nb_classes,
-        train_steps=usersettings.nbEpoch*nbIterationPerEpoch_train,
-        min_eval_frequency=nbIterationPerEpoch_train,#test after each train epoch
-        nbIterationPerEpoch_test=nbIterationPerEpoch_test,
-        nbIterationPerEpoch_train=nbIterationPerEpoch_train,
-        debug=usersettings.display_model_layers_info
-        )
-    #add additionnal hyperparams coming from argv
-    if argv is not None:
-      if  isinstance(argv[0], dict):
-        for key, val in argv[0].iteritems():
-          print('Adding hyperparameter (key,val):'+str((key,val)))
-          params.add_hparam(name=key,value=val)
+def getIterationsPerEpoch(mode):
+  ''' given a mode (train or test), compute the number of iterations required to parse the related dataset (one epoch)
+  Args:
+     mode: a string, 'train' or 'val' to set which dataset to consider
+  Returns:
+     an integer : the number of iterations required to do an epoch
+  '''
+  nbSamples=0
+  #get the number of samples wrt target dataset
+  if mode == 'train':
+    nbSamples=usersettings.nb_train_samples
+  elif mode=='val':
+    nbSamples=usersettings.nb_test_samples
+  else:
+    raise ValueError('Expected parameter string \'train\' or \'val\' ')
+  #compute number of iterations per dataset epoch
+  nbIterationPerEpoch=nbSamples/(usersettings.batch_size)
+  print('One {mod} epoch performed in {iterations} iterations'.format(mod=mode, iterations=nbIterationPerEpoch))
+  if nbIterationPerEpoch==0:
+    raise ValueError('usersettings.nb_{mod}_samples is too low v.s. batch_size, check those values'.format(mod=mode))
 
+  return nbIterationPerEpoch
 
-    #Session hardware configuration :
-    gpu_options=tf.GPUOptions(allow_growth=True)
-    #activate XLA JIT level 1 by default
-    graph_options=tf.GraphOptions()
-    graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.OFF#ON_1#OFF
-    sessionConfig=tf.ConfigProto(
-                                allow_soft_placement=True,
-                                log_device_placement=params.debug_sess,
-                                gpu_options=gpu_options,
-                                graph_options=graph_options
-                                )
+def getTrainSpecs(params, global_hooks):
+  ''' setup the training specs wrt the experiment usersettings file
+  Args:
+    param: a dictionnary of general parameters
+    global_hooks : a list of hooks that should be considered at least in the train mode
+                   this list will be completed by train mode specific hooks
+  Returns:
+    an initialized tf.estimator.TrainSpec object instance
+  '''
+  #copy the global hooks before adding others specific to the train mode
+  train_hooks=copy.copy(global_hooks)
 
-    # Set the run_config and the directory to save the model and stats
-    summary_steps_period=1 #by default, log each step
-    if usersettings.nb_summary_per_train_epoch>0:
-        summary_steps_period=int(nbIterationPerEpoch_train/usersettings.nb_summary_per_train_epoch)
-    run_config = tf.contrib.learn.RunConfig(#FIXME : to be replaced once allowed by tf.estimator.RunConfig
-                                session_config=sessionConfig,
-                                save_summary_steps=summary_steps_period,
-                                save_checkpoints_steps=nbIterationPerEpoch_train,
-                                model_dir=params.sessionFolder
+  #set the train input data pipeline and related hooks (if any)
+  with tf.variable_scope('train_input_pipeline'),tf.device('/cpu:0'):
+    # Setup data loaders
+    train_input_fn, train_input_hook = usersettings.get_input_pipeline_train_val(
+                                            batch_size=usersettings.batch_size,
+                                            raw_data_files_folder=usersettings.raw_data_dir_train,
+                                            shuffle_batches=True)
+    if train_input_hook is not None:
+      train_hooks.append(train_input_hook)
+
+  #add a step counter
+  train_hooks.append(tf.train.StepCounterHook(
+                                            every_n_steps=10,
+                                            every_n_secs=None,
+                                            output_dir=params.sessionFolder,
+                                            summary_writer=None
                                             )
+                    )
 
-    '''TODO: have a look at :
-    https://www.tensorflow.org/api_docs/python/tf/contrib/learn/learn_runner/tune
-    related discussions :
-    --> https://github.com/tensorflow/tensorflow/issues/7868
-    --> https://github.com/tensorflow/tensorflow/issues/16576
-    --> a proposal: https://github.com/makoeppel/hyperParameterSearchTF/tree/master
-    tuner = create_tuner(study_configuration, objective_key)
-    learn_runner.tune(experiment_fn=_create_my_experiment, tuner)
-    '''
+  return tf.estimator.TrainSpec(input_fn=train_input_fn,
+                                max_steps=params.nbIterationPerEpoch_train*usersettings.nbEpoch,
+                                hooks=train_hooks)
 
-    learn_runner.run(
-        experiment_fn=experiment_fn,  # First-class function
-        run_config=run_config,  # RunConfig
-        schedule=usersettings.train_val_schedule_strategy,
-        hparams=params  # HParams
-    )
+def getEvalSpecs(params, global_hooks):
+  ''' setup the eval specs wrt the experiment usersettings file
+  Args:
+    param: a dictionnary of general parameters
+    global_hooks : a list of hooks that should be considered at least in the validation mode
+                   this list will be completed by val mode specific hooks
+  Returns:
+    an initialized tf.estimator.EvalSpec object instance
+  '''
+  #copy the global hooks before adding others specific to the validation mode
+  eval_hooks=copy.copy(global_hooks)
 
-def experiment_fn(run_config, params):
-    """Create an experiment to train and evaluate the model.
+  with tf.variable_scope('eval_input_pipeline'),tf.device('/cpu:0'):
+    eval_input_fn, eval_input_hook = usersettings.get_input_pipeline_train_val(
+                                            batch_size=usersettings.batch_size,
+                                            raw_data_files_folder=usersettings.raw_data_dir_val,
+                                            shuffle_batches=False)
+    if eval_input_hook is not None:
+      eval_hooks.append(eval_input_hook)
 
-    Args:
-        run_config (RunConfig): Configuration for Estimator run.
-        params (HParam): Hyperparameters
-
-    Returns:
-        (Experiment) Experiment for training the mnist model.
-    """
-    # You can change a subset of the run_config properties as
-    #run_config = run_config.replace(save_checkpoints_steps=params.min_eval_frequency)
-
-    print('Starting experiment with Hyper parameters:',str(params))
-
-    # Define the mnist classifier
-    estimator = get_estimator(run_config, params)
-    with tf.variable_scope('train_val_input_pipeline'),tf.device('/cpu:0'):
-        # Setup data loaders
-        train_input_fn, train_input_hook = usersettings.get_input_pipeline_train_val(
-                                                    batch_size=usersettings.batch_size,
-                                                    raw_data_files_folder=usersettings.raw_data_dir_train,
-                                                    shuffle_batches=True)
-        eval_input_fn, eval_input_hook = usersettings.get_input_pipeline_train_val(
-                                                    batch_size=usersettings.batch_size,
-                                                    raw_data_files_folder=usersettings.raw_data_dir_val,
-                                                    shuffle_batches=False)
-
-    '''#create an early stop monnitor (stop training when test loss no more decreases for a long time)
-    early_stop_monitor = tf.keras.callbacks.EarlyStopping(monitor='loss',
-                                                            min_delta=0,
-                                                            patience=0,
-                                                            verbose=1,
-                                                            mode='auto'
-                                                        )
-    '''
-    steps_counter_hook=tf.train.StepCounterHook(
-                                                every_n_steps=10,
-                                                every_n_secs=None,
-                                                output_dir=params.sessionFolder,
-                                                summary_writer=None
-                                                )
-
-    # TODO for model export and serving, have a look here : https://www.tensorflow.org/programmers_guide/saved_model#requesting_predictions_from_a_local_server
-    # TODO, look example here : https://stackoverflow.com/questions/44535119/example-of-tensorflow-contrib-learn-exportstrategy
-    export_strategy=tf.contrib.learn.make_export_strategy(
-        serving_input_fn=usersettings.get_input_pipeline_serving,
-        default_output_alternative_key=None,
+  #specify model exporters to generate served models after each val session
+  exporters = []
+  #-> an exporter for intermediate models along training
+  exporters.append(tf.estimator.LatestExporter(
+        name='latest_models',
+        serving_input_receiver_fn=usersettings.get_input_pipeline_serving,
         assets_extra=None,
         as_text=False,
         exports_to_keep=5
+        )
+      )
+  #-> a final exporter at the end of the training
+  exporters.append(tf.estimator.FinalExporter(
+        name='final_model',
+        serving_input_receiver_fn=usersettings.get_input_pipeline_serving,
+        assets_extra=None,
+        as_text=False,
+        )
+      )
+  '''TODO : when possible, move to thus one available in tf 1.10:
+  tf.estimator.BestExporter(#choosing here to only export better models
+      name='best_exporter',
+      serving_input_receiver_fn=usersettings.get_input_pipeline_serving,
+      event_file_pattern='eval/*.tfevents.*',
+      compare_fn=_loss_smaller,
+      assets_extra=None,
+      as_text=False,
+      exports_to_keep=5
+      )
+  '''
+  return tf.estimator.EvalSpec( input_fn=eval_input_fn,
+                                steps=params.nbIterationPerEpoch_val,
+                                name=None,
+                                hooks=eval_hooks,
+                                exporters=exporters,
+                                start_delay_secs=120,
+                                throttle_secs=60)
+
+def getSessionConfig(params):
+  '''
+  defines the session configuration (GPU, summary options, etc.)
+  Args:
+    params: general parameters dictionnary
+  Returns:
+    a configured tf.estimator.RunConfig object instance
+  '''
+  gpu_options=tf.GPUOptions(allow_growth=True)
+  #activate XLA JIT level 1 by default
+  graph_options=tf.GraphOptions()
+  if hasattr(usersettings,'XLA_FLAG'):
+    graph_options.optimizer_options.global_jit_level = usersettings.XLA_FLAG
+  else:
+    graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.OFF#ON_1#OFF
+  sessionConfig=tf.ConfigProto(
+                              allow_soft_placement=True,
+                              log_device_placement=params.debug_sess,
+                              gpu_options=gpu_options,
+                              graph_options=graph_options
+                              )
+
+  # Set the run_config and the directory to save the model and stats
+  summary_steps_period=1 #by default, log each step
+  if usersettings.nb_summary_per_train_epoch>0:
+    summary_steps_period=int(params.nbIterationPerEpoch_train/usersettings.nb_summary_per_train_epoch)
+  run_config =tf.estimator.RunConfig(
+                              model_dir=params.sessionFolder,
+                              tf_random_seed=usersettings.random_seed,
+                              save_summary_steps=summary_steps_period,
+                              save_checkpoints_steps=params.nbIterationPerEpoch_train,
+                              save_checkpoints_secs=None,
+                              session_config=sessionConfig,
+                              keep_checkpoint_max=5,
+                              keep_checkpoint_every_n_hours=10000,
+                              log_step_count_steps=100,
+                              train_distribute=None,
+                              #TODO, activate when tf 1.10 available : device_fn=None
+                              )
+
+  return run_config
+
+# Define and run experiment ###############################
+def run_experiment(argv=None):
+  print('Running an experiment. argv='+str(argv))
+
+  # Define model parameters
+  params = tf.contrib.training.HParams(
+    nbIterationPerEpoch_train=getIterationsPerEpoch('train'),
+    nbIterationPerEpoch_val=getIterationsPerEpoch('val'),
+    learning_rate=usersettings.initial_learning_rate,
+    n_classes=usersettings.nb_classes,
+    debug=usersettings.display_model_layers_info #can be forced to True if script option --debug is provided
     )
-    train_monitors=[steps_counter_hook]
-    eval_hooks=None
-    if params.debug_sess:
-      debughook=tf_debug.TensorBoardDebugHook(params.debug_server_addresses,
-                                            send_traceback_and_source_code=False,
-                                            log_usage=False)
-      #add debug hook to train and eval monitors
-      eval_hooks=[debughook]
-      train_monitors.append(debughook)
+  #add additionnal hyperparams coming from argv
+  if argv is not None:
+    if  isinstance(argv[0], dict):
+      for key, val in argv[0].iteritems():
+        print('Adding hyperparameter (key,val):'+str((key,val)))
+        params.add_hparam(name=key,value=val)
 
-    # Define the experiment
-    if train_input_hook is not None:
-        train_monitors+=[train_input_hook]
-    if eval_input_hook is not None:
-        eval_hooks=[eval_input_hook]
-    #CLI debug hook hooks = [tf_debug.LocalCLIDebugHook()]
+  #specify general hooks (common to train and validate modes)
+  globalHooks=[]
+  if params.debug_sess:
+    globalHooks.append(tf_debug.TensorBoardDebugHook(params.debug_server_addresses,
+                                          send_traceback_and_source_code=True,
+                                          log_usage=False)
+                      )
 
-    experiment = tf.contrib.learn.Experiment(
-                    estimator=estimator,
-                    train_input_fn=train_input_fn,
-                    eval_input_fn=eval_input_fn,
-                    eval_metrics=None,
-                    train_steps=params.train_steps,
-                    eval_steps=params.nbIterationPerEpoch_test,
-                    train_monitors=train_monitors,
-                    eval_hooks=eval_hooks,
-                    eval_delay_secs=120,
-                    continuous_eval_throttle_secs=60,
-                    min_eval_frequency=params.min_eval_frequency,
-                    delay_workers_by_global_step=False,
-                    export_strategies=export_strategy,
-                    train_steps_per_iteration=params.min_eval_frequency,
-                    checkpoint_and_export=True
-                )
-    return experiment
+  #specify the training input function and related parameters
+  train_spec = getTrainSpecs(params, globalHooks)
+
+  #specify the testing input function and related parameters
+  eval_spec = getEvalSpecs(params, globalHooks)
+
+  #specify session hardware configuration :
+  run_config =getSessionConfig(params)
+
+  # Define the estimator
+  estimator = None
+  if hasattr(usersettings, 'premade_estimator'):
+    print('Using a premade estimator')
+    #raise ValueError('TODO')
+    estimator=usersettings.premade_estimator
+    #estimator.model_dir=params.sessionFolder
+  else:
+    print('Using a custom estimator')
+    estimator = tf.estimator.Estimator(
+        model_fn=model_fn,
+        params=params,
+        config=run_config
+    )
+
+  #start the train/val/export session
+  tf.estimator.train_and_evaluate(
+            estimator,
+            train_spec,
+            eval_spec
+        )
 
 # Define model ############################################
-def get_estimator(run_config, params):
-    """Return the model as a Tensorflow Estimator object.
-
-    Args:
-         run_config (RunConfig): Configuration for Estimator run.
-         params (HParams): hyperparameters.
-    """
-    return tf.estimator.Estimator(
-        model_fn=model_fn,  # First-class function
-        params=params,  # HParams
-        config=run_config  # RunConfig
-    )
-
 def model_fn(features, labels, mode, params):
     """Model function used in the estimator.
 
     Args:
         features (Tensor): Input features to the model.
         labels (Tensor): Labels tensor for training and evaluation.
-        mode (ModeKeys): Specifies if training, evaluation or prediction.
+        mode (tf.estimator.ModeKeys): Specifies if training, evaluation or prediction.
         params (HParams): hyperparameters.
 
     Returns:
         (EstimatorSpec): Model to be run by Estimator.
     """
-    if usersettings.random_seed is not None:
-      tf.set_random_seed(usersettings.random_seed)
+
     print('############ Received features='+str(type(features)))
     if isinstance(features,dict):
         #basic case (for serving especially) where input is a dict with only the 'feature' item
@@ -347,8 +388,11 @@ def model_fn(features, labels, mode, params):
 
     #FIXME for now tensorflow_server only works on CPU so using GPU only for training and validation
     model_placement="/cpu:0"
-    if mode != ModeKeys.INFER:
+    if mode != tf.estimator.ModeKeys.PREDICT and len(usersettings.used_gpu_IDs)>0:
         model_placement="/gpu:0"
+        print('**** model placed on GPU')
+    else:
+        print('**** model placed on CPU')
 
     with tf.name_scope("data_preprocess"):
         features=usersettings.data_preprocess(features, model_placement)
@@ -386,7 +430,7 @@ def model_fn(features, labels, mode, params):
             #add maintain_averages_op to collection tf.GraphKeys.UPDATE_OPS to force running before the optimization step
             tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, maintain_averages_op)
 
-            if mode != ModeKeys.TRAIN : #restore moving averaged variables to predict
+            if mode != tf.estimator.ModeKeys.TRAIN : #restore moving averaged variables to predict
                 def _restore_vars(ema):
                     ema_variables = tf.get_collection(tf.GraphKeys.MOVING_AVERAGE_VARIABLES)
                     return tf.group(*[tf.assign(x, ema.average(x)) for x in ema_variables])
@@ -403,7 +447,7 @@ def model_fn(features, labels, mode, params):
     eval_metric_ops = {}
     train_parameters_scaffold=None
     embedding_checkpoint_saver=None
-    if mode != ModeKeys.INFER: #if training or validation, but not predicting/serving, compute a loss, etc.
+    if mode != tf.estimator.ModeKeys.PREDICT: #if training or validation, but not predicting/serving, compute a loss, etc.
         with tf.name_scope('model_loss'):
           with tf.name_scope('regularization_loss'):
             # -> first get the weights loss found in collection tf.GraphKeys.REGULARIZATION_LOSSES
@@ -419,7 +463,7 @@ def model_fn(features, labels, mode, params):
           #finalize total loss
           loss=usersettings.get_total_loss(inputs=features, model_outputs_dict=model_outputs_dict, labels=labels, weights_loss=weights_loss)
 
-        if mode == ModeKeys.TRAIN:
+        if mode == tf.estimator.ModeKeys.TRAIN:
             '''define the training op that will first apply all ops found in collection
             tf.GraphKeys.UPDATE_OPS (batchnorm updates and weights ema for instance)
             and then apply the optimization op
@@ -438,7 +482,7 @@ def model_fn(features, labels, mode, params):
             print('### Number of parameters : '+str(number_of_parameters))
 
 
-        if mode==ModeKeys.EVAL:
+        if mode==tf.estimator.ModeKeys.EVAL:
             #DATA EMBEDDING SECTION for the validation stap only
             with tf.device(':/cpu:0'),tf.variable_scope('evaluate'):
                 #->
@@ -537,7 +581,7 @@ def model_fn(features, labels, mode, params):
                       and try to keep connections between codes and labels before storing
                     '''
                     #deduce the maximum number of samples to store
-                    stored_embedding_samples=params.nbIterationPerEpoch_test*usersettings.batch_size
+                    stored_embedding_samples=params.nbIterationPerEpoch_val*usersettings.batch_size
                     flatten_features=get_flatten_feature(features_center_val, 'input_features')
                     flatten_labels=get_flatten_feature(labels_center_val, 'labels')
                     flatten_saved_samples_dict={}
@@ -550,7 +594,7 @@ def model_fn(features, labels, mode, params):
                     eval_metric_ops = usersettings.get_eval_metric_ops(inputs=features_fov, model_outputs_dict=model_outputs_fov, labels=labels)
 
                 else: #sample level classification
-                    stored_embedding_samples=params.nbIterationPerEpoch_test*usersettings.batch_size
+                    stored_embedding_samples=params.nbIterationPerEpoch_val*usersettings.batch_size
                     flatten_features=get_flatten_feature(features, 'input_features')
                     flatten_labels=get_flatten_feature(labels, 'labels')
                     flatten_saved_samples_dict={}
@@ -561,7 +605,6 @@ def model_fn(features, labels, mode, params):
                         except :
                             print('Scalar feature not considered for embedding projection')
                     eval_metric_ops = usersettings.get_eval_metric_ops(inputs=features, model_outputs_dict=model_outputs_dict, labels=labels)
-
 
                 with tf.variable_scope('save_embeddings'):
 
@@ -607,8 +650,9 @@ def model_fn(features, labels, mode, params):
                                                                         collections=[tf.GraphKeys.LOCAL_VARIABLES],
                                                                         name=name)
                         #-> define the final assign op that dequeues all the sample and store into the buffer
-                        assign_samples=whole_samples_to_store.assign(samples_saving_queue.dequeue_many(stored_embedding_samples))#flatten_raw_images)
-                        #-> define a histogram on this buffer for monitoring purpose
+                        assign_samples=whole_samples_to_store.assign(samples_saving_queue.dequeue_up_to(stored_embedding_samples))#flatten_raw_images)
+                        assign_samples=tf.Print(assign_samples,[samples_saving_queue.size()], message="###################################################### Samples queue AFTER dequeue")#-> define a histogram on this buffer for monitoring purpose
+                        assign_samples=tf.Print(assign_samples,[assign_samples, samples_saving_queue.size()], message="###################################################### Samples queue AFTER dequeue")#-> define a histogram on this buffer for monitoring purpose
                         samples_hist=tf.summary.histogram(name+'_values',whole_samples_to_store)
 
                         return {'variable_buffer':whole_samples_to_store,
@@ -654,7 +698,7 @@ def model_fn(features, labels, mode, params):
                     '''
                     #create a metadata file to store the ground truth labels in
                     with tf.variable_scope('labels_to_metadata_file'):
-                        labels_tsv_input=labels_queue.dequeue_many(stored_embedding_samples)
+                        labels_tsv_input=labels_queue.dequeue_up_to(stored_embedding_samples)
                         label_names=usersettings.reference_labels#label_names=['pixel_labels', 'code_labels'] #default labels that should be overiden by usersettings.reference_labels
                         print('declared labels in settings file='+str(label_names))
                         print('labels_tsv_input just dequeud:'+str(labels_tsv_input))
@@ -738,6 +782,7 @@ def model_fn(features, labels, mode, params):
 
                             if self._final_ops is not None:
                                 print('Saving embeddings and summaries')
+                                print('This step may LOCK if nb_test_samples if larger than one epoch on the validation dataset')
                                 for op in self._final_ops:
                                     print('Running '+str(op))
                                     session.run(op)
@@ -820,7 +865,7 @@ def get_train_op_fn(loss, params):
     print('Creating solver...')
     with tf.name_scope('optimizer'):
         if usersettings.num_epochs_per_decay>0 and usersettings.learning_rate_decay_factor>0:
-
+            #TODO: check for cold epoch/warmup/exponential learning rate profiles : https://cloud.google.com/tpu/docs/inception-v3-advanced#exponential_moving_average
             with tf.name_scope('learning_rate_decay'):
                 # Calculate the learning rate schedule.
                 decay_steps = int(params.nbIterationPerEpoch_train * usersettings.num_epochs_per_decay)
@@ -958,7 +1003,7 @@ def do_inference(host, port, model_name, concurrency, num_tests):
       request.model_spec.name = model_name
       request.model_spec.signature_name = usersettings.served_head
       request.inputs[usersettings.input_data_name].CopyFrom(
-            tf.contrib.util.make_tensor_proto(sample, shape=sample.shape))
+            tf.make_tensor_proto(sample, shape=sample.shape))
       if FLAGS.debug:
         print('Time to prepare request:',round(time.time() - start_time, 2))
 
@@ -1025,12 +1070,35 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None):
         print('Forcing system to only focus on the target GPU {gpuID} thus avoiding memory allocation issues on the other GPUs'.format(gpuID=usersettings.used_gpu_IDs))
         os.environ["CUDA_VISIBLE_DEVICES"] = str(usersettings.used_gpu_IDs)[1:-1]
 
-    model_name=usersettings.model_file.split('.')[0]
+    if hasattr(usersettings, 'model_file'):
+      model_name=usersettings.model_file.split('.')[0]
+    else:
+      model_name='premade_estimator'
     #manage the working folder in the case of a new experiment
     workingFolder=usersettings.workingFolder
     if restart_from_sessionFolder is None:
       sessionFolder=os.path.join(workingFolder, usersettings.session_name+'_'+datetime.datetime.now().strftime("%Y-%m-%d--%H:%M:%S"))
     return usersettings, sessionFolder, model_name
+
+def get_served_model_info(one_model_path, expected_model_name):
+  ''' basic function that checks served model behaviors
+  Args:
+  one_model_path: the path to a servable model directory
+  expected_model_name: the model name that is expected to be found on the server
+  Returns:
+    Nothing for now
+  '''
+  import subprocess
+  #get the first subfolder of the served models directory
+  served_model_info_cmd='saved_model_cli show --dir {target_model} --tag_set serve'.format(target_model=one_model_path)
+  print('Checking served model available signatures using command '+served_model_info_cmd)
+  cmd_result=subprocess.check_output(served_model_info_cmd.split())
+  print('You may add option \' --signature_def SIGNATURE_DEF_NAME\' to get details on inputs and outputs of the model')
+  print('Answer='+str(cmd_result))
+  if expected_model_name in cmd_result:
+    print('Target model {target} name found in the command answer'.format(target=expected_model_name))
+  else:
+    raise ValueError('Target model {target} name NOT found in the command answer'.format(target=expected_model_name))
 
 # Run script ##############################################
 if __name__ == "__main__":
@@ -1041,17 +1109,44 @@ if __name__ == "__main__":
         raw_input('Running in debug mode. Press Enter to continue...')
     if FLAGS.start_server is True:
         print('### START TENSORFLOW SERVER MODE ###')
+
         usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName))
 
+        #target the served models folder
+        model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/final_model')
+        if not(os.path.exists(model_folder)):
+          model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/latest_models')
+        print('Considering served model parent directory:'+model_folder)
+        #check if at least one served model exists in the target models directory
+        try:
+          #check served model existance
+          if not(os.path.exists(model_folder)):
+            raise ValueError('served models directory not found : '+model_folder)
+          #look for a model in the directory
+          one_model=next(os.walk(model_folder))[1][0]
+          one_model_path=os.path.join(model_folder, one_model)
+          if not(os.path.exists(one_model_path)):
+            raise ValueError('served models directory not found : '+one_model_path)
+          print('Found at least one servable model directory '+str(one_model_path))
+
+          # print servable informations
+          #propose some commands to get information on the served model
+          print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME')
+        except Exception, e:
+          raise ValueError('Could not find servable model, error='+str(e.message))
+
+        get_served_model_info(one_model_path, usersettings.served_head)
         tensorflow_start_cmd="tensorflow_model_server --port={port} --model_name={model} --model_base_path={model_dir}".format(port=usersettings.tensorflow_server_port,
                                                                                                                 model=model_name,
-                                                                                                                model_dir=os.path.join(scripts_WD,FLAGS.model_dir,'export/Servo'))
+                                                                                                                model_dir=model_folder)
 
         print('Starting tensorflow server with command :'+tensorflow_start_cmd)
         os.system(tensorflow_start_cmd)
 
     elif FLAGS.predict is True or FLAGS.predict_stream !=0:
         print('### PREDICT MODE, interacting with a tensorflow server ###')
+        print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAM, you can then add option --signature_def MODEL_NAME')
+
         usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName))
 
         #FIXME errors reported on gRPC: https://github.com/grpc/grpc/issues/13752 ... stay tuned, had to install a specific gpio version (pip install grpcio==1.7.3)
@@ -1081,7 +1176,8 @@ if __name__ == "__main__":
         if not FLAGS.restart_interrupted:
           os.makedirs(sessionFolder)
           os.makedirs(os.path.join(sessionFolder,embeddingsFolder))
-          shutil.copyfile(os.path.join(scripts_WD, usersettings.model_file), os.path.join(sessionFolder, usersettings.model_file))
+          if hasattr(usersettings, 'model_file'):
+            shutil.copyfile(os.path.join(scripts_WD, usersettings.model_file), os.path.join(sessionFolder, usersettings.model_file))
           settings_copy_fullpath=os.path.join(sessionFolder, settingsFile_saveName)
           shutil.copyfile(os.path.join(scripts_WD, FLAGS.usersettings), settings_copy_fullpath)
         tf.app.run(
