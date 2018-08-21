@@ -1131,7 +1131,7 @@ if __name__ == "__main__":
 
           # print servable informations
           #propose some commands to get information on the served model
-          print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAM, you can then add option --signature_def MODEL_NAME')
+          print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME')
         except Exception, e:
           raise ValueError('Could not find servable model, error='+str(e.message))
 
