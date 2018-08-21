@@ -1,13 +1,13 @@
 # What's that ?
 
-A set of scripts that demonstrate the use of Tensorflow experiments and estimators on 1D data
+A set of scripts that demonstrate the use of Tensorflow estimators on various data and tasks 
 @brief : the main script that enables training, validation and serving Tensorflow based models merging all needs in a
 single script to train, evaluate, export and serve, taking large inspirations of official Tensorflow demos.
 @author : Alexandre Benoit, LISTIC lab, FRANCE
 
 Several ideas are put together:
 
-* experiments and estimators to manage training, validation and export in a easier way (but experiments are still in the contrib module so subject to strong changes)
+* estimators to manage training, validation and export in a easier way using the tf.estimator.train_and_evaluate functionnality
 * using moving averages to store parameters with values smoothed along the last training steps (FIXME : ensure those values are used for real by the estimator, actually the graph shows 2 parameter savers...).
 * visualization including embedding projections to observe some data projections on the TensorBoard
 * tensorflow-serving-api to use to serve the model and dynamically load updated models
@@ -98,6 +98,7 @@ is targeted when starting the script (this filename is set in var FLAGS.usersett
 This script has some known problems, any suggestion is welcome:
 * moving average parameters saving is maybe not correctly done. I am not sure that the smoothed variables are saved instead of the current parameters
 * for now tensorflow_server only works on CPU so using GPU only for training and validation. Track : https://github.com/tensorflow/serving/issues/668
+* the model_fn function should be refactored to enhance clarity and maintainability. Also, conversion for feature columns to tensors should be carried out at the model definition level (later than currently in order to improve model flexibility)
 
 # TODO :
 
@@ -351,7 +352,7 @@ class Client_IO:
 ```
 
 # Final notes:
-This demo has been tested on Tensorflow 1.4.1 and 1.5 and makes use of the Experiment and Estimator
+This demo has been tested on Tensorflow 1.4.1 and 1.5 and makes use of tf.estimator
 available in the contrib module that is expected to evolve along Tensorflow versions.
 * Look at https://github.com/GoogleCloudPlatform/cloudml-samples/blob/master/census/tensorflowcore/trainer/model.py
 * Look at some general guidelines on Tenforflow here https://github.com/vahidk/EffectiveTensorflow
