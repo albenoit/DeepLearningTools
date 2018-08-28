@@ -555,12 +555,14 @@ def model_fn(features, labels, mode, params):
                         print('--> Extracting central patch VALUE of feature map \'{name}\' : {tensor}'.format(name=feature_name, tensor=feature_map))
 
                         #get center coordinates
-                        central_data_idx=(np.array(feature_map.get_shape().as_list()[1:1+xdimensions])/2).tolist()
+                        central_data_idx=(np.array(feature_map.get_shape().as_list()[1:3])/2).tolist()
                         print('---> central patch VALUE index='+str(central_data_idx))
+                        central_data_dims=len(features.get_shape().as_list()[3:])
+
                         #return the central slice
                         central_value= tf.slice( feature_map,
-                                      begin=[0]+central_data_idx+[0],
-                                      size=[-1]+[1]*xdimensions+[-1])
+                                      begin=[0]+central_data_idx+[0]*central_data_dims,
+                                      size=[-1]+[1,1]+[-1]*central_data_dims)
                         print('---> central patch VALUE shape='+str(central_value))
                         return central_value
 
@@ -614,14 +616,6 @@ def model_fn(features, labels, mode, params):
                     flatten_saved_samples_dict['input_samples']=flatten_features
                     flatten_saved_samples_dict['labels']=flatten_labels
                     print('About to save, each iteration, the following data:'+str(flatten_saved_samples_dict))
-                    ''' WHEN AVAILABLE? ADD IMAGE summaries
-                       ---> https://github.com/tensorflow/tensorflow/issues/15332
-                       ---> https://github.com/tensorflow/tensorflow/issues/14042
-                       #add image summaries if inputs are images
-                    val_summaries=usersettings.get_validation_summaries(inputs=features, predictions=predictions, labels=labels, embedding_code=embedding_code)
-                    if val_summaries is not None:
-                        print('new summaries added!!!')
-                    '''
 
                     '''-> prepare large buffers to store all evaluation samples for plotting
                       --> those buffer are LOCAL_VARIABLES dedicated to the EVAL mode

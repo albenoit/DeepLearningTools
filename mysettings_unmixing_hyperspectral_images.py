@@ -1,6 +1,16 @@
 '''
 @author: Alexandre Benoit, LISTIC lab, FRANCE
 @brief : simple personnal file that defines experiment specific keys to be used with our programs
+
+Some notes on the data fom Kevin Jacq(Edytem):
+canal des lamines : 0=pas de labels et non annoté, 1=lamine hiver, 2=lamine été
+
+canal crues : 0=pas de labels et non annoté, 1=crues (la j'ai choisi la zone crue avec un rectangle, mais ce n'est pas le cas, donc le voisinage peu etre des pixels de crues, ensuite il peut avoir des crues plus fines que je ne connais pas)
+canal lamines et crues : 0=pas de labels et non annoté, 1=lamine hiver, 2=lamine été, 3=crues (j'ai quand même changé le chiffre)
+
+ pourquoi les 0 sont dangereux si ce n'est pas annoté? Le réseau utilise les données à 0 pour apprendre? Je pensais qu'il apprenait sur les labellisés (1/2/3) et généralisait ensuite aux 0.
+
+
 '''
 import DataProvider_input_pipeline
 import tensorflow as tf
@@ -69,7 +79,7 @@ ref_data_filename_extension='*.tif'
 #load all image files to use for training or testing
 nb_train_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train, file_extension=raw_data_filename_extension))
 nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val, file_extension=raw_data_filename_extension))
-reference_labels=['semantic_labels']
+reference_labels=['lamines', 'crues', 'lamines_plus_crues']
 number_of_crops_per_image=1000
 nb_train_samples=nb_train_images*number_of_crops_per_image#nb_train_images*number_of_crops_per_image# number of images * number of crops per image
 nb_test_samples=nb_val_images*number_of_crops_per_image
