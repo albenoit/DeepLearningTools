@@ -71,7 +71,7 @@ class ExperimentsSettingsChecker(object):
 
               #check model
               self.has('model_file', 'model_file must be set as a filename targetting the model description to optimise')
-              assert os.path.exists(self.experiments_settings.model_file), '{model} targetted by model_file filename does not exist'.format(self.experiments_settings.model_file)
+              assert os.path.exists(self.experiments_settings.model_file), '{model} targetted by model_file filename does not exist'.format(model=self.experiments_settings.model_file)
               self.assertPositive_above_zero('patchSize', 'the extend (in pixels/data samples width) of the input data samples provided to the model')
               self.assertPositive_above_equal_zero('field_of_view', 'the width/field of view of the model. With convolutionnal models, this corresponds to the neighborhood width in the input space that is taken into account to take a decision')
 

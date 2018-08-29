@@ -1,6 +1,16 @@
 '''
 @author: Alexandre Benoit, LISTIC lab, FRANCE
 @brief : simple personnal file that defines experiment specific keys to be used with our programs
+
+Some notes on the data fom Kevin Jacq(Edytem):
+canal des lamines : 0=pas de labels et non annoté, 1=lamine hiver, 2=lamine été
+
+canal crues : 0=pas de labels et non annoté, 1=crues (la j'ai choisi la zone crue avec un rectangle, mais ce n'est pas le cas, donc le voisinage peu etre des pixels de crues, ensuite il peut avoir des crues plus fines que je ne connais pas)
+canal lamines et crues : 0=pas de labels et non annoté, 1=lamine hiver, 2=lamine été, 3=crues (j'ai quand même changé le chiffre)
+
+ pourquoi les 0 sont dangereux si ce n'est pas annoté? Le réseau utilise les données à 0 pour apprendre? Je pensais qu'il apprenait sur les labellisés (1/2/3) et généralisait ensuite aux 0.
+
+
 '''
 import DataProvider_input_pipeline
 import tensorflow as tf
@@ -26,7 +36,7 @@ with other processing jobs, yours and the ones of your colleagues.
 Then, connect to the processing node and type in command line 'nvidia-smi'
 to check which gpu is free (very few used memory and GPU )
 '''
-used_gpu_IDs=[]
+used_gpu_IDs=[0]
 #set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
 XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
@@ -35,7 +45,7 @@ XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 model_file='model_densenet_3D.py'
 display_model_layers_info=False #a flag to enable the display of additionnal console information on the model properties (for debug purpose)
 
-field_of_view=2
+field_of_view=20
 test_patch_overlapping_ratio=0.75 #-> patch overlapping when evaluating/predicting
 
 #-> define here a string name used for the train, eval and served models
@@ -56,25 +66,25 @@ random_seed=None
 # learning rate decaying parameters
 nbEpoch=50
 weights_weight_decay=0.0001
-initial_learning_rate=0.0001
+initial_learning_rate=0.001
 num_epochs_per_decay=10 #number of epoch keepng the same learning rate
 learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
 predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> a first set of data
-raw_data_dir_train = "../../../../Datasets/hyperspectral/carottes/train/SWIR/"
-raw_data_dir_val = "../../../../Datasets/hyperspectral/carottes/train/SWIR/"
+raw_data_dir_train = "/uds_data/listic/datasets/hyperspectral/carottes/train/SWIR/"
+raw_data_dir_val = "/uds_data/listic/datasets/hyperspectral/carottes/train/SWIR/"
 raw_data_filename_extension='*.tif'
 ref_data_filename_extension='*.tif'
 #load all image files to use for training or testing
-nb_train_images=1#len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train_, file_extension=raw_data_filename_extension))
-nb_val_images=1#len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val_, file_extension=raw_data_filename_extension))
-reference_labels=['semantic_labels']
-number_of_crops_per_image=10
-nb_train_samples=10#nb_train_images*number_of_crops_per_image# number of images * number of crops per image
-nb_test_samples=50#nb_val_images*number_of_crops_per_image
-batch_size=1
-nb_classes=34
+nb_train_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train, file_extension=raw_data_filename_extension))
+nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val, file_extension=raw_data_filename_extension))
+reference_labels=['lamines', 'crues', 'lamines_plus_crues']
+number_of_crops_per_image=1000
+nb_train_samples=nb_train_images*number_of_crops_per_image#nb_train_images*number_of_crops_per_image# number of images * number of crops per image
+nb_test_samples=nb_val_images*number_of_crops_per_image
+batch_size=4
+nb_classes=10
 
 ####################################################
 ## Define here use case specific metrics, loss, etc.
@@ -206,13 +216,14 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
                 apply_whitening=True,
                 batch_size_train=batch_size,
                 use_alternative_imread='opencv',
-                balance_classes_distribution=isTraining,
+                balance_classes_distribution=False,#isTraining,
                 classes_entropy_threshold=0.6,
                 opencv_read_flags=cv2.IMREAD_LOAD_GDAL | cv2.IMREAD_ANYDEPTH,
                 field_of_view=get_fov(isTraining),
                 manage_nan_values='avoid')
 
         #retreive a batch of samples
+        last_labels_channels_nb=3
         with tf.name_scope("retrieve_batch"):
             # batch sample retrieval
             data_batch=data_provider.deepnet_data_queue.dequeue_many(batch_size)
@@ -224,8 +235,8 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
                 #-> get reference data restricted to the center part of the images
                 reference_crops=tf.expand_dims(tf.cast(
                                         tf.slice( data_batch,
-                                            begin=[0,field_of_view/2, field_of_view/2, data_provider.single_image_raw_depth-1],
-                                            size=[-1,patchSize-field_of_view, patchSize-field_of_view,1])
+                                            begin=[0,field_of_view/2, field_of_view/2, data_provider.single_image_raw_depth-last_labels_channels_nb],
+                                            size=[-1,patchSize-field_of_view, patchSize-field_of_view,last_labels_channels_nb])
                                     ,dtype=tf.int32),
                                     -1)
         return raw_images, reference_crops

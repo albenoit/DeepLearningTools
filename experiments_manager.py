@@ -520,6 +520,7 @@ def model_fn(features, labels, mode, params):
                 #FIXME, the following criteria is stil hazardous and may nt adapt to new use cases
                 denseLabels= (xdimensions>=2 and xdimensions_labels>=2) and len(features.get_shape().as_list())>=4
                 if denseLabels is True: #multiple samples/labels per data sample use case
+                    print("Now preparing data embedding from the central pixels of the validation data samples")
                     #crop raw data as for labels whatever the dimension of the data (considering initial shape [batch, [xdimensions], channels])
                     xdimensions=(len(features.get_shape().as_list())-2)
                     def get_feature_central_area(feature_map, feature_name):
@@ -533,9 +534,10 @@ def model_fn(features, labels, mode, params):
                         print('--> Extracting central patch AREA of feature map \'{name}\' : {tensor}'.format(name=feature_name, tensor=feature_map))
                         central_value=None
                         if usersettings.patchSize-usersettings.field_of_view>0:
+                            additionnal_dims_size=features.get_shape().as_list()[3:-1]#remove spatial border effects but keep all the other dimensios as is
                             central_value=tf.slice( feature_map,
-                                                  begin=[0]+[usersettings.field_of_view//2]*xdimensions+[0],
-                                                  size=[-1]+[usersettings.patchSize-usersettings.field_of_view]*xdimensions+[-1])
+                                                  begin=[0]+[usersettings.field_of_view//2]*2+[0]*len(additionnal_dims_size)+[0],
+                                                  size=[-1]+[usersettings.patchSize-usersettings.field_of_view]*2+additionnal_dims_size+[-1])
                         else:
                             central_value=feature_map
                         print('---> central value shape='+str(central_value.get_shape().as_list()))
@@ -553,12 +555,14 @@ def model_fn(features, labels, mode, params):
                         print('--> Extracting central patch VALUE of feature map \'{name}\' : {tensor}'.format(name=feature_name, tensor=feature_map))
 
                         #get center coordinates
-                        central_data_idx=(np.array(feature_map.get_shape().as_list()[1:1+xdimensions])/2).tolist()
+                        central_data_idx=(np.array(feature_map.get_shape().as_list()[1:3])/2).tolist()
                         print('---> central patch VALUE index='+str(central_data_idx))
+                        central_data_dims=len(features.get_shape().as_list()[3:])
+
                         #return the central slice
                         central_value= tf.slice( feature_map,
-                                      begin=[0]+central_data_idx+[0],
-                                      size=[-1]+[1]*xdimensions+[-1])
+                                      begin=[0]+central_data_idx+[0]*central_data_dims,
+                                      size=[-1]+[1,1]+[-1]*central_data_dims)
                         print('---> central patch VALUE shape='+str(central_value))
                         return central_value
 
@@ -612,14 +616,6 @@ def model_fn(features, labels, mode, params):
                     flatten_saved_samples_dict['input_samples']=flatten_features
                     flatten_saved_samples_dict['labels']=flatten_labels
                     print('About to save, each iteration, the following data:'+str(flatten_saved_samples_dict))
-                    ''' WHEN AVAILABLE? ADD IMAGE summaries
-                       ---> https://github.com/tensorflow/tensorflow/issues/15332
-                       ---> https://github.com/tensorflow/tensorflow/issues/14042
-                       #add image summaries if inputs are images
-                    val_summaries=usersettings.get_validation_summaries(inputs=features, predictions=predictions, labels=labels, embedding_code=embedding_code)
-                    if val_summaries is not None:
-                        print('new summaries added!!!')
-                    '''
 
                     '''-> prepare large buffers to store all evaluation samples for plotting
                       --> those buffer are LOCAL_VARIABLES dedicated to the EVAL mode
@@ -651,8 +647,8 @@ def model_fn(features, labels, mode, params):
                                                                         name=name)
                         #-> define the final assign op that dequeues all the sample and store into the buffer
                         assign_samples=whole_samples_to_store.assign(samples_saving_queue.dequeue_up_to(stored_embedding_samples))#flatten_raw_images)
-                        assign_samples=tf.Print(assign_samples,[samples_saving_queue.size()], message="###################################################### Samples queue AFTER dequeue")#-> define a histogram on this buffer for monitoring purpose
-                        assign_samples=tf.Print(assign_samples,[assign_samples, samples_saving_queue.size()], message="###################################################### Samples queue AFTER dequeue")#-> define a histogram on this buffer for monitoring purpose
+                        #assign_samples=tf.Print(assign_samples,[samples_saving_queue.size()], message="###################################################### Samples queue AFTER dequeue")#-> define a histogram on this buffer for monitoring purpose
+                        #assign_samples=tf.Print(assign_samples,[assign_samples, samples_saving_queue.size()], message="###################################################### Samples queue AFTER dequeue")#-> define a histogram on this buffer for monitoring purpose
                         samples_hist=tf.summary.histogram(name+'_values',whole_samples_to_store)
 
                         return {'variable_buffer':whole_samples_to_store,
