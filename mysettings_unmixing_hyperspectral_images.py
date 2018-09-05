@@ -3,12 +3,10 @@
 @brief : simple personnal file that defines experiment specific keys to be used with our programs
 
 Some notes on the data fom Kevin Jacq(Edytem):
-canal des lamines : 0=pas de labels et non annoté, 1=lamine hiver, 2=lamine été
+canal des lamines : 0=pas de labels et non annotie, 1=lamine hiver, 2=lamineete
 
-canal crues : 0=pas de labels et non annoté, 1=crues (la j'ai choisi la zone crue avec un rectangle, mais ce n'est pas le cas, donc le voisinage peu etre des pixels de crues, ensuite il peut avoir des crues plus fines que je ne connais pas)
-canal lamines et crues : 0=pas de labels et non annoté, 1=lamine hiver, 2=lamine été, 3=crues (j'ai quand même changé le chiffre)
-
- pourquoi les 0 sont dangereux si ce n'est pas annoté? Le réseau utilise les données à 0 pour apprendre? Je pensais qu'il apprenait sur les labellisés (1/2/3) et généralisait ensuite aux 0.
+canal crues : 0=pas de labels et non annote, 1=crues (la j'ai choisi la zone crue avec un rectangle, mais ce n'est pas le cas, donc le voisinage peut etre des pixels de crues, ensuite il peut avoir des crues plus fines que je ne connais pas)
+canal lamines et crues : 0=pas de labels et non annote, 1=lamine hiver, 2=lamine et, 3=crues (j'ai quand meme ce le chiffre)
 
 
 '''
@@ -25,7 +23,7 @@ tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
 serving_client_timeout_int_secs=5#timeout limit when a client requests a served model
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
-session_name='Carottes_edytem_'
+session_name='Carottes_edytem_DenseNet'
 
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
@@ -45,7 +43,7 @@ XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 model_file='model_densenet_3D.py'
 display_model_layers_info=False #a flag to enable the display of additionnal console information on the model properties (for debug purpose)
 
-field_of_view=20
+field_of_view=33
 test_patch_overlapping_ratio=0.75 #-> patch overlapping when evaluating/predicting
 
 #-> define here a string name used for the train, eval and served models
@@ -58,31 +56,31 @@ served_head=model_head_prediction_name #define here the output that will be prov
 nb_summary_per_train_epoch=4
 
 #define image patches extraction parameters
-patchSize=64
+patchSize=32
 
 #random seed used to init weights, etc. Use an integer value to make experiments reproducible
-random_seed=None
+random_seed=42
 
 # learning rate decaying parameters
 nbEpoch=50
 weights_weight_decay=0.0001
 initial_learning_rate=0.001
-num_epochs_per_decay=10 #number of epoch keepng the same learning rate
+num_epochs_per_decay=20 #number of epoch keepng the same learning rate
 learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
 predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> a first set of data
 raw_data_dir_train = "/uds_data/listic/datasets/hyperspectral/carottes/train/SWIR/"
-raw_data_dir_val = "/uds_data/listic/datasets/hyperspectral/carottes/train/SWIR/"
+raw_data_dir_val = "/uds_data/listic/datasets/hyperspectral/carottes/val/SWIR/"
 raw_data_filename_extension='*.tif'
 ref_data_filename_extension='*.tif'
 #load all image files to use for training or testing
 nb_train_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train, file_extension=raw_data_filename_extension))
 nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val, file_extension=raw_data_filename_extension))
-reference_labels=['lamines', 'crues', 'lamines_plus_crues']
+reference_labels=['inconnu_lamine_crue']
 number_of_crops_per_image=1000
 nb_train_samples=nb_train_images*number_of_crops_per_image#nb_train_images*number_of_crops_per_image# number of images * number of crops per image
-nb_test_samples=nb_val_images*number_of_crops_per_image
+nb_test_samples=2*nb_val_images*number_of_crops_per_image
 batch_size=4
 nb_classes=10
 
@@ -146,6 +144,8 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
                                     #reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS
                                     )
 
+    tf.summary.scalar('weights_loss', weights_loss)
+    tf.summary.scalar('mse_loss', reconstruction_loss)
     return reconstruction_loss+weights_weight_decay*weights_loss
 
 def get_eval_metric_ops(inputs, model_outputs_dict, labels):
@@ -204,21 +204,21 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
 
         #init the input pipeline
         data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation(raw_data_files, -1,
-                shuffle_samples=shuffle_batches,
+                shuffle_samples=True,#shuffle_batches,
                 patch_ratio_vs_input=patchSize,
                 max_patches_per_image=number_of_crops_per_image,
                 image_area_coverage_factor=int(isTraining)+1.0,#factor 2 on training, 1 on testing
                 num_preprocess_threads=1,#4 threads on training, 1 on testing
-                apply_random_flip_left_right=isTraining,
+                apply_random_flip_left_right=False,#isTraining,
                 apply_random_flip_up_down=False,
-                apply_random_brightness=apply_pixel_transforms(isTraining),
-                apply_random_saturation=apply_pixel_transforms(isTraining),
-                apply_whitening=True,
+                apply_random_brightness=None,#apply_pixel_transforms(isTraining),
+                apply_random_saturation=None,#apply_pixel_transforms(isTraining),
+                apply_whitening=False,
                 batch_size_train=batch_size,
-                use_alternative_imread='opencv',
+                use_alternative_imread='gdal',
                 balance_classes_distribution=False,#isTraining,
-                classes_entropy_threshold=0.6,
-                opencv_read_flags=cv2.IMREAD_LOAD_GDAL | cv2.IMREAD_ANYDEPTH,
+                classes_entropy_threshold=0.3,
+                opencv_read_flags=None,#cv2.IMREAD_LOAD_GDAL | cv2.IMREAD_ANYDEPTH,
                 field_of_view=get_fov(isTraining),
                 manage_nan_values='avoid')
 
@@ -235,8 +235,8 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
                 #-> get reference data restricted to the center part of the images
                 reference_crops=tf.expand_dims(tf.cast(
                                         tf.slice( data_batch,
-                                            begin=[0,field_of_view/2, field_of_view/2, data_provider.single_image_raw_depth-last_labels_channels_nb],
-                                            size=[-1,patchSize-field_of_view, patchSize-field_of_view,last_labels_channels_nb])
+                                            begin=[0,field_of_view/2, field_of_view/2, data_provider.single_image_raw_depth-1],
+                                            size=[-1,patchSize-field_of_view, patchSize-field_of_view,1])
                                     ,dtype=tf.int32),
                                     -1)
         return raw_images, reference_crops
