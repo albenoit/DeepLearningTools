@@ -28,7 +28,7 @@ a=pandas.read_pickle('experiments/curves_fitting/my_test_2018-02-12--17:48:17/mo
 save_model_variables_to_pandas=True
 
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
-session_name='TCN_MSE_LSTM'
+session_name='LSTM'
 
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
@@ -187,7 +187,7 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
                             labels=Y,
                             predictions=get_ROI(model_outputs_dict['F_x'], 'forward'),
                             scope='forward_prediction_error')
-    '''loss_G=tf.losses.mean_squared_error(
+    loss_G=tf.losses.mean_squared_error(
                             labels=X,
                             predictions=get_ROI(model_outputs_dict['G_y'], 'backward'),
                             scope='backward_prediction_error')
@@ -199,10 +199,10 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
                             labels=X,
                             predictions=get_ROI(model_outputs_dict['GoF_x'], 'forward'),
                             scope='forward_backward_prediction_error')
-    '''
+
     #loss_F=tf.reduce_sum(tf.square(Y - get_ROI(model_outputs_dict['F_x'], 'forward')))
     #print('loss_F='+str(loss_F))
-    totalLoss=loss_F
+    totalLoss=loss_F+loss_G+loss_F_G+loss_G_F
     #totalLoss=tf.Print(loss_F,[loss_F], 'loss')
     tf.summary.scalar('task_weights_loss_ratio', weights_loss/loss_F)
     return totalLoss+weights_weight_decay*weights_loss
@@ -338,7 +338,7 @@ class Client_IO:
 
         #load the test csv file and stack into memory
         #self.inputdata=np.genfromtxt(os.path.join(raw_data_dir_val,'CAC_norm.txt'), delimiter=csv_field_delim)
-        self.inputdata=pd.read_csv(os.path.join(raw_data_dir_train,'CAC_norm.txt'), delimiter=csv_field_delim).as_matrix()
+        self.inputdata=pd.read_csv(os.path.join(raw_data_dir_val,'CAC_norm.txt'), delimiter=csv_field_delim).as_matrix()
         #print('Read text data, shape='+str(self.inputdata.shape))
         self.neighborhood_range=2
         self.current_time_idx=self.neighborhood_range*time_series_length+field_of_view
