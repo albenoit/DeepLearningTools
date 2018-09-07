@@ -235,7 +235,7 @@ def model(  data,
     #basic architexture for testing purpose
     nb_layers_sequence_encoding=[4, 5]
     bottleneck_nb_layers=7
-    growth_rate=16
+    growth_rate=12
     output_only_inputs_last_decoding_block=False
     use_dense_block=True #if False, then the architecture will not include dense connections and will resemble UNet
     '''
@@ -330,12 +330,19 @@ def model(  data,
     output_dict={'code':last_encoding_feature_maps, 'reconstructed_data':logits_semantic}
 
     #add each skip connexion output for embedding
+    '''all_skips_list=[]
     for id, skip_layer in enumerate(skip_connection_list):
         output_dict['skip_'+str(id)]=skip_layer
-    #finally concatenate all the skip lapeyrs
-    #all_skips=tf.concat([tf.layers.flatten(skip_layer) for skip_layer in skip_connection_list],axis=1)
-    #output_dict['all_skips']=all_skips
+        #finally concatenate all the skip lapeyrs
+        all_skips_list.append(tf.image.resize_nearest_neighbor(
+                                               skip_layer,
+                                               logits_semantic.get_shape().as_list()[1:4],
+                                               align_corners=True,
+                                              )
+                        )
+    all_skips=tf.concat(all_skips_list, axis=-1)
+    output_dict['all_skips']=all_skips
     #concat code+skiplayers
-    #output_dict['code_with_all_skips']=tf.concat([tf.layers.flatten(last_encoding_feature_maps),tf.layers.flatten(all_skips)], axis=1)
-    
+    output_dict['code_with_all_skips']=tf.concat([tf.layers.flatten(last_encoding_feature_maps),tf.layers.flatten(all_skips)], axis=1)
+    '''
     return output_dict
