@@ -1034,3 +1034,38 @@ def FileListProcessor_csv_lines(files, csv_field_delim, queue_capacity, shuffle_
             dataset=dataset.shuffle(buffer_size=5*batch_size)
 
         return dataset
+
+def FileListProcessor_image_classification(sourceFolder, file_extension,
+                                           use_alternative_imread=False,
+                                           image_reader_flags=-1,
+                                           shuffle_batches=True,
+                                           batch_size=1,
+                                           device="/cpu:0",
+                                           debug=False):
+  '''
+    Loads a set of images from a folder with associated labels for image classification
+    Args:
+      sourceFolder : the parent folder of the target files
+      file_extension : the target file extension
+      use_alternative_imread : set False to read from Tensorflow native ops or set 'gdal' or 'opencv' to read with those tools,
+      image_reader_flags : set -1 to use defaults or add specific flags to provide to the image readers
+      shuffle_batches : set True to shuffle false to keep order
+      batch_size : an indicatr batch size to dimension the prefectch queue
+      device : the device where to put the dataset provider (better to set on CPU ("/cpu:0"))
+      debug: Boolean, if True, prints additionnal logs
+  '''
+  ds = tf.data.Dataset.list_files(os.path.join(sourceFolder,file_extension))
+  ds = ds.map(map_func=load_image)
+
+  dataset = (tf.data.TextLineDataset(files)  # Read text file
+     .skip(1)  # Skip header row
+     .map(decode_csv, num_parallel_calls=4)  # Decode each line in a multi thread mode (asynchronous reading)
+     .cache() # Warning: Caches entire dataset, can cause out of memory
+     .repeat(1)    # Repeats dataset only one time (one epoch) thus allowing to automatically switch between train and eval steps
+     .batch(batch_size)
+     .prefetch(5*batch_size)  # Make sure you always have 1 batch ready to serve
+     )
+  if shuffle_batches is True:
+      dataset=dataset.shuffle(buffer_size=5*batch_size)
+
+  return dataset
