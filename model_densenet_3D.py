@@ -11,22 +11,20 @@ def weight_variable(shape):
     @param shape, the 4d tensor shape
     variable is allocated on the CPU memory even if processing will use it on GPU
     '''
-    with tf.device('/cpu:0'):
-        n= np.prod(shape[:3])#n_input_channels*kernelShape
-        trunc_stddev = np.sqrt(1.3 * 2.0 / n)
-        initial = tf.truncated_normal(shape, 0.0, trunc_stddev)
-        weights=tf.get_variable(name='weights', initializer=initial)
-        tf.add_to_collection('weights_losses', tf.nn.l2_loss(weights))
-        return weights
+    n= np.prod(shape[:3])#n_input_channels*kernelShape
+    trunc_stddev = np.sqrt(1.3 * 2.0 / n)
+    initial = tf.truncated_normal(shape, 0.0, trunc_stddev)
+    weights=tf.get_variable(name='weights', initializer=initial)
+    tf.add_to_collection('weights_losses', tf.nn.l2_loss(weights))
+    return weights
 
 def bias_variable(shape):
     ''' basic constant bias variable init (a little above 0)
     @param shape, the 4d tensor shape
     variable is allocated on the CPU memory even if processing will use it on GPU
     '''
-    with tf.device('/cpu:0'):
-        initial = tf.constant(0.01, shape=shape)
-        return tf.get_variable(name='biases', initializer=initial)
+    initial = tf.constant(0.01, shape=shape)
+    return tf.get_variable(name='biases', initializer=initial)
 
 """
 def conv2d(input_features, outing_nb_features, kernel_size, with_bias=True):
@@ -227,7 +225,6 @@ def model(  data,
             hparams,
             mode
             ):
-    variable_placement="/cpu:0"
     from tensorflow.contrib.learn import ModeKeys
     is_training = mode == ModeKeys.TRAIN
 
@@ -236,11 +233,11 @@ def model(  data,
     keep_prob=1.0-dropout_rate
 
     #basic architexture for testing purpose
-    nb_layers_sequence_encoding=[1]
-    bottleneck_nb_layers=2
-    growth_rate=2
+    nb_layers_sequence_encoding=[4, 5]
+    bottleneck_nb_layers=7
+    growth_rate=12
     output_only_inputs_last_decoding_block=False
-    use_dense_block=False #if False, then the architecture will not include dense connections and will resemble UNet
+    use_dense_block=True #if False, then the architecture will not include dense connections and will resemble UNet
     '''
     #FC-DenseNet-103 architecture:
     nb_layers_sequence_encoding=[4, 5, 7, 10, 12]
@@ -330,4 +327,22 @@ def model(  data,
 
     print('Semantic segmentation pixel field of view='+str(field_of_view))
 
-    return {'code':last_encoding_feature_maps, 'reconstructed_data':logits_semantic}
+    output_dict={'code':last_encoding_feature_maps, 'reconstructed_data':logits_semantic}
+
+    #add each skip connexion output for embedding
+    '''all_skips_list=[]
+    for id, skip_layer in enumerate(skip_connection_list):
+        output_dict['skip_'+str(id)]=skip_layer
+        #finally concatenate all the skip lapeyrs
+        all_skips_list.append(tf.image.resize_nearest_neighbor(
+                                               skip_layer,
+                                               logits_semantic.get_shape().as_list()[1:4],
+                                               align_corners=True,
+                                              )
+                        )
+    all_skips=tf.concat(all_skips_list, axis=-1)
+    output_dict['all_skips']=all_skips
+    #concat code+skiplayers
+    output_dict['code_with_all_skips']=tf.concat([tf.layers.flatten(last_encoding_feature_maps),tf.layers.flatten(all_skips)], axis=1)
+    '''
+    return output_dict

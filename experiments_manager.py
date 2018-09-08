@@ -241,17 +241,19 @@ def getEvalSpecs(params, global_hooks):
         as_text=False,
         )
       )
-  '''TODO : when possible, move to thus one available in tf 1.10:
-  tf.estimator.BestExporter(#choosing here to only export better models
-      name='best_exporter',
-      serving_input_receiver_fn=usersettings.get_input_pipeline_serving,
-      event_file_pattern='eval/*.tfevents.*',
-      compare_fn=_loss_smaller,
-      assets_extra=None,
-      as_text=False,
-      exports_to_keep=5
-      )
-  '''
+  try: #when possible, keep the best model (available in tf 1.10):
+      tf.estimator.BestExporter(#choosing here to only export better models
+          name='best_model',
+          serving_input_receiver_fn=usersettings.get_input_pipeline_serving,
+          event_file_pattern='eval/*.tfevents.*',
+          compare_fn=_loss_smaller,
+          assets_extra=None,
+          as_text=False,
+          exports_to_keep=5
+          )
+  except:
+     print('tf.estimator.BestExporter is not available on this tensorflow version, tf>1.1 required')
+     pass
   return tf.estimator.EvalSpec( input_fn=eval_input_fn,
                                 steps=params.nbIterationPerEpoch_val,
                                 name=None,
@@ -556,7 +558,7 @@ def model_fn(features, labels, mode, params):
 
                         #get center coordinates
                         central_data_idx=(np.array(feature_map.get_shape().as_list()[1:3])/2).tolist()
-                        print('---> central patch VALUE index='+str(central_data_idx))
+                        print('---> central patch coordinates='+str(central_data_idx))
                         central_data_dims=len(features.get_shape().as_list()[3:])
 
                         #return the central slice
@@ -1109,7 +1111,7 @@ if __name__ == "__main__":
         usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName))
 
         #target the served models folder
-        model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/final_model')
+        model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/best_model')
         if not(os.path.exists(model_folder)):
           model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/latest_models')
         print('Considering served model parent directory:'+model_folder)

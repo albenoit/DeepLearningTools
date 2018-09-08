@@ -651,7 +651,7 @@ class FileListProcessor_Semantic_Segmentation:
                 self.cropSize=[self.patchSize,self.patchSize,self.single_image_raw_depth+self.single_image_reference_depth]
             print('Deep net will be fed by samples of shape='+str(self.cropSize))
             self.deep_data_queue_capacity= self.batch_size_train*self.max_patches_per_image*self.num_preprocess_threads
-            min_after_dequeue = (self.deep_data_queue_capacity*3)/4
+            min_after_dequeue = self.batch_size_train*self.num_preprocess_threads#, (self.deep_data_queue_capacity*3)/4)
             print('data queue values: min_after_dequeue={min_after_dequeue},data_queue_capacity={capacity}'.format(min_after_dequeue=min_after_dequeue,capacity=self.deep_data_queue_capacity))
 
             if self.shuffle_samples: #randomized queues
