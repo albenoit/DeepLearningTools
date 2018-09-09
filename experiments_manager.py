@@ -376,7 +376,9 @@ def model_fn(features, labels, mode, params):
         (EstimatorSpec): Model to be run by Estimator.
     """
 
-    print('############ Received features='+str(type(features)))
+    print('###################################################')
+    print('Defining the custom model_fn with mode : '+str(mode))
+    print('=> input features='+str(features))
     if isinstance(features,dict):
         #basic case (for serving especially) where input is a dict with only the 'feature' item
         if 'feature' in features and len(features)==1:
