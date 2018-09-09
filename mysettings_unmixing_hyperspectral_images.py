@@ -70,19 +70,20 @@ learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM
 predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> a first set of data
-raw_data_dir_train = "/uds_data/listic/datasets/hyperspectral/carottes/train/SWIR/"
-raw_data_dir_val = "/uds_data/listic/datasets/hyperspectral/carottes/val/SWIR/"
+raw_data_dir_train = "/home/alben/workspace/Datasets/hyperspectral/carottes/train/SWIR/"#"/uds_data/listic/datasets/hyperspectral/carottes/train/SWIR/"
+raw_data_dir_val = "/home/alben/workspace/Datasets/hyperspectral/carottes/train/SWIR/"#"/uds_data/listic/datasets/hyperspectral/carottes/val/SWIR/"
 raw_data_filename_extension='*.tif'
 ref_data_filename_extension='*.tif'
 #load all image files to use for training or testing
 nb_train_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train, file_extension=raw_data_filename_extension))
 nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val, file_extension=raw_data_filename_extension))
 reference_labels=['inconnu_lamine_crue']
-number_of_crops_per_image=1000
+number_of_crops_per_image=200
 nb_train_samples=nb_train_images*number_of_crops_per_image#nb_train_images*number_of_crops_per_image# number of images * number of crops per image
-nb_test_samples=2*nb_val_images*number_of_crops_per_image
+nb_test_samples=50*nb_val_images*number_of_crops_per_image
 batch_size=4
 nb_classes=10
+input_nb_spectral_bands=128#specify here the number of spectral band (central bands) that should be considered for processing
 
 ####################################################
 ## Define here use case specific metrics, loss, etc.
@@ -229,8 +230,8 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
             data_batch=data_provider.deepnet_data_queue.dequeue_many(batch_size)
             # extract raw data,  reference data will be extracted at the optimizer level
             raw_images=tf.expand_dims(tf.slice( data_batch,
-                                        begin=[0,0,0,10],
-                                        size=[-1,-1,-1,data_provider.single_image_raw_depth-20]),-1)
+                                        begin=[0,0,0,int(data_provider.single_image_raw_depth-last_labels_channels_nb-input_nb_spectral_bands)/2],
+                                        size=[-1,-1,-1,input_nb_spectral_bands]),-1)
             with tf.name_scope('prepare_reference_data'):
                 #-> get reference data restricted to the center part of the images
                 reference_crops=tf.expand_dims(tf.cast(
@@ -248,7 +249,7 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
 -class Client_IO, a class to specifiy input data requests and response on the client side when serving a model
 For performance/enhancement of the model, have a look here for graph optimization: https://github.com/tensorflow/tensorflow/blob/r1.4/tensorflow/tools/graph_transforms/README.md
 '''
-serving_img_shape=[64,64,148]
+serving_img_shape=[64,64,input_nb_spectral_bands]
 def get_input_pipeline_serving():
     '''Build the serving inputs, expecting messages made of :
     -> a batch of size 1 of a single image in the uint8 format (no preliminary normalisation is expected).

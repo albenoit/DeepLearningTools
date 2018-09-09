@@ -233,9 +233,9 @@ def model(  data,
     keep_prob=1.0-dropout_rate
 
     #basic architexture for testing purpose
-    nb_layers_sequence_encoding=[4, 5]
-    bottleneck_nb_layers=7
-    growth_rate=12
+    nb_layers_sequence_encoding=[1, 1, 1]
+    bottleneck_nb_layers=1
+    growth_rate=30
     output_only_inputs_last_decoding_block=False
     use_dense_block=True #if False, then the architecture will not include dense connections and will resemble UNet
     '''
@@ -248,7 +248,7 @@ def model(  data,
     '''
     number_of_encoding_blocks=len(nb_layers_sequence_encoding)
     n_layers_per_block=nb_layers_sequence_encoding+[bottleneck_nb_layers]+nb_layers_sequence_encoding[::-1]
-    print('Using {blocks} for each encoding and decoding branch with the following number of layers: {layers_per_blocks}'.format(blocks=number_of_encoding_blocks,
+    print('Using {blocks} blocks for each encoding and decoding branch with the following number of layers: {layers_per_blocks}'.format(blocks=number_of_encoding_blocks,
                                                                                                                                 layers_per_blocks=n_layers_per_block))
     total_nb_layers=np.sum(n_layers_per_block)+len(n_layers_per_block)+1
     print('Expected number of layers (including input, output and transition blocks)= '+str(total_nb_layers))
