@@ -461,7 +461,7 @@ def model_fn(features, labels, mode, params):
                 print('Found the following regularisation losses')
                 for layer_loss in regularization_losses:
                     print(layer_loss)
-            print('Found {nb_losses} layers regularisation_losses'.format(nb_losses=len(regularization_losses)))
+            print('Found {nb_losses} layers regularisation_losses within collection tf.GraphKeys.REGULARIZATION_LOSSES'.format(nb_losses=len(regularization_losses)))
             weights_loss=tf.reduce_sum(regularization_losses)#tf.losses.get_regularization_loss()
             tf.summary.scalar('Regularization_loss', weights_loss)
           #finalize total loss

@@ -15,7 +15,7 @@ def weight_variable(shape):
     trunc_stddev = np.sqrt(1.3 * 2.0 / n)
     initial = tf.truncated_normal(shape, 0.0, trunc_stddev)
     weights=tf.get_variable(name='weights', initializer=initial)
-    tf.add_to_collection('weights_losses', tf.nn.l2_loss(weights))
+    tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, tf.nn.l2_loss(weights))
     return weights
 
 def bias_variable(shape):
@@ -233,9 +233,9 @@ def model(  data,
     keep_prob=1.0-dropout_rate
 
     #basic architexture for testing purpose
-    nb_layers_sequence_encoding=[1, 1, 1]
-    bottleneck_nb_layers=1
-    growth_rate=30
+    nb_layers_sequence_encoding=[2, 2, 2]
+    bottleneck_nb_layers=2
+    growth_rate=16
     output_only_inputs_last_decoding_block=False
     use_dense_block=True #if False, then the architecture will not include dense connections and will resemble UNet
     '''
