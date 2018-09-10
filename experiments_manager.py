@@ -86,6 +86,8 @@ As a reminder, here are the functions prototypes:
 ---def getInputData(self, idx):
 ---def decodeResponse(self, result):
 ---def finalize():
+-------> Note, the finalize method will be called once the number of expected
+iterations is reached and if any StopIteration exception is sent by the client
 
 Some examples of such functions are put in the README.md and in the versionned mysettings_xxx.py demos
 
@@ -233,14 +235,7 @@ def getEvalSpecs(params, global_hooks):
         exports_to_keep=5
         )
       )
-  #-> a final exporter at the end of the training
-  exporters.append(tf.estimator.FinalExporter(
-        name='final_model',
-        serving_input_receiver_fn=usersettings.get_input_pipeline_serving,
-        assets_extra=None,
-        as_text=False,
-        )
-      )
+
   try: #when possible, keep the best model (available in tf 1.10):
       tf.estimator.BestExporter(#choosing here to only export better models
           name='best_model',
@@ -992,21 +987,25 @@ def do_inference(host, port, model_name, concurrency, num_tests):
   notDone=True
   predictionIdx=0
   while notDone:
-      predictionIdx=predictionIdx+1
-      start_time=time.time()
-      sample=client_io.getInputData(predictionIdx)
-      if FLAGS.debug:
-          print('Input data is ready (data, shape)'+str((sample, sample.shape)))
-          print('Time to prepare collect data request:',round(time.time() - start_time, 2))
-          start_time=time.time()
-      request = predict_pb2.PredictRequest()
-      request.model_spec.name = model_name
-      request.model_spec.signature_name = usersettings.served_head
-      request.inputs[usersettings.input_data_name].CopyFrom(
-            tf.make_tensor_proto(sample, shape=sample.shape))
-      if FLAGS.debug:
-        print('Time to prepare request:',round(time.time() - start_time, 2))
-
+      try:
+        predictionIdx=predictionIdx+1
+        start_time=time.time()
+        sample=client_io.getInputData(predictionIdx)
+        if FLAGS.debug:
+            print('Input data is ready (data, shape)'+str((sample, sample.shape)))
+            print('Time to prepare collect data request:',round(time.time() - start_time, 2))
+            start_time=time.time()
+        request = predict_pb2.PredictRequest()
+        request.model_spec.name = model_name
+        request.model_spec.signature_name = usersettings.served_head
+        request.inputs[usersettings.input_data_name].CopyFrom(
+              tf.make_tensor_proto(sample, shape=sample.shape))
+        if FLAGS.debug:
+          print('Time to prepare request:',round(time.time() - start_time, 2))
+      except StopIteration:
+        print('End of the process detection, finalizing the finalize method')
+        notDone=True
+        break
       #asynchronous message reception, may hide some AbortionError details and only provide CancellationError(code=StatusCode.CANCELLED, details="Cancelled")
       '''result_future = stub.Predict.future(request, usersettings.serving_client_timeout_int_secs)  # 5 seconds
       result_future.add_done_callback(
@@ -1118,22 +1117,25 @@ if __name__ == "__main__":
           model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/latest_models')
         print('Considering served model parent directory:'+model_folder)
         #check if at least one served model exists in the target models directory
-        try:
-          #check served model existance
-          if not(os.path.exists(model_folder)):
-            raise ValueError('served models directory not found : '+model_folder)
-          #look for a model in the directory
-          one_model=next(os.walk(model_folder))[1][0]
-          one_model_path=os.path.join(model_folder, one_model)
-          if not(os.path.exists(one_model_path)):
-            raise ValueError('served models directory not found : '+one_model_path)
-          print('Found at least one servable model directory '+str(one_model_path))
-
-          # print servable informations
-          #propose some commands to get information on the served model
-          print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME')
-        except Exception, e:
-          raise ValueError('Could not find servable model, error='+str(e.message))
+        stillWait=True
+        while stillWait is True:
+          print('Looking for a servable model in '+os.path.join(scripts_WD,FLAGS.model_dir,'export/'))
+          try:
+            #check served model existance
+            if not(os.path.exists(model_folder)):
+              raise ValueError('served models directory not found : '+model_folder)
+            #look for a model in the directory
+            one_model=next(os.walk(model_folder))[1][0]
+            one_model_path=os.path.join(model_folder, one_model)
+            if not(os.path.exists(one_model_path)):
+              raise ValueError('served models directory not found : '+one_model_path)
+            print('Found at least one servable model directory '+str(one_model_path))
+            stillWait=False
+            # print servable informations
+            #propose some commands to get information on the served model
+            print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME')
+          except Exception, e:
+            raise ValueError('Could not find servable model, error='+str(e.message))
 
         get_served_model_info(one_model_path, usersettings.served_head)
         tensorflow_start_cmd="tensorflow_model_server --port={port} --model_name={model} --model_base_path={model_dir}".format(port=usersettings.tensorflow_server_port,
@@ -1145,7 +1147,7 @@ if __name__ == "__main__":
 
     elif FLAGS.predict is True or FLAGS.predict_stream !=0:
         print('### PREDICT MODE, interacting with a tensorflow server ###')
-        print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAM, you can then add option --signature_def MODEL_NAME')
+        print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME')
 
         usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName))
 

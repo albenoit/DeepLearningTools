@@ -6,9 +6,9 @@ Some notes on the data fom Kevin Jacq(Edytem):
 canal des lamines : 0=pas de labels et non annotie, 1=lamine hiver, 2=lamineete
 
 canal crues : 0=pas de labels et non annote, 1=crues (la j'ai choisi la zone crue avec un rectangle, mais ce n'est pas le cas, donc le voisinage peut etre des pixels de crues, ensuite il peut avoir des crues plus fines que je ne connais pas)
-canal lamines et crues : 0=pas de labels et non annote, 1=lamine hiver, 2=lamine et, 3=crues (j'ai quand meme ce le chiffre)
+canal lamines et crues : 0=pas de labels et non annote, 1=lamine hiver, 2=lamine ete, 3=crues (j'ai quand meme ce le chiffre)
 
-
+Autre approche : 20 points d'analyse chimique par carotte (taux de matiere organique).
 '''
 import DataProvider_input_pipeline
 import tensorflow as tf
@@ -21,7 +21,7 @@ workingFolder='experiments/hyperspectral_images'
 tensorflow_server_address='127.0.0.1'
 tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
-serving_client_timeout_int_secs=5#timeout limit when a client requests a served model
+serving_client_timeout_int_secs=20#timeout limit when a client requests a served model
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='Carottes_edytem_DenseNet'
 
@@ -43,7 +43,7 @@ XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 model_file='model_densenet_3D.py'
 display_model_layers_info=False #a flag to enable the display of additionnal console information on the model properties (for debug purpose)
 
-field_of_view=33
+field_of_view=9
 test_patch_overlapping_ratio=0.75 #-> patch overlapping when evaluating/predicting
 
 #-> define here a string name used for the train, eval and served models
@@ -57,6 +57,8 @@ nb_summary_per_train_epoch=4
 
 #define image patches extraction parameters
 patchSize=32
+server_patch_size=32#let's try with a different patch size when serving
+server_crops_per_batch=4#define here how many crops are sent to the server at a single time
 
 #random seed used to init weights, etc. Use an integer value to make experiments reproducible
 random_seed=42
@@ -80,11 +82,12 @@ nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data
 reference_labels=['inconnu_lamine_crue']
 number_of_crops_per_image=200
 nb_train_samples=nb_train_images*number_of_crops_per_image#nb_train_images*number_of_crops_per_image# number of images * number of crops per image
-nb_test_samples=50*nb_val_images*number_of_crops_per_image
+nb_test_samples=1*nb_val_images*number_of_crops_per_image
 batch_size=4
 nb_classes=10
 input_nb_spectral_bands=128#specify here the number of spectral band (central bands) that should be considered for processing
-
+first_selected_band_id=7#the index of the first band to process (follows the input_nb_spectral_bands)
+#REMINDER : skip the first and last 10 bands
 ####################################################
 ## Define here use case specific metrics, loss, etc.
 #with tf.name_scope("loss"):
@@ -116,8 +119,8 @@ def model_outputs_postprocessing_for_serving(model_outputs_dict):
     #in this use case, we have two outputs:
     #->  code that is kept as is
     #->  semantic map logits from which we extract the most probable class index for each pixel
-    postprocessed_outputs={model_head_embedding_name:model_outputs_dict['code'],
-                           model_head_prediction_name:tf.saturate_cast(model_outputs_dict['reconstructed_data'], tf.uint16),
+    postprocessed_outputs={#model_head_embedding_name:model_outputs_dict['code'],
+                           model_head_prediction_name:model_outputs_dict['code']#tf.saturate_cast(model_outputs_dict['reconstructed_data'], tf.uint16),
                            }
     return postprocessed_outputs
 
@@ -230,7 +233,7 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
             data_batch=data_provider.deepnet_data_queue.dequeue_many(batch_size)
             # extract raw data,  reference data will be extracted at the optimizer level
             raw_images=tf.expand_dims(tf.slice( data_batch,
-                                        begin=[0,0,0,int(data_provider.single_image_raw_depth-last_labels_channels_nb-input_nb_spectral_bands)/2],
+                                        begin=[0,0,0,first_selected_band_id],#int(data_provider.single_image_raw_depth-last_labels_channels_nb-input_nb_spectral_bands)/2],
                                         size=[-1,-1,-1,input_nb_spectral_bands]),-1)
             with tf.name_scope('prepare_reference_data'):
                 #-> get reference data restricted to the center part of the images
@@ -249,17 +252,19 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
 -class Client_IO, a class to specifiy input data requests and response on the client side when serving a model
 For performance/enhancement of the model, have a look here for graph optimization: https://github.com/tensorflow/tensorflow/blob/r1.4/tensorflow/tools/graph_transforms/README.md
 '''
-serving_img_shape=[64,64,input_nb_spectral_bands]
+
+serving_img_shape=[server_crops_per_batch, server_patch_size,server_patch_size,input_nb_spectral_bands]
 def get_input_pipeline_serving():
     '''Build the serving inputs, expecting messages made of :
-    -> a batch of size 1 of a single image in the uint8 format (no preliminary normalisation is expected).
-    ---> the input is then converted into a float32 4D batch
+    -> a batch of multiple image crops in the uint16 format (no preliminary normalisation is expected).
+    ---> the input is then converted into a float32 5D batch and is processed as for trainn/val
     '''
     serialized_tf_example = tf.placeholder(
         dtype=tf.uint16,
         shape=serving_img_shape,
         name='serialized_input_data')
-    img_5D=tf.reshape(tf.cast(serialized_tf_example, dtype=tf.float32),[1]+serving_img_shape+[1])
+
+    img_5D=tf.expand_dims(tf.cast(serialized_tf_example, dtype=tf.float32),-1)
     print('Served input='+str(img_5D))
     return tf.estimator.export.ServingInputReceiver(
         img_5D, {input_data_name: serialized_tf_example})
@@ -279,14 +284,40 @@ class Client_IO:
             Args:
                debugMode: set True if some debug messages should be displayed
         '''
-        self.debugMode=debugMode
+        #Some test setup here
+        test_file="/home/alben/workspace/Datasets/hyperspectral/carottes/train/SWIR/LDBSWIR.tif"
 
-        #self.frame=cv2.imread('../../../../datasamples/semantic_segmentation/raw_data/aachen_000000_000019_leftImg8bit.png')
-        self.input_stream=cv2.VideoCapture(0)
-        valid, frame=self.input_stream.read()
+        self.debugMode=debugMode #set True to activate debug prints
+        inframe=DataProvider_input_pipeline.imread_from_gdal(test_file, debug_mode=True)
+        self.code_scale=8
+
+        #convert to expected server input format (type and keep the expected number of bands only)
+        self.inframe=inframe.astype(np.uint16)[:,:,first_selected_band_id:first_selected_band_id+input_nb_spectral_bands]
+        self.reference=inframe.astype(np.uint16)[:,:,-3:]#keep the ground truth of the 3 last layers
+        #add padding to handle borders
+        self.inframe=np.pad(array=self.inframe, pad_width=((field_of_view/2,field_of_view/2), (field_of_view/2,field_of_view/2), (0,0)), mode='constant')
+        self.reference=np.pad(array=self.reference, pad_width=((field_of_view/2,field_of_view/2), (field_of_view/2,field_of_view/2), (0,0)), mode='constant')
+        #cv2.imread('../../../../datasamples/semantic_segmentation/raw_data/aachen_000000_000019_leftImg8bit.png')
+        self.outframe=np.zeros((self.inframe.shape[0], self.inframe.shape[1], self.inframe.shape[2]))
+        self.codeframe=np.zeros((self.inframe.shape[0]/self.code_scale, self.inframe.shape[1]/self.code_scale, 512))
+        #define crops parsing indicators
+        self.crop_index=0
+        self.nb_crops_lines=self.outframe.shape[0]/(patchSize-field_of_view)
+        self.nb_crops_colums=self.outframe.shape[1]/(patchSize-field_of_view)
+        self.crops_positions_in=[]
+        self.crops_positions_code=[]
+        self.patch_effective_width=server_patch_size-field_of_view
+        self.code_effective_width=self.patch_effective_width/self.code_scale
+        for l in range(self.nb_crops_lines):
+          for c in range(self.nb_crops_colums):
+            self.crops_positions_in.append((l*self.patch_effective_width,c*self.patch_effective_width))
+            self.crops_positions_code.append((l*self.code_effective_width,c*self.code_effective_width))
+        print('Processing taking into account model field of view : patch_effective_width, code_effective_width='+str((self.patch_effective_width, self.code_effective_width)))
+        #print('patches in top left='+str(self.crops_positions_in))
+        #print('code out   top left='+str(self.crops_positions_code))
         if self.debugMode is True:
             print('RPC Client ready to interract with the server')
-            print('Image reader ready, original frame size='+str(frame.shape))
+            print('Image reader ready, original frame size='+str(self.inframe.shape))
 
         # reporting here the Cityscapes labels lookup table to use on the
         # client side for semantic map color visualisation.
@@ -344,14 +375,11 @@ class Client_IO:
         # name to label object
         name2label      = { label.name    : label for label in self.labels           }
         # id to color label object
-        self.carottes=np.zeros((256,1,3), dtype=np.uint8)
-        self.carottes[0:35] = np.reshape(np.array([ label[7] for label in self.labels ], dtype=np.uint8), (35,1,3))
-
+        self.carottes=np.zeros((len(self.labels),1,3), dtype=np.uint8)
+        self.carottes= np.reshape(np.array([ label[7] for label in self.labels ], dtype=np.uint8), (len(self.labels),1,3))
         if self.debugMode is True:
             print('carottes'+str(self.carottes))
             print('carottes.shape'+str(self.carottes.shape))
-            print('carottes[5]='+str(self.carottes[5]))
-
 
     def getInputData(self, idx):
         ''' method that returns data samples complying with the placeholder
@@ -361,11 +389,22 @@ class Client_IO:
         Returns:
            the data sample with shape and type complying with the server input
         '''
-        valid, frame=self.input_stream.read()
-        #valid=True
-        if valid is False:
-            raise ValueError('Could not load input frame')
-        self.frame_patch=cv2.resize(frame, (serving_img_shape[1],serving_img_shape[0]))
+        if self.crop_index>=len(self.crops_positions_in):
+          #TODO, exit the process
+          print('Input image has been fully parsed, program end...')
+          raise StopIteration
+
+        crops=[]
+        #self.crop_index is not updated here, decodeResponse will do this FIXME, any async issue ?
+        crop_index=self.crop_index
+        for i in range(server_crops_per_batch):
+          crop_coord=self.crops_positions_in[i]
+          crops.append(self.inframe[crop_coord[0]:crop_coord[0]+server_patch_size,crop_coord[1]:crop_coord[1]+server_patch_size,:])
+          crop_index+=1
+
+        #self.crops_positions
+        self.frame_patch=np.array(crops)
+        print('Crops to be sent to server shape='+str(self.frame_patch.shape))
         if self.debugMode is True:
             print('Input frame'+str(self.frame_patch.shape))
         return self.frame_patch
@@ -377,10 +416,32 @@ class Client_IO:
             Args:
             result: a PredictResponse object that contains the request result
         '''
-        response = np.reshape(np.array(result.outputs[served_head].int_val),serving_img_shape[:-1]).astype(np.uint8)
+        response = np.reshape(np.array(result.outputs[model_head_prediction_name].float_val),
+                              [server_crops_per_batch, 4, 4, 16*32]).astype(np.float32)
+        print('Received answer shape '+str(response.shape))
 
+        #self.crop_index is not updated here, decodeResponse will do this FIXME, any async issue ?
+        crop_index=self.crop_index
+        for i in range(server_crops_per_batch):
+          crop_coord=self.crops_positions_code[self.crop_index+i]
+          print(crop_coord)
+          self.codeframe[crop_coord[0]:crop_coord[0]+2,crop_coord[1]:crop_coord[1]+2,:]=response[i,1:3,1:3,:]
+          self.crops_positions_code
+          crop_index+=1
+        #finaly update the batch crop index
+        self.crop_index+=server_crops_per_batch
+
+        #TODO, do some clustering to draw a nice image...
+        cv2.imshow("code", self.codeframe[:,:,:3].astype(np.uint8))
+        cv2.waitKey(4)
+
+    def finalize(self):
+        ''' a function called when the prediction loop ends '''
+        print('Prediction process ended successfuly')
+        np.savetxt('/home/alben/code.csv', self.codeframe)
         if self.debugMode is True:
             print('Answer shape='+str(response.shape))
+
         cv2.imshow('Semantic_map', response)
 
         semantic_map_3c=cv2.cvtColor(response, cv2.COLOR_GRAY2BGR);
@@ -391,7 +452,3 @@ class Client_IO:
         cv2.addWeighted(semantic_map_color, alpha, self.frame_patch, 1 - alpha, 0, self.frame_patch)
         cv2.imshow('Semantic segmentation overlay', self.frame_patch)
         cv2.waitKey(4)
-
-    def finalize(self):
-        ''' a function called when the prediction loop ends '''
-        print('Prediction process ended successfuly')

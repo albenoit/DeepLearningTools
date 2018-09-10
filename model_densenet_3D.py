@@ -295,7 +295,7 @@ def model(  data,
         bfc = bias_variable([ n_outputs ])
         logits_classif= tf.matmul(features_average_flat, Wfc) + bfc
     """
-    with tf.variable_scope('Segmentation'):
+    with tf.variable_scope('Reconstruction'):
         # We store now the output of the next dense block in a list. We will only upsample these new feature maps
         block_to_upsample = []
         decoding_feature_maps=last_encoding_feature_maps
@@ -328,7 +328,7 @@ def model(  data,
     print('Semantic segmentation pixel field of view='+str(field_of_view))
 
     output_dict={'code':last_encoding_feature_maps, 'reconstructed_data':logits_semantic}
-
+    print('Model output dict=',output_dict)
     #add each skip connexion output for embedding
     '''all_skips_list=[]
     for id, skip_layer in enumerate(skip_connection_list):
