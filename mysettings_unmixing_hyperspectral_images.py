@@ -50,7 +50,7 @@ test_patch_overlapping_ratio=0.75 #-> patch overlapping when evaluating/predicti
 input_data_name='input'
 model_head_embedding_name='code'
 model_head_prediction_name=tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY
-served_head=model_head_prediction_name #define here the output that will be provided by tensorflow-server
+served_head=model_head_prediction_name#, model_head_embedding_name] #define here the output that will be provided by tensorflow-server
 
 #-> set the number of summaries store per training epoch (more=more precise BUT higer cost)
 nb_summary_per_train_epoch=4
@@ -119,8 +119,8 @@ def model_outputs_postprocessing_for_serving(model_outputs_dict):
     #in this use case, we have two outputs:
     #->  code that is kept as is
     #->  semantic map logits from which we extract the most probable class index for each pixel
-    postprocessed_outputs={#model_head_embedding_name:model_outputs_dict['code'],
-                           model_head_prediction_name:model_outputs_dict['code']#tf.saturate_cast(model_outputs_dict['reconstructed_data'], tf.uint16),
+    postprocessed_outputs={model_head_embedding_name:model_outputs_dict['code'],
+                           model_head_prediction_name:model_outputs_dict['reconstructed_data']#tf.saturate_cast(model_outputs_dict['reconstructed_data'], tf.uint16),
                            }
     return postprocessed_outputs
 
@@ -404,7 +404,6 @@ class Client_IO:
 
         #self.crops_positions
         self.frame_patch=np.array(crops)
-        print('Crops to be sent to server shape='+str(self.frame_patch.shape))
         if self.debugMode is True:
             print('Input frame'+str(self.frame_patch.shape))
         return self.frame_patch
@@ -416,31 +415,62 @@ class Client_IO:
             Args:
             result: a PredictResponse object that contains the request result
         '''
-        response = np.reshape(np.array(result.outputs[model_head_prediction_name].float_val),
+        '''response_code = np.reshape(np.array(result.outputs[model_head_embedding_name].float_val),
                               [server_crops_per_batch, 4, 4, 16*32]).astype(np.float32)
-        print('Received answer shape '+str(response.shape))
+        '''
+        response_recons = np.reshape(np.array(result.outputs[model_head_prediction_name].float_val),
+                              serving_img_shape).astype(np.float32)
+
+        if self.debugMode is True:
+          print('Received answer shape '+str(response_recons.shape))
 
         #self.crop_index is not updated here, decodeResponse will do this FIXME, any async issue ?
         crop_index=self.crop_index
         for i in range(server_crops_per_batch):
-          crop_coord=self.crops_positions_code[self.crop_index+i]
-          print(crop_coord)
-          self.codeframe[crop_coord[0]:crop_coord[0]+2,crop_coord[1]:crop_coord[1]+2,:]=response[i,1:3,1:3,:]
+          crop_coord_code=self.crops_positions_code[self.crop_index+i]
+          crop_coord=self.crops_positions_in[self.crop_index+i]
+          start_idx=(field_of_view-1)/2
+          stop_idx=start_idx+self.patch_effective_width
+          #self.codeframe[crop_coord_code[0]:crop_coord_code[0]+2,crop_coord_code[1]:crop_coord_code[1]+2,:]=response_code[i,1:3,1:3,:]
+          self.outframe[crop_coord[0]:crop_coord[0]+self.patch_effective_width,crop_coord[1]:crop_coord[1]+self.patch_effective_width,:]=response_recons[i,start_idx:stop_idx,start_idx:stop_idx,:]
           self.crops_positions_code
           crop_index+=1
         #finaly update the batch crop index
         self.crop_index+=server_crops_per_batch
 
         #TODO, do some clustering to draw a nice image...
-        cv2.imshow("code", self.codeframe[:,:,:3].astype(np.uint8))
-        cv2.waitKey(4)
+
+        cv2.imshow("code", self.scale_0_255uint8(self.codeframe[:,:,:3]))
+        cv2.imshow("input", self.scale_0_255uint8(self.inframe[:,:,10:13]))
+        cv2.imshow("reconstruction", self.scale_0_255uint8(self.outframe[:,:,10:13]))
+        cv2.waitKey(10)
+
+    def scale_0_255uint8(self, data):
+      eps=0.000005
+      return (255*(data-data.min())/(data.max()-data.min()+eps)).astype(np.uint8)
 
     def finalize(self):
         ''' a function called when the prediction loop ends '''
         print('Prediction process ended successfuly')
-        np.savetxt('/home/alben/code.csv', self.codeframe)
-        if self.debugMode is True:
+        np.save('/home/alben/code.dat', self.codeframe)
+
+        from sklearn.feature_extraction import image
+        from sklearn.cluster import spectral_clustering
+
+        graph = image.img_to_graph(img)
+        graph.data = np.exp(-graph.data / graph.data.std())
+        labels = spectral_clustering(graph, n_clusters=2, eigen_solver='arpack')
+
+        plt.matshow(img)
+        plt.matshow(labels)
+
+        plt.show()
+
+        '''if self.debugMode is True:
             print('Answer shape='+str(response.shape))
+
+
+
 
         cv2.imshow('Semantic_map', response)
 
@@ -452,3 +482,4 @@ class Client_IO:
         cv2.addWeighted(semantic_map_color, alpha, self.frame_patch, 1 - alpha, 0, self.frame_patch)
         cv2.imshow('Semantic segmentation overlay', self.frame_patch)
         cv2.waitKey(4)
+        '''
