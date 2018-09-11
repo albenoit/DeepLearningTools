@@ -13,6 +13,8 @@ Autre approche : 20 points d'analyse chimique par carotte (taux de matiere organ
 import DataProvider_input_pipeline
 import tensorflow as tf
 import numpy as np
+import os
+client_no_display=True#set True to avoid display on the client side
 
 #-> set here your own working folder
 workingFolder='experiments/hyperspectral_images'
@@ -105,7 +107,11 @@ def data_preprocess(features, model_placement):
     '''
     # do nothing, train and val input paipeline standardize data on their own and
     # serving will do its own too
-    return features
+    raw_min= tf.reduce_min(features, axis=[1,2,3,4], keep_dims=True)
+    raw_max= tf.reduce_max(features, axis=[1,2,3,4], keep_dims=True)
+    eps=0.00001
+    standardized_data=(features-raw_min)/(raw_max-raw_min+eps)
+    return standardized_data
 
 def model_outputs_postprocessing_for_serving(model_outputs_dict):
     ''' define here the post-processings to be applied to each of the model outputs when used withtensorflow serving
@@ -442,17 +448,23 @@ class Client_IO:
 
         cv2.imshow("code", self.scale_0_255uint8(self.codeframe[:,:,:3]))
         cv2.imshow("input", self.scale_0_255uint8(self.inframe[:,:,10:13]))
-        cv2.imshow("reconstruction", self.scale_0_255uint8(self.outframe[:,:,10:13]))
+        cv2.imshow("reconstruction", self.scale_0_255uint8(self.outframe[:,:,10:13], saturate=True))
         cv2.waitKey(10)
 
-    def scale_0_255uint8(self, data):
+    def scale_0_255uint8(self, data, saturate=False):
+      data_=data.astype(np.float32)
       eps=0.000005
-      return (255*(data-data.min())/(data.max()-data.min()+eps)).astype(np.uint8)
+      scaled_0_1=(data_-data_.min())/(data_.max()-data_.min()+eps)
+      if saturate:
+        scaled_0_1=1. / (1. + np.exp(-scaled_0_1*2.))
+      #scale to 0-255 and cast
+      return (255*scaled_0_1).astype(np.uint8)
 
     def finalize(self):
         ''' a function called when the prediction loop ends '''
         print('Prediction process ended successfuly')
-        np.save('/home/alben/code.dat', self.codeframe)
+        working_directory=os.getcwd()
+        np.save(os.path.join(working_directory,'/home/alben/code.dat'), self.codeframe)
 
         from sklearn.feature_extraction import image
         from sklearn.cluster import spectral_clustering
@@ -461,10 +473,14 @@ class Client_IO:
         graph.data = np.exp(-graph.data / graph.data.std())
         labels = spectral_clustering(graph, n_clusters=2, eigen_solver='arpack')
 
-        plt.matshow(img)
-        plt.matshow(labels)
+        #save matrix
+        np.save(os.path.join(working_directory,'/home/alben/labels.dat'))
 
-        plt.show()
+        if client_no_display is False:
+          import matplotlib.pyplot as plt
+          plt.matshow(img)
+          plt.matshow(labels)
+          plt.show()
 
         '''if self.debugMode is True:
             print('Answer shape='+str(response.shape))
