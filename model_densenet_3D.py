@@ -238,6 +238,7 @@ def model(  data,
     growth_rate=16
     output_only_inputs_last_decoding_block=False
     use_dense_block=True #if False, then the architecture will not include dense connections and will resemble UNet
+    use_skip_connections=False
     '''
     #FC-DenseNet-103 architecture:
     nb_layers_sequence_encoding=[4, 5, 7, 10, 12]
@@ -309,7 +310,10 @@ def model(  data,
             #concatenate with the skip connection)
             print('Transition up, concatenated upscaled encoded features {upshape} with skip layer {skipshape}'.format(upshape=feature_maps_up.get_shape().as_list(),
                                                                                                                 skipshape=skip_connection_list[blockID].get_shape().as_list()))
-            feature_maps_in=tf.concat([feature_maps_up, skip_connection_list[blockID]], axis=4, name='decoding_block_layers_concat_'+str(blockID))
+            if use_skip_connections is True:
+                feature_maps_in=tf.concat([feature_maps_up, skip_connection_list[blockID]], axis=4, name='decoding_block_layers_concat_'+str(blockID))
+            else:
+                feature_maps_in=feature_maps_up
             print('Transition up+skip layers output features {outshape}'.format(outshape=feature_maps_in.get_shape().as_list()))
             # apply dense block
             decoding_feature_maps = block_3d(feature_maps_in, nlayers, growth_rate, is_training, keep_prob, blockID, use_dense_block)

@@ -25,7 +25,7 @@ tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
 serving_client_timeout_int_secs=20#timeout limit when a client requests a served model
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
-session_name='Carottes_edytem_DenseNet'
+session_name='Carottes_edytem_DenseNetNoSkips'
 
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
@@ -36,7 +36,7 @@ with other processing jobs, yours and the ones of your colleagues.
 Then, connect to the processing node and type in command line 'nvidia-smi'
 to check which gpu is free (very few used memory and GPU )
 '''
-used_gpu_IDs=[0]
+used_gpu_IDs=[1]
 #set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
 XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
@@ -74,8 +74,8 @@ learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM
 predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> a first set of data
-raw_data_dir_train = "/home/alben/workspace/Datasets/hyperspectral/carottes/train/SWIR/"#"/uds_data/listic/datasets/hyperspectral/carottes/train/SWIR/"
-raw_data_dir_val = "/home/alben/workspace/Datasets/hyperspectral/carottes/train/SWIR/"#"/uds_data/listic/datasets/hyperspectral/carottes/val/SWIR/"
+raw_data_dir_train = "/uds_data/listic/datasets/hyperspectral/carottes/train/SWIR/"#"/home/alben/workspace/Datasets/hyperspectral/carottes/train/SWIR/"#"/uds_data/listic/datasets/hyperspectral/carottes/train/SWIR/"
+raw_data_dir_val = "/uds_data/listic/datasets/hyperspectral/carottes/train/SWIR/"#"/home/alben/workspace/Datasets/hyperspectral/carottes/train/SWIR/"#"/uds_data/listic/datasets/hyperspectral/carottes/val/SWIR/"
 raw_data_filename_extension='*.tif'
 ref_data_filename_extension='*.tif'
 #load all image files to use for training or testing
@@ -84,7 +84,7 @@ nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data
 reference_labels=['inconnu_lamine_crue']
 number_of_crops_per_image=200
 nb_train_samples=nb_train_images*number_of_crops_per_image#nb_train_images*number_of_crops_per_image# number of images * number of crops per image
-nb_test_samples=1*nb_val_images*number_of_crops_per_image
+nb_test_samples=22*nb_val_images*number_of_crops_per_image
 batch_size=4
 nb_classes=10
 input_nb_spectral_bands=128#specify here the number of spectral band (central bands) that should be considered for processing
@@ -105,13 +105,8 @@ def data_preprocess(features, model_placement):
     Returns:
        the preprocessed data
     '''
-    # do nothing, train and val input paipeline standardize data on their own and
-    # serving will do its own too
-    raw_min= tf.reduce_min(features, axis=[1,2,3,4], keep_dims=True)
-    raw_max= tf.reduce_max(features, axis=[1,2,3,4], keep_dims=True)
-    eps=0.00001
-    standardized_data=(features-raw_min)/(raw_max-raw_min+eps)
-    return standardized_data
+    # standardize the data
+    return features
 
 def model_outputs_postprocessing_for_serving(model_outputs_dict):
     ''' define here the post-processings to be applied to each of the model outputs when used withtensorflow serving
@@ -174,6 +169,15 @@ def get_eval_metric_ops(inputs, model_outputs_dict, labels):
                 predictions=model_outputs_dict['reconstructed_data'],
                 name='mean_squared_error'),
             }
+
+def standardize_hsi(hsi):
+  ''' apply zero mean and unit variance to each of the input images of a batch
+    Args: hsi, the input image batch
+    Returns:a batch of standardized images
+  '''
+  hsi_std=tf.map_fn(tf.image.per_image_standardization, hsi)
+  print('hsi_std=',hsi_std)
+  return hsi_std
 
 '''Define here the input pipelines :
 -1. a common function for train and validation modes
@@ -238,9 +242,13 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
             # batch sample retrieval
             data_batch=data_provider.deepnet_data_queue.dequeue_many(batch_size)
             # extract raw data,  reference data will be extracted at the optimizer level
-            raw_images=tf.expand_dims(tf.slice( data_batch,
-                                        begin=[0,0,0,first_selected_band_id],#int(data_provider.single_image_raw_depth-last_labels_channels_nb-input_nb_spectral_bands)/2],
-                                        size=[-1,-1,-1,input_nb_spectral_bands]),-1)
+            raw_images=tf.slice( data_batch,
+                                 begin=[0,0,0,first_selected_band_id],#int(data_provider.single_image_raw_depth-last_labels_channels_nb-input_nb_spectral_bands)/2],
+                                 size=[-1,-1,-1,input_nb_spectral_bands])
+            # standardize the data
+            raw_images=standardize_hsi(raw_images)
+            #reshae to 5D tensors
+            raw_images=tf.expand_dims(raw_images, -1)
             with tf.name_scope('prepare_reference_data'):
                 #-> get reference data restricted to the center part of the images
                 reference_crops=tf.expand_dims(tf.cast(
@@ -270,7 +278,8 @@ def get_input_pipeline_serving():
         shape=serving_img_shape,
         name='serialized_input_data')
 
-    img_5D=tf.expand_dims(tf.cast(serialized_tf_example, dtype=tf.float32),-1)
+    img_5D=tf.expand_dims(standardize_hsi(tf.cast(serialized_tf_example, dtype=tf.float32)),-1)
+
     print('Served input='+str(img_5D))
     return tf.estimator.export.ServingInputReceiver(
         img_5D, {input_data_name: serialized_tf_example})
