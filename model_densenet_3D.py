@@ -194,7 +194,7 @@ def block(input, layers, growth, is_training, keep_prob, blockID):
         print('==> block output shape = {outshape}'.format(outshape=block_out.get_shape().as_list()))
     return block_out
 """
-def block_3d(input, layers, growth, is_training, keep_prob, blockID, dense_block=True):
+def block_3d(input, layers, growth, is_training, keep_prob, blockID, dense_block=True, low_dimension_output=False):
     '''each layer of the block receives all the preceeding data
     but the block output feature maps do not include the initial input features
     '''
@@ -210,7 +210,7 @@ def block_3d(input, layers, growth, is_training, keep_prob, blockID, dense_block
             else:
                 feature_maps=new_feature_maps
             block_feature_maps.append(new_feature_maps)
-        if len(block_feature_maps)>1  and dense_block is True:
+        if (len(block_feature_maps)>1  and dense_block is True) and not(low_dimension_output):
             block_out=tf.concat(block_feature_maps, axis=4, name='block_layers_concat')
         else:
             block_out=new_feature_maps
@@ -238,7 +238,7 @@ def model(  data,
     growth_rate=16
     output_only_inputs_last_decoding_block=False
     use_dense_block=True #if False, then the architecture will not include dense connections and will resemble UNet
-    use_skip_connections=False
+    use_skip_connections=True
     '''
     #FC-DenseNet-103 architecture:
     nb_layers_sequence_encoding=[4, 5, 7, 10, 12]
@@ -284,7 +284,7 @@ def model(  data,
         #central bottleneck
     with tf.variable_scope('Bottleneck'):
         print('Central bottleneck with {central_nb_layers} layers'.format(central_nb_layers=n_layers_per_block[number_of_encoding_blocks]))
-        last_encoding_feature_maps = block_3d(feature_maps, n_layers_per_block[number_of_encoding_blocks], growth_rate, is_training, keep_prob, number_of_encoding_blocks, use_dense_block)
+        last_encoding_feature_maps = block_3d(feature_maps, n_layers_per_block[number_of_encoding_blocks], growth_rate, is_training, keep_prob, number_of_encoding_blocks, use_dense_block, True)
         field_of_view+=n_layers_per_block[number_of_encoding_blocks]*2
     """
     #image classification task branch
