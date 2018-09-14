@@ -165,7 +165,7 @@ def transition_down_3d(input_features, is_training, keep_prob, block_idx, stride
     with tf.variable_scope('TransitionDown_3d_'+str(block_idx)):
         preprocessed_features = tf.nn.relu(tf.layers.batch_normalization(input_features, training=is_training))
         if strided_conv:
-            transition = conv3d(preprocessed_features, preprocessed_features.get_shape().as_list()[-1], kernel_size=3, strides=[1,1,2])
+            transition = conv3d(preprocessed_features, preprocessed_features.get_shape().as_list()[-1], kernel_size=3, strides=[2,2,2])
         else:
             new_features = conv3d(preprocessed_features, preprocessed_features.get_shape().as_list()[-1], kernel_size=1)
             new_features = tf.nn.dropout(new_features, keep_prob)
@@ -194,7 +194,7 @@ def block(input, layers, growth, is_training, keep_prob, blockID):
         print('==> block output shape = {outshape}'.format(outshape=block_out.get_shape().as_list()))
     return block_out
 """
-def block_3d(input, layers, growth, is_training, keep_prob, blockID, dense_block=True, low_dimension_output=False):
+def block_3d(input, layers, growth, is_training, keep_prob, blockID, dense_block=True):
     '''each layer of the block receives all the preceeding data
     but the block output feature maps do not include the initial input features
     '''
@@ -210,7 +210,7 @@ def block_3d(input, layers, growth, is_training, keep_prob, blockID, dense_block
             else:
                 feature_maps=new_feature_maps
             block_feature_maps.append(new_feature_maps)
-        if (len(block_feature_maps)>1  and dense_block is True) and not(low_dimension_output):
+        if len(block_feature_maps)>1  and dense_block is True:
             block_out=tf.concat(block_feature_maps, axis=4, name='block_layers_concat')
         else:
             block_out=new_feature_maps
@@ -238,7 +238,7 @@ def model(  data,
     growth_rate=16
     output_only_inputs_last_decoding_block=False
     use_dense_block=True #if False, then the architecture will not include dense connections and will resemble UNet
-    use_skip_connections=True
+    use_skip_connections=False
     '''
     #FC-DenseNet-103 architecture:
     nb_layers_sequence_encoding=[4, 5, 7, 10, 12]
@@ -274,7 +274,7 @@ def model(  data,
                 feature_maps_block=tf.concat([feature_maps_block, feature_maps], axis=4, name='encoding_block_layers_concat_'+str(blockID))
             # At the end of the dense block, the current stack is stored in the skip_connections list
             skip_connection_list.append(feature_maps_block)
-            feature_maps=transition_down_3d( feature_maps_block, is_training, keep_prob, blockID)
+            feature_maps=transition_down_3d( feature_maps_block, is_training, keep_prob, blockID, True)
             print('** concat(Block+input)+transition down shape='+str(feature_maps.get_shape().as_list()))
             #update field of view
             field_of_view+=n_layers_per_block[blockID]*2
@@ -284,7 +284,7 @@ def model(  data,
         #central bottleneck
     with tf.variable_scope('Bottleneck'):
         print('Central bottleneck with {central_nb_layers} layers'.format(central_nb_layers=n_layers_per_block[number_of_encoding_blocks]))
-        last_encoding_feature_maps = block_3d(feature_maps, n_layers_per_block[number_of_encoding_blocks], growth_rate, is_training, keep_prob, number_of_encoding_blocks, use_dense_block, True)
+        last_encoding_feature_maps = block_3d(feature_maps, n_layers_per_block[number_of_encoding_blocks], growth_rate, is_training, keep_prob, number_of_encoding_blocks, use_dense_block)
         field_of_view+=n_layers_per_block[number_of_encoding_blocks]*2
     """
     #image classification task branch
