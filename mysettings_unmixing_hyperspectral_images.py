@@ -25,7 +25,7 @@ tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
 serving_client_timeout_int_secs=20#timeout limit when a client requests a served model
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
-session_name='Carottes_edytem_DenseNetNoSkips'
+session_name='Carottes_edytem_DenseNetWithSkips'
 
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
@@ -36,7 +36,7 @@ with other processing jobs, yours and the ones of your colleagues.
 Then, connect to the processing node and type in command line 'nvidia-smi'
 to check which gpu is free (very few used memory and GPU )
 '''
-used_gpu_IDs=[1]
+used_gpu_IDs=[0]
 #set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
 XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
@@ -74,8 +74,8 @@ learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM
 predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> a first set of data
-raw_data_dir_train = "/uds_data/listic/datasets/hyperspectral/carottes/train/SWIR/"#"/home/alben/workspace/Datasets/hyperspectral/carottes/train/SWIR/"#"/uds_data/listic/datasets/hyperspectral/carottes/train/SWIR/"
-raw_data_dir_val = "/uds_data/listic/datasets/hyperspectral/carottes/train/SWIR/"#"/home/alben/workspace/Datasets/hyperspectral/carottes/train/SWIR/"#"/uds_data/listic/datasets/hyperspectral/carottes/val/SWIR/"
+raw_data_dir_train = "/home/alben/workspace/Datasets/hyperspectral/carottes/train/SWIR/"#"/uds_data/listic/datasets/hyperspectral/carottes/train/SWIR/"
+raw_data_dir_val = "/home/alben/workspace/Datasets/hyperspectral/carottes/train/SWIR/"#"/uds_data/listic/datasets/hyperspectral/carottes/val/SWIR/"
 raw_data_filename_extension='*.tif'
 ref_data_filename_extension='*.tif'
 #load all image files to use for training or testing
@@ -84,7 +84,7 @@ nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data
 reference_labels=['inconnu_lamine_crue']
 number_of_crops_per_image=200
 nb_train_samples=nb_train_images*number_of_crops_per_image#nb_train_images*number_of_crops_per_image# number of images * number of crops per image
-nb_test_samples=22*nb_val_images*number_of_crops_per_image
+nb_test_samples=2*nb_val_images*number_of_crops_per_image
 batch_size=4
 nb_classes=10
 input_nb_spectral_bands=128#specify here the number of spectral band (central bands) that should be considered for processing
@@ -152,6 +152,37 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     tf.summary.scalar('weights_loss', weights_loss)
     tf.summary.scalar('mse_loss', reconstruction_loss)
     return reconstruction_loss+weights_weight_decay*weights_loss
+
+def get_validation_summaries(inputs, model_outputs_dict, labels):
+    ''' add here (if required) some summaries to be applied on the validation dataset
+    Args:
+        inputs: the input data samples batch
+        model_outputs_dict: the dictionnay of model outputs, field names must comply withthe ones defined in the model_file
+        labels: the reference data / ground truth if available
+    Returns:
+        a list of summaries
+    '''
+    inputs=tf.squeeze(inputs,-1)#remove the channel dimension
+    reconstruction=tf.squeeze(model_outputs_dict['reconstructed_data'],-1)#remove the channel dimension
+
+    with tf.name_scope('image_summaries'):
+
+        def get_hsi_rgb_image(inputs, channel_start_idx):
+          raw_rgb=tf.slice(inputs, begin=[0,0,0,channel_start_idx], size=[-1,-1,-1,3])
+          raw_rgb_min= tf.reduce_min(raw_rgb, axis=[1,2,3], keep_dims=True)
+          raw_rgb_max= tf.reduce_max(raw_rgb, axis=[1,2,3], keep_dims=True)
+          raw_images_rgb_0_1=(raw_rgb-raw_rgb_min)/(raw_rgb_max-raw_rgb_min)
+          raw_images_display=tf.saturate_cast(raw_images_rgb_0_1*255.0, dtype=tf.uint8)
+          print('adapting HSI image to rgb image:',inputs,raw_images_display)
+          return raw_images_display
+
+        reference_images_crops_regions_display=tf.saturate_cast((tf.squeeze(labels,-1)*255)/nb_classes, dtype=tf.uint8)
+        print('*********reference shape='+str(reference_images_crops_regions_display.get_shape().as_list()))
+        return ([tf.summary.image("input", get_hsi_rgb_image(inputs, 20)),
+                tf.summary.image("labels", reference_images_crops_regions_display),
+                tf.summary.image("reconstruction", get_hsi_rgb_image(reconstruction, 20)),
+               ], nb_test_samples/4)
+
 
 def get_eval_metric_ops(inputs, model_outputs_dict, labels):
     """Return a dict of the evaluation Ops.
@@ -457,7 +488,7 @@ class Client_IO:
 
         cv2.imshow("code", self.scale_0_255uint8(self.codeframe[:,:,:3]))
         cv2.imshow("input", self.scale_0_255uint8(self.inframe[:,:,10:13]))
-        cv2.imshow("reconstruction", self.scale_0_255uint8(self.outframe[:,:,10:13], saturate=True))
+        cv2.imshow("reconstruction", self.scale_0_255uint8(self.outframe[:,:,10:13], saturate=False))
         cv2.waitKey(10)
 
     def scale_0_255uint8(self, data, saturate=False):
