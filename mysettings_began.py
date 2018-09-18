@@ -142,9 +142,8 @@ def getOptimizer(loss, learning_rate, global_step):
     #for tensor in tf.get_default_graph().as_graph_def().node:
     #    print('tensor:'+str(tensor.name))
 
-    with tf.variable_scope("optimizer_adversarial_balancing", reuse=True):
-        k=tf.get_variable(name='k')
-
+    # Get required existing variables references
+    k=tf.get_default_graph().get_tensor_by_name('optimizer_adversarial_balancing/k:0')
     G_loss=tf.get_default_graph().get_tensor_by_name('model_loss/Gloss:0')
     G_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/BEGAN/G/')
     G_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope='model/BEGAN/G/')
@@ -252,7 +251,7 @@ def get_validation_summaries(inputs, model_outputs_dict, labels):
     '''
     with tf.name_scope('eval_summaries_addon'):
       G_fake_samples = model_outputs_dict['generator_fake_samples']
-      return ([tf.summary.image('fake_sample', G_fake_samples, max_outputs=summary_fake_samples_max_number)
+      return ([tf.summary.image('fake_sample', G_fake_samples, max_outputs=summary_fake_samples_max_number),
               tf.summary.histogram('G_hist', G_fake_samples)] # for checking out of bound
               , nb_test_samples/4)
 

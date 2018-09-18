@@ -519,6 +519,7 @@ def model_fn(features, labels, mode, params):
                 #FIXME, the following criteria is stil hazardous and may nt adapt to new use cases
                 denseLabels= (xdimensions>=2 and xdimensions_labels>=2) and len(features.get_shape().as_list())>=4
                 if denseLabels is True: #multiple samples/labels per data sample use case
+                    print('*** Dense labels case study')
                     print("Now preparing data embedding from the central pixels of the validation data samples")
                     #crop raw data as for labels whatever the dimension of the data (considering initial shape [batch, [xdimensions], channels])
                     xdimensions=(len(features.get_shape().as_list())-2)
@@ -597,6 +598,7 @@ def model_fn(features, labels, mode, params):
                     eval_metric_ops = usersettings.get_eval_metric_ops(inputs=features_fov, model_outputs_dict=model_outputs_fov, labels=labels)
 
                 else: #sample level classification
+                    print('*** No dense labels case study')
                     stored_embedding_samples=params.nbIterationPerEpoch_val*usersettings.batch_size
                     flatten_features=get_flatten_feature(features, 'input_features')
                     flatten_labels=get_flatten_feature(labels, 'labels')
@@ -807,7 +809,10 @@ def model_fn(features, labels, mode, params):
 
                 if hasattr(usersettings, 'get_validation_summaries'):
                   with tf.name_scope('eval_addon_summaries'):
-                    eval_addon_summaries, save_steps=usersettings.get_validation_summaries(inputs=features_fov, model_outputs_dict=model_outputs_fov, labels=labels)
+                    if denseLabels is True:
+                      eval_addon_summaries, save_steps=usersettings.get_validation_summaries(inputs=features_fov, model_outputs_dict=model_outputs_fov, labels=labels)
+                    else:
+                      eval_addon_summaries, save_steps=usersettings.get_validation_summaries(inputs=features, model_outputs_dict=model_outputs_dict, labels=labels)
                   eval_summary_hook = tf.train.SummarySaverHook(
                                 save_steps=save_steps,
                                 output_dir= os.path.join(params.sessionFolder,embeddingsFolder,'eval_addon_summaries'),
