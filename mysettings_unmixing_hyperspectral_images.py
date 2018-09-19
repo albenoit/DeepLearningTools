@@ -245,7 +245,7 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     '''get the z_mean and z_std model variables (should exist if dealing with a VAE model),
      if not found, Exception is generated, move to a classical MSE reconstruction loss (not a VAE model)
     '''
-    if hasattr(model_outputs_dict, 'z_mean') and hasattr(model_outputs_dict, 'z_std'):
+    if 'z_mean' in model_outputs_dict.keys() and 'z_std' in model_outputs_dict:
       print('*** Trying to establish a VAE loss if required model variables are available (z_mean and z_std)')
       #z_mean=tf.get_default_graph().get_tensor_by_name('model/Bottleneck/z_mean:0')
       #tf.get_default_graph().get_tensor_by_name('model/Bottleneck/z_mean/BiasAdd:0')
@@ -364,16 +364,17 @@ def standardize_hsi(hsi, mode='minmax'):
        mode: 'minmax' to scale between 0 and 1 according to min and max values or 'standardize' for 0 mean, unit variance scaling
     Returns:a batch of standardized images
   '''
+  hsi_std=None
   if mode=='minmax':
-    raw_rgb_min= tf.reduce_min(raw_rgb, axis=[1,2,3], keep_dims=True)
-    raw_rgb_max= tf.reduce_max(raw_rgb, axis=[1,2,3], keep_dims=True)
-    raw_images_rgb_0_1=(raw_rgb-raw_rgb_min)/(raw_rgb_max-raw_rgb_min)
-  elif mode=='standardize'
+    hsi_min= tf.reduce_min(hsi, axis=[1,2,3], keepdims=True)
+    hsi_max= tf.reduce_max(hsi, axis=[1,2,3], keepdims=True)
+    print('Min, Max values='+str((hsi_min, hsi_max)))
+    hsi_std=(hsi-hsi_min)/(hsi_max-hsi_min)
+  elif mode=='standardize':
     hsi_std=tf.map_fn(tf.image.per_image_standardization, hsi)
   else:
     raise ValueError('standardize_hsi mode error, available options are \'minmax\' and \'standardize\' ')
 
-    print('hsi_std=',hsi_std)
   return hsi_std
 
 '''Define here the input pipelines :
