@@ -15,6 +15,7 @@ import tensorflow as tf
 import numpy as np
 import os
 client_no_display=True#set True to avoid display on the client side
+DEBUG_OPTIM=True#adds Prints to monitor some critical optimization variables
 
 #-> set here your own working folder
 workingFolder='experiments/hyperspectral_images'
@@ -43,6 +44,13 @@ XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 #-> define here the used model under variable 'model'
 #model_file='model_densenet.py'
 model_file='model_densenet_3D.py'
+isBEGAN=False #set True to activate BEGAN training instead of Autoencoding
+isVAE=False   #set True to activate VAE like generator architecture
+if isBEGAN:
+  session_name+='_BEGAN'
+if isVAE:
+  session_name+='_VAE'
+
 display_model_layers_info=False #a flag to enable the display of additionnal console information on the model properties (for debug purpose)
 
 field_of_view=9
@@ -58,7 +66,7 @@ served_head=model_head_prediction_name#, model_head_embedding_name] #define here
 nb_summary_per_train_epoch=4
 
 #define image patches extraction parameters
-patchSize=32
+patchSize=16
 server_patch_size=32#let's try with a different patch size when serving
 server_crops_per_batch=4#define here how many crops are sent to the server at a single time
 
@@ -90,6 +98,14 @@ nb_classes=10
 input_nb_spectral_bands=128#specify here the number of spectral band (central bands) that should be considered for processing
 first_selected_band_id=7#the index of the first band to process (follows the input_nb_spectral_bands)
 #REMINDER : skip the first and last 10 bands
+
+
+''' BEGAN specific optimization parameters :'''
+equilibrium_gamma=0.8
+optimizer_beta1 = 0.5
+lambd_k = 1e-3
+lr_lower_bound = 2e-5
+
 ####################################################
 ## Define here use case specific metrics, loss, etc.
 #with tf.name_scope("loss"):
@@ -105,7 +121,8 @@ def data_preprocess(features, model_placement):
     Returns:
        the preprocessed data
     '''
-    # standardize the data
+    # do nothing, train and val input pipeline standardize data on their own and
+    # serving will do its own too
     return features
 
 def model_outputs_postprocessing_for_serving(model_outputs_dict):
@@ -120,7 +137,23 @@ def model_outputs_postprocessing_for_serving(model_outputs_dict):
     #in this use case, we have two outputs:
     #->  code that is kept as is
     #->  semantic map logits from which we extract the most probable class index for each pixel
-    postprocessed_outputs={model_head_embedding_name:model_outputs_dict['code'],
+    postprocessed_outputs=None
+    '''#TODO, activate when system will be fine
+    if isBEGAN:
+      with tf.name_scope('convert_to_standard_image'):
+        eps=0.001
+        fake_min= tf.reduce_min(model_outputs_dict['reconstructed_data'], axis=None, keep_dims=True)
+        fake_max= tf.reduce_max(model_outputs_dict['reconstructed_data'], axis=None, keep_dims=True)
+        fake_0_1=(model_outputs_dict['reconstructed_data']-fake_min)/(fake_max-fake_min+eps)
+        fake_0_255=tf.saturate_cast(fake_0_1*255.0, dtype=tf.uint8)
+
+        postprocessed_outputs={model_head_generator_name:fake_0_255,
+                           #model_head_prediction_name:model_outputs_dict['discriminator_decision'],
+                           }
+
+    else:
+    '''
+    postprocessed_outputs={#model_head_embedding_name:model_outputs_dict['code'],
                            model_head_prediction_name:model_outputs_dict['reconstructed_data']#tf.saturate_cast(model_outputs_dict['reconstructed_data'], tf.uint16),
                            }
     return postprocessed_outputs
@@ -128,6 +161,48 @@ def model_outputs_postprocessing_for_serving(model_outputs_dict):
 def getOptimizer(loss, learning_rate, global_step):
     '''define here the specific optimizer to be used
     '''
+
+    if isBEGAN:
+      # Get required existing variables references
+      k=tf.get_default_graph().get_tensor_by_name('optimizer_adversarial_balancing/k:0')
+      G_loss=tf.get_default_graph().get_tensor_by_name('model_loss/Gloss:0')
+      G_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/BEGAN/G/')
+      G_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope='model/BEGAN/G/')
+
+      D_loss=tf.get_default_graph().get_tensor_by_name('model_loss/Dloss:0')
+      D_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/BEGAN/D/')
+      D_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope='model/BEGAN/D/')
+
+      balance=tf.get_default_graph().get_tensor_by_name('model_loss/balance_DG:0')
+
+      if DEBUG_OPTIM is True:
+          print('D_vars='+str(D_vars))
+          print('G_vars='+str(G_vars))
+          print('D_update_ops='+str(D_update_ops))
+          print('G_update_ops='+str(G_update_ops))
+
+      # The authors suggest decaying learning rate by 0.5 when the convergence mesure stall
+      # carpedm20 decays by 0.5 per 100000 steps
+      # Heumi decays by 0.95 per 2000 steps (https://github.com/Heumi/BEGAN-tensorflow/)
+      with tf.variable_scope('D_train_op'):
+          with tf.control_dependencies(D_update_ops):
+              D_train_op = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=optimizer_beta1).\
+                  minimize(D_loss, var_list=D_vars, global_step=global_step)
+      with tf.variable_scope('G_train_op'):
+          with tf.control_dependencies(G_update_ops):
+              G_train_op = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=optimizer_beta1).\
+                  minimize(G_loss, var_list=G_vars, global_step=global_step)
+
+      # It should be ops `define` under control_dependencies
+      with tf.control_dependencies([D_train_op,G_train_op]):
+          with tf.variable_scope('update_k'):
+              training_op = tf.assign(k, tf.clip_by_value(k + lambd_k * balance, 0., 1.)) # define
+
+      if DEBUG_OPTIM is True:
+          training_op=tf.Print(training_op, [G_loss, D_loss, k, balance], message='DEBUG [G_loss, D_loss, k, balance]')
+
+      return training_op
+    #implicit else (if not BEGAN approach):
     return tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
 
 def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
@@ -139,19 +214,82 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
         weights_loss: the model weights loss that may be used for regularization
     '''
     print('inputs='+str(inputs))
-    print('recons='+str(model_outputs_dict['reconstructed_data']))
-    reconstruction_loss=tf.losses.mean_squared_error(
-                                    model_outputs_dict['reconstructed_data'],
-                                    inputs,
-                                    weights=1.0,
-                                    scope=None,
-                                    loss_collection=tf.GraphKeys.LOSSES,
-                                    #reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS
-                                    )
+    print('inputs.graph='+str(inputs.graph))
 
-    tf.summary.scalar('weights_loss', weights_loss)
-    tf.summary.scalar('mse_loss', reconstruction_loss)
-    return reconstruction_loss+weights_weight_decay*weights_loss
+
+    if isBEGAN:
+      with tf.variable_scope("optimizer_adversarial_balancing", reuse=False):
+          initial_k = tf.constant(0.)
+          k=tf.get_variable(name='k', initializer=initial_k, trainable=False)
+
+      D_real_energy=model_outputs_dict['D_real_energy']
+      D_fake_energy=model_outputs_dict['D_fake_energy']
+
+      #with tf.variable_scope('D_loss'):
+      D_loss = tf.identity(D_real_energy-k*D_fake_energy, name='Dloss')
+      G_loss = tf.identity(D_fake_energy, name='Gloss')
+
+      balance = tf.abs(equilibrium_gamma*D_real_energy-D_fake_energy,name='balance_DG')
+      convergence_measure = D_real_energy+ balance
+      equilibrium=D_fake_energy/D_real_energy #should match hyperparameter equilibrium_gamma
+      tf.summary.scalar('G_loss', G_loss),
+      tf.summary.scalar('D_loss', D_loss),
+      tf.summary.scalar('D_energy/real', D_real_energy),
+      tf.summary.scalar('D_energy/fake', D_fake_energy),
+      tf.summary.scalar('Equilibrium', equilibrium),
+      tf.summary.scalar('convergence_measure', convergence_measure),
+      tf.summary.scalar('k', k),
+
+      return convergence_measure
+
+    '''get the z_mean and z_std model variables (should exist if dealing with a VAE model),
+     if not found, Exception is generated, move to a classical MSE reconstruction loss (not a VAE model)
+    '''
+    if hasattr(model_outputs_dict, 'z_mean') and hasattr(model_outputs_dict, 'z_std'):
+      print('*** Trying to establish a VAE loss if required model variables are available (z_mean and z_std)')
+      #z_mean=tf.get_default_graph().get_tensor_by_name('model/Bottleneck/z_mean:0')
+      #tf.get_default_graph().get_tensor_by_name('model/Bottleneck/z_mean/BiasAdd:0')
+      z_mean=model_outputs_dict['z_mean']
+      z_std=model_outputs_dict ['z_std']
+      print('z_mean and z_std=',z_mean,z_std)
+      print('-> found z_mean and z_std, VAE loss is being build up')
+      ################################ ae loss
+      inputs_flat = tf.reshape(inputs, shape=[batch_size, -1])
+      reconstruction_flat = tf.reshape(model_outputs_dict['reconstructed_data'], shape=[batch_size, -1])
+      w = 0.85
+      with tf.name_scope('reconstruction_loss'):
+          # Reconstruction loss
+          encode_decode_loss = -tf.reduce_mean(w * inputs_flat * tf.log(reconstruction_flat + 1e-8),
+                                               reduction_indices=[1]) - \
+                               tf.reduce_mean(
+                                   (1 - w) * (1 - inputs_flat) * tf.log(1 - reconstruction_flat + 1e-8),
+                                   reduction_indices=[1])
+      with tf.name_scope('kl_Divergence_loss'):
+          # KL Divergence loss
+          kl_div_loss = 1 + z_std - tf.square(z_mean) - tf.exp(z_std)
+          kl_div_loss = -0.5 * tf.reduce_sum(kl_div_loss, 1)
+
+      with tf.name_scope('vae_loss_overall'):
+          ae_loss = tf.reduce_mean(encode_decode_loss + kl_div_loss)
+          sum_ae_loss = tf.summary.scalar('ae_loss', ae_loss, collections=['loss_summary'])
+      return ae_loss
+
+    else:
+      print('*** Could not establish a VAE loss, moving to classical MSE reconstruction loss')
+
+      print('recons='+str(model_outputs_dict['reconstructed_data']))
+      reconstruction_loss=tf.losses.mean_squared_error(
+                                      model_outputs_dict['reconstructed_data'],
+                                      inputs,
+                                      weights=1.0,
+                                      scope=None,
+                                      loss_collection=tf.GraphKeys.LOSSES,
+                                      #reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS
+                                      )
+
+      tf.summary.scalar('mse_loss', reconstruction_loss)
+
+      return reconstruction_loss+weights_weight_decay*weights_loss
 
 def get_validation_summaries(inputs, model_outputs_dict, labels):
     ''' add here (if required) some summaries to be applied on the validation dataset
@@ -162,6 +300,7 @@ def get_validation_summaries(inputs, model_outputs_dict, labels):
     Returns:
         a list of summaries
     '''
+
     inputs=tf.squeeze(inputs,-1)#remove the channel dimension
     reconstruction=tf.squeeze(model_outputs_dict['reconstructed_data'],-1)#remove the channel dimension
 
@@ -181,7 +320,8 @@ def get_validation_summaries(inputs, model_outputs_dict, labels):
         return ([tf.summary.image("input", get_hsi_rgb_image(inputs, 20)),
                 tf.summary.image("labels", reference_images_crops_regions_display),
                 tf.summary.image("reconstruction", get_hsi_rgb_image(reconstruction, 20)),
-               ], nb_test_samples/4)
+                tf.summary.histogram('reconstruction', tf.layers.flatten(reconstruction)),
+               ], int(nb_test_samples/4))
 
 
 def get_eval_metric_ops(inputs, model_outputs_dict, labels):
@@ -193,7 +333,23 @@ def get_eval_metric_ops(inputs, model_outputs_dict, labels):
     Returns:
         Dict of metric results keyed by name.
     """
+    if isBEGAN:
+        D_real_energy=model_outputs_dict['D_real_energy']
+        D_fake_energy=model_outputs_dict['D_fake_energy']
+        #FIXME in the paper, equilibrium_gamma is not fixed but is : equilibrium_gamma=E[L(G(z))]/E[L(x)]
 
+        balance = tf.abs(equilibrium_gamma*D_real_energy-D_fake_energy)
+        convergence_measure = D_real_energy + balance
+
+        return {
+                'model_loss/D_energy/real': tf.metrics.mean_tensor (
+                            values=D_real_energy),
+                'model_loss/D_energy/fake': tf.metrics.mean_tensor (
+                            values=D_fake_energy),
+                'model_loss/convergence_measure': tf.metrics.mean_tensor (
+                            values=convergence_measure),
+               }
+    #implicit else (if isBEGAN)
     return {
             'MSE': tf.metrics.mean_squared_error(
                 labels=inputs,
@@ -201,13 +357,23 @@ def get_eval_metric_ops(inputs, model_outputs_dict, labels):
                 name='mean_squared_error'),
             }
 
-def standardize_hsi(hsi):
+def standardize_hsi(hsi, mode='minmax'):
   ''' apply zero mean and unit variance to each of the input images of a batch
-    Args: hsi, the input image batch
+    Args:
+       hsi, the input image batch
+       mode: 'minmax' to scale between 0 and 1 according to min and max values or 'standardize' for 0 mean, unit variance scaling
     Returns:a batch of standardized images
   '''
-  hsi_std=tf.map_fn(tf.image.per_image_standardization, hsi)
-  print('hsi_std=',hsi_std)
+  if mode=='minmax':
+    raw_rgb_min= tf.reduce_min(raw_rgb, axis=[1,2,3], keep_dims=True)
+    raw_rgb_max= tf.reduce_max(raw_rgb, axis=[1,2,3], keep_dims=True)
+    raw_images_rgb_0_1=(raw_rgb-raw_rgb_min)/(raw_rgb_max-raw_rgb_min)
+  elif mode=='standardize'
+    hsi_std=tf.map_fn(tf.image.per_image_standardization, hsi)
+  else:
+    raise ValueError('standardize_hsi mode error, available options are \'minmax\' and \'standardize\' ')
+
+    print('hsi_std=',hsi_std)
   return hsi_std
 
 '''Define here the input pipelines :
@@ -278,7 +444,7 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
                                  size=[-1,-1,-1,input_nb_spectral_bands])
             # standardize the data
             raw_images=standardize_hsi(raw_images)
-            #reshae to 5D tensors
+            #reshape to 5D tensors
             raw_images=tf.expand_dims(raw_images, -1)
             with tf.name_scope('prepare_reference_data'):
                 #-> get reference data restricted to the center part of the images

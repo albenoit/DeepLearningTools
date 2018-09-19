@@ -234,11 +234,12 @@ def model(  data,
 
     #basic architexture for testing purpose
     nb_layers_sequence_encoding=[2, 2, 2]
-    bottleneck_nb_layers=2
+    bottleneck_nb_layers=1
     growth_rate=16
     output_only_inputs_last_decoding_block=False
     use_dense_block=True #if False, then the architecture will not include dense connections and will resemble UNet
     use_skip_connections=False
+    Variationnal_AE=True#set True to transform the AE into a VAE
     '''
     #FC-DenseNet-103 architecture:
     nb_layers_sequence_encoding=[4, 5, 7, 10, 12]
@@ -286,6 +287,59 @@ def model(  data,
         print('Central bottleneck with {central_nb_layers} layers'.format(central_nb_layers=n_layers_per_block[number_of_encoding_blocks]))
         last_encoding_feature_maps = block_3d(feature_maps, n_layers_per_block[number_of_encoding_blocks], growth_rate, is_training, keep_prob, number_of_encoding_blocks, use_dense_block)
         field_of_view+=n_layers_per_block[number_of_encoding_blocks]*2
+        last_encoding_feature_maps_shape=last_encoding_feature_maps.get_shape().as_list()
+        #add specific layers for variationnal autoencoding
+        if Variationnal_AE: #hints from https://github.com/vividda/3D-PhysNet/blob/master/main-3D-PhysNet-IJCAI.py
+          with tf.name_scope('variationnal_encoding'):
+
+            with tf.name_scope('3D_to_1D_flattening'):
+                encoder_conv_out_flat=tf.layers.flatten(last_encoding_feature_maps)
+                print('Bottleneck: Code size before variationnal encoding='+str(encoder_conv_out_flat))
+                encoder_vect = tf.layers.dense(inputs=encoder_conv_out_flat,
+                                             units=500,#5000,
+                                             activation=tf.nn.relu,
+                                             use_bias=True,
+                                             kernel_initializer= tf.variance_scaling_initializer(scale=2.0, mode='fan_in', distribution="normal"), #MSRA init
+                                             name='flatten_code')
+            with tf.name_scope('Mean_and_std'):
+                z_mean = tf.layers.dense(inputs=encoder_vect,
+                                         units=20,#800,
+                                         activation=None,
+                                         use_bias=True,
+                                         kernel_initializer= tf.glorot_uniform_initializer(),#Xavier init
+                                         name='z_mean'
+                                         )
+                                         #tools.Ops.fc(lfc, out_d=800, name='z_mean')
+                z_std = tf.layers.dense(inputs=encoder_vect,
+                                         units=20,#800,
+                                         activation=None,
+                                         use_bias=True,
+                                         kernel_initializer= tf.glorot_uniform_initializer(),#Xavier init
+                                         name='z_std'
+                                         )
+                                         #z_std = tools.Ops.fc(lfc, out_d=800, name='z_std')
+
+            with tf.name_scope('Gaussian_distribution_sampling'):
+                # Sampler: Normal (gaussian) random distribution
+                eps = tf.random_normal(tf.shape(z_std), dtype=tf.float32, mean=0., stddev=1.0,
+                                       name='epsilon')
+                samples = z_mean + tf.exp(z_std / 2.0) * eps
+
+                #if willing to introduce some external data in the code, to this here:
+                #lfc = tf.concat([lfc, C_G], axis=1)
+
+            with tf.name_scope('sampled_code'):
+                last_encoding_feature_maps = tf.layers.dense(inputs=samples,
+                                         units=np.prod(last_encoding_feature_maps_shape[1:]),
+                                         activation=tf.nn.relu,
+                                         use_bias=True,
+                                         kernel_initializer= tf.variance_scaling_initializer(scale=2.0, mode='fan_in', distribution="normal"), #MSRA init
+                                         name='sampled_code'
+                                         )
+
+                                         #lfc = tools.Ops.xxlu(tools.Ops.fc(lfc, out_d=np.prod(last_encoding_feature_maps_shape[1:]), name='fc2'),
+                                         #name='relu')
+                last_encoding_feature_maps = tf.reshape(last_encoding_feature_maps, last_encoding_feature_maps_shape)
     """
     #image classification task branch
     with tf.variable_scope('Classifier'):
@@ -326,6 +380,7 @@ def model(  data,
             else:
                 logits_semantic = conv3d(tf.concat([decoding_feature_maps, feature_maps_in], axis=4), reconstructed_channels_output, kernel_size=1, squeeze=False)
 
+            logits_semantic =tf.sigmoid(logits_semantic, name='output_sigmoid')
     print('logits_semantic shape='+str(logits_semantic.get_shape().as_list()))
     print('Net global image classificer out shape = '+str(logits_semantic.get_shape().as_list()))
 
@@ -333,6 +388,13 @@ def model(  data,
 
     output_dict={'code':last_encoding_feature_maps, 'reconstructed_data':logits_semantic}
     print('Model output dict=',output_dict)
+
+    #add optionnal outputs
+    if Variationnal_AE:
+        output_dict['encoder_vect']=encoder_vect
+        output_dict['z_mean']=z_mean
+        output_dict['z_std']=z_std
+
     #add each skip connexion output for embedding
     '''all_skips_list=[]
     for id, skip_layer in enumerate(skip_connection_list):
