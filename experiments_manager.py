@@ -543,7 +543,13 @@ def model_fn(features, labels, mode, params):
                         print('---> central value shape='+str(central_value.get_shape().as_list()))
                         return central_value
                     features_fov=get_feature_central_area(features, 'input')
-                    model_outputs_fov={output_key: get_feature_central_area(output_feature, output_key) for output_key,output_feature in model_outputs_dict.items()}
+                    model_outputs_fov={}
+                    for output_key,output_feature in model_outputs_dict.items():
+                      #FIXME test may not be robust enough...
+                      if len(output_feature.get_shape().as_list())-2 == xdimensions:
+                        model_outputs_fov[output_key]= get_feature_central_area(output_feature, output_key)
+                      else:#keep the data as is
+                        model_outputs_fov[output_key]=output_feature
                     #pick the central pixel Value
                     def get_feature_central_pixel(feature_map, feature_name):
                         ''' returns the central pixel of the input feature map
@@ -566,7 +572,15 @@ def model_fn(features, labels, mode, params):
                         print('---> central patch VALUE shape='+str(central_value))
                         return central_value
 
-                    model_outputs_center_val_dict={output_key: get_feature_central_pixel(output_feature, output_key) for output_key,output_feature in model_outputs_dict.items()}
+                    model_outputs_center_val_dict={}
+                    for output_key,output_feature in model_outputs_dict.items():
+                      #FIXME test may not be robust enough...
+                      if len(output_feature.get_shape().as_list())-2 == xdimensions:
+                        model_outputs_center_val_dict[output_key]= get_feature_central_pixel(output_feature, output_key)
+                      else:#keep the data as is
+                        print('Could not extract central pixel of feature {feat}'.format(feat=output_feature))
+                        model_outputs_center_val_dict[output_key]=output_feature
+                    print('...Central pixel extraction OK')
                     labels_center_val=get_feature_central_pixel(labels, 'labels')
                     features_center_val=get_feature_central_pixel(features_fov, 'input')
                     '''#resize labels map to the size of the code to pick a rough label value consistent with the code
