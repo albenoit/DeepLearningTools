@@ -76,7 +76,7 @@ random_seed=42
 # learning rate decaying parameters
 nbEpoch=50
 weights_weight_decay=0.0001
-initial_learning_rate=0.001
+initial_learning_rate=0.0001
 num_epochs_per_decay=20 #number of epoch keepng the same learning rate
 learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
 predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
