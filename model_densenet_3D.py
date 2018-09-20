@@ -396,7 +396,7 @@ def model(  data,
 
     #add optionnal outputs
     if Variationnal_AE:
-        output_dict['encoder_vect']=encoder_vect
+        output_dict['encoder_vect']=encoder_conv_out_flat
         output_dict['z_mean']=z_mean
         output_dict['z_std']=z_std
 

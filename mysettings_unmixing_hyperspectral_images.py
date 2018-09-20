@@ -26,7 +26,7 @@ tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
 serving_client_timeout_int_secs=20#timeout limit when a client requests a served model
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
-session_name='Carottes_edytem_DenseNetWithSkips'
+session_name='Carottes_edytem_DenseNetWithSkips_xcross'
 
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
@@ -66,7 +66,7 @@ served_head=model_head_prediction_name#, model_head_embedding_name] #define here
 nb_summary_per_train_epoch=4
 
 #define image patches extraction parameters
-patchSize=16
+patchSize=32
 server_patch_size=patchSize#let's try with a different patch size when serving
 server_crops_per_batch=4#define here how many crops are sent to the server at a single time
 
@@ -276,7 +276,7 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
                                    (1 - w) * (1 - inputs_flat) * tf.log(1 - reconstruction_flat + 1e-8),
                                    reduction_indices=[1])
           #choose the appropriate loss:
-          encode_decode_loss = mse_loss
+          encode_decode_loss = cross_entropy_loss
       with tf.name_scope('kl_Divergence_loss'):
           # KL Divergence loss
           kl_div_loss = 1 + z_std - tf.square(z_mean) - tf.exp(z_std)
