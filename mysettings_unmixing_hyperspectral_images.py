@@ -45,7 +45,7 @@ XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 #model_file='model_densenet.py'
 model_file='model_densenet_3D.py'
 isBEGAN=False #set True to activate BEGAN training instead of Autoencoding
-isVAE=False   #set True to activate VAE like generator architecture
+isVAE=True   #set True to activate VAE like generator architecture
 if isBEGAN:
   session_name+='_BEGAN'
 if isVAE:
@@ -67,7 +67,7 @@ nb_summary_per_train_epoch=4
 
 #define image patches extraction parameters
 patchSize=16
-server_patch_size=32#let's try with a different patch size when serving
+server_patch_size=patchSize#let's try with a different patch size when serving
 server_crops_per_batch=4#define here how many crops are sent to the server at a single time
 
 #random seed used to init weights, etc. Use an integer value to make experiments reproducible
@@ -142,8 +142,8 @@ def model_outputs_postprocessing_for_serving(model_outputs_dict):
     if isBEGAN:
       with tf.name_scope('convert_to_standard_image'):
         eps=0.001
-        fake_min= tf.reduce_min(model_outputs_dict['reconstructed_data'], axis=None, keep_dims=True)
-        fake_max= tf.reduce_max(model_outputs_dict['reconstructed_data'], axis=None, keep_dims=True)
+        fake_min= tf.reduce_min(model_outputs_dict['reconstructed_data'], axis=None, keepdims=True)
+        fake_max= tf.reduce_max(model_outputs_dict['reconstructed_data'], axis=None, keepdims=True)
         fake_0_1=(model_outputs_dict['reconstructed_data']-fake_min)/(fake_max-fake_min+eps)
         fake_0_255=tf.saturate_cast(fake_0_1*255.0, dtype=tf.uint8)
 
@@ -246,6 +246,8 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
      if not found, Exception is generated, move to a classical MSE reconstruction loss (not a VAE model)
     '''
     if 'z_mean' in model_outputs_dict.keys() and 'z_std' in model_outputs_dict:
+      if isVAE is False:
+        raise ValueError('Trying to setup a VAE loss while isVAE is False')
       print('*** Trying to establish a VAE loss if required model variables are available (z_mean and z_std)')
       #z_mean=tf.get_default_graph().get_tensor_by_name('model/Bottleneck/z_mean:0')
       #tf.get_default_graph().get_tensor_by_name('model/Bottleneck/z_mean/BiasAdd:0')
@@ -259,11 +261,22 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
       w = 0.85
       with tf.name_scope('reconstruction_loss'):
           # Reconstruction loss
-          encode_decode_loss = -tf.reduce_mean(w * inputs_flat * tf.log(reconstruction_flat + 1e-8),
+          #reconstruction_flat_=tf.maximum(reconstruction_flat, 0.01)
+          mse_loss=tf.losses.mean_squared_error(
+                                          model_outputs_dict['reconstructed_data'],
+                                          inputs,
+                                          weights=1.0,
+                                          scope=None,
+                                          loss_collection=tf.GraphKeys.LOSSES,
+                                          #reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS
+                                          )
+          cross_entropy_loss=-tf.reduce_mean(w * inputs_flat * tf.log(reconstruction_flat + 1e-8),
                                                reduction_indices=[1]) - \
                                tf.reduce_mean(
                                    (1 - w) * (1 - inputs_flat) * tf.log(1 - reconstruction_flat + 1e-8),
                                    reduction_indices=[1])
+          #choose the appropriate loss:
+          encode_decode_loss = mse_loss
       with tf.name_scope('kl_Divergence_loss'):
           # KL Divergence loss
           kl_div_loss = 1 + z_std - tf.square(z_mean) - tf.exp(z_std)
@@ -308,8 +321,8 @@ def get_validation_summaries(inputs, model_outputs_dict, labels):
 
         def get_hsi_rgb_image(inputs, channel_start_idx):
           raw_rgb=tf.slice(inputs, begin=[0,0,0,channel_start_idx], size=[-1,-1,-1,3])
-          raw_rgb_min= tf.reduce_min(raw_rgb, axis=[1,2,3], keep_dims=True)
-          raw_rgb_max= tf.reduce_max(raw_rgb, axis=[1,2,3], keep_dims=True)
+          raw_rgb_min= tf.reduce_min(raw_rgb, axis=[1,2,3], keepdims=True)
+          raw_rgb_max= tf.reduce_max(raw_rgb, axis=[1,2,3], keepdims=True)
           raw_images_rgb_0_1=(raw_rgb-raw_rgb_min)/(raw_rgb_max-raw_rgb_min)
           raw_images_display=tf.saturate_cast(raw_images_rgb_0_1*255.0, dtype=tf.uint8)
           print('adapting HSI image to rgb image:',inputs,raw_images_display)

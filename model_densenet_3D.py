@@ -104,7 +104,7 @@ def composite_function(input_features, out_features, kernel_size, is_training, k
     unit (ReLU) [6] and a 3 * 3 convolution (Conv).
     '''
     with tf.variable_scope('Composite_'+str(name)):
-        preprocessed_features = tf.nn.relu(tf.layers.batch_normalization(input_features, training=is_training))
+        preprocessed_features = tf.nn.relu(tf.contrib.layers.layer_norm(input_features))#, training=is_training))
         new_features = conv2d(preprocessed_features, out_features, kernel_size)
         new_features = tf.nn.dropout(new_features, keep_prob)
         return new_features
@@ -116,7 +116,7 @@ def composite_function_3d(input_features, out_features, kernel_size, is_training
     unit (ReLU) [6] and a 3 * 3 convolution (Conv).
     '''
     with tf.variable_scope('Composite_3d_'+str(name)):
-        preprocessed_features = tf.nn.relu(tf.layers.batch_normalization(input_features, training=is_training))
+        preprocessed_features = tf.nn.relu(tf.contrib.layers.layer_norm(input_features))#, training=is_training))
         new_features = conv3d(preprocessed_features, out_features, kernel_size)
         new_features = tf.nn.dropout(new_features, keep_prob)
         return new_features
@@ -148,7 +148,7 @@ def transition_down(input_features, is_training, keep_prob, block_idx):
     ------> would be conv2d with kernel=3 and strite=2 ?
     '''
     with tf.variable_scope('TransitionDown_'+str(block_idx)):
-        preprocessed_features = tf.nn.relu(tf.layers.batch_normalization(input_features, training=is_training))
+        preprocessed_features = tf.nn.relu(tf.contrib.layers.layer_norm(input_features))#, training=is_training))
         new_features = conv2d(preprocessed_features, preprocessed_features.get_shape().as_list()[-1], kernel_size=1)
         new_features = tf.nn.dropout(new_features, keep_prob)
         transition = tf.nn.max_pool(new_features, ksize=[ 1, 2, 2, 1 ], strides=[1, 2, 2, 1 ], padding='SAME')
@@ -163,7 +163,7 @@ def transition_down_3d(input_features, is_training, keep_prob, block_idx, stride
     ------> would be conv2d with kernel=3 and strite=2 ?
     '''
     with tf.variable_scope('TransitionDown_3d_'+str(block_idx)):
-        preprocessed_features = tf.nn.relu(tf.layers.batch_normalization(input_features, training=is_training))
+        preprocessed_features = tf.nn.relu(tf.contrib.layers.layer_norm(input_features))#, training=is_training))
         if strided_conv:
             transition = conv3d(preprocessed_features, preprocessed_features.get_shape().as_list()[-1], kernel_size=3, strides=[2,2,2])
         else:
@@ -288,6 +288,7 @@ def model(  data,
         last_encoding_feature_maps = block_3d(feature_maps, n_layers_per_block[number_of_encoding_blocks], growth_rate, is_training, keep_prob, number_of_encoding_blocks, use_dense_block)
         field_of_view+=n_layers_per_block[number_of_encoding_blocks]*2
         last_encoding_feature_maps_shape=last_encoding_feature_maps.get_shape().as_list()
+        last_encoding_feature_maps=tf.check_numerics(last_encoding_feature_maps, message='Encoder : NaN in last_encoding_feature_maps')
         #add specific layers for variationnal autoencoding
         if Variationnal_AE: #hints from https://github.com/vividda/3D-PhysNet/blob/master/main-3D-PhysNet-IJCAI.py
           with tf.name_scope('variationnal_encoding'):
@@ -302,22 +303,24 @@ def model(  data,
                                              kernel_initializer= tf.variance_scaling_initializer(scale=2.0, mode='fan_in', distribution="normal"), #MSRA init
                                              name='flatten_code')
             with tf.name_scope('Mean_and_std'):
-                z_mean = tf.layers.dense(inputs=encoder_vect,
-                                         units=20,#800,
+                z_mean = tf.layers.dense(inputs=encoder_conv_out_flat,
+                                         units=32,#800,
                                          activation=None,
                                          use_bias=True,
                                          kernel_initializer= tf.glorot_uniform_initializer(),#Xavier init
                                          name='z_mean'
                                          )
                                          #tools.Ops.fc(lfc, out_d=800, name='z_mean')
-                z_std = tf.layers.dense(inputs=encoder_vect,
-                                         units=20,#800,
+                z_std = tf.layers.dense(inputs=encoder_conv_out_flat,
+                                         units=32,#800,
                                          activation=None,
                                          use_bias=True,
                                          kernel_initializer= tf.glorot_uniform_initializer(),#Xavier init
                                          name='z_std'
                                          )
                                          #z_std = tools.Ops.fc(lfc, out_d=800, name='z_std')
+                z_mean=tf.check_numerics(z_mean, message='Encoder : NaN in z_mean')
+                z_std=tf.check_numerics(z_std, message='Encoder : NaN in z_std')
 
             with tf.name_scope('Gaussian_distribution_sampling'):
                 # Sampler: Normal (gaussian) random distribution
@@ -336,6 +339,7 @@ def model(  data,
                                          kernel_initializer= tf.variance_scaling_initializer(scale=2.0, mode='fan_in', distribution="normal"), #MSRA init
                                          name='sampled_code'
                                          )
+                print('decoder_first_dense_layer:'+str())
 
                                          #lfc = tools.Ops.xxlu(tools.Ops.fc(lfc, out_d=np.prod(last_encoding_feature_maps_shape[1:]), name='fc2'),
                                          #name='relu')
@@ -350,6 +354,7 @@ def model(  data,
         bfc = bias_variable([ n_outputs ])
         logits_classif= tf.matmul(features_average_flat, Wfc) + bfc
     """
+    last_encoding_feature_maps=tf.check_numerics(last_encoding_feature_maps, message='Decoder : NaN in last_encoding_feature_maps')
     with tf.variable_scope('Reconstruction'):
         # We store now the output of the next dense block in a list. We will only upsample these new feature maps
         block_to_upsample = []
