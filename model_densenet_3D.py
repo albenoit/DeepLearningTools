@@ -239,6 +239,7 @@ def model(  data,
     output_only_inputs_last_decoding_block=False
     use_dense_block=True #if False, then the architecture will not include dense connections and will resemble UNet
     use_skip_connections=False
+    use_stridedconv_insteadof_maxpool=False
     Variationnal_AE=True#set True to transform the AE into a VAE
     '''
     #FC-DenseNet-103 architecture:
@@ -275,7 +276,7 @@ def model(  data,
                 feature_maps_block=tf.concat([feature_maps_block, feature_maps], axis=4, name='encoding_block_layers_concat_'+str(blockID))
             # At the end of the dense block, the current stack is stored in the skip_connections list
             skip_connection_list.append(feature_maps_block)
-            feature_maps=transition_down_3d( feature_maps_block, is_training, keep_prob, blockID, True)
+            feature_maps=transition_down_3d( feature_maps_block, is_training, keep_prob, blockID, use_stridedconv_insteadof_maxpool)
             print('** concat(Block+input)+transition down shape='+str(feature_maps.get_shape().as_list()))
             #update field of view
             field_of_view+=n_layers_per_block[blockID]*2
@@ -294,7 +295,9 @@ def model(  data,
           with tf.name_scope('variationnal_encoding'):
 
             with tf.name_scope('3D_to_1D_flattening'):
-                encoder_conv_out_flat=tf.layers.flatten(last_encoding_feature_maps)
+                #activation+nprmalization bbefore feeding into the next layers
+                vae_code_=tf.nn.relu(tf.contrib.layers.layer_norm(last_encoding_feature_maps))
+                encoder_conv_out_flat=tf.layers.flatten(vae_code_)
                 print('Bottleneck: Code size before variationnal encoding='+str(encoder_conv_out_flat))
                 encoder_vect = tf.layers.dense(inputs=encoder_conv_out_flat,
                                              units=500,#5000,
