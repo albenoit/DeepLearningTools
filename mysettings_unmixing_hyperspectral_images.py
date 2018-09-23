@@ -270,6 +270,8 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
                                           loss_collection=tf.GraphKeys.LOSSES,
                                           #reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS
                                           )
+          tf.summary.scalar('mse_loss', mse_loss)
+
           cross_entropy_loss=-tf.reduce_mean(w * inputs_flat * tf.log(reconstruction_flat + 1e-8),
                                                reduction_indices=[1]) - \
                                tf.reduce_mean(
@@ -281,10 +283,9 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
           # KL Divergence loss
           kl_div_loss = 1 + z_std - tf.square(z_mean) - tf.exp(z_std)
           kl_div_loss = -0.5 * tf.reduce_sum(kl_div_loss, 1)
-
+          tf.summary.scalar('VAE_kl_loss', tf.reduce_mean(kl_div_loss))
       with tf.name_scope('vae_loss_overall'):
           ae_loss = tf.reduce_mean(encode_decode_loss + kl_div_loss)
-          sum_ae_loss = tf.summary.scalar('ae_loss', ae_loss, collections=['loss_summary'])
       return ae_loss
 
     else:
@@ -675,7 +676,7 @@ class Client_IO:
       data_=data.astype(np.float32)
       eps=0.000005
       data_min=data_.min()
-      data_max=data_.max()      
+      data_max=data_.max()
       scaled_0_1=(data_-data_min)/(data_max-data_min+eps)
       if saturate:
         scaled_0_1=1. / (1. + np.exp(-scaled_0_1*2.))
