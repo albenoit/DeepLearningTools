@@ -674,7 +674,9 @@ class Client_IO:
     def scale_0_255uint8(self, data, saturate=False):
       data_=data.astype(np.float32)
       eps=0.000005
-      scaled_0_1=(data_-data_.min())/(data_.max()-data_.min()+eps)
+      data_min=data_.min()
+      data_max=data_.max()      
+      scaled_0_1=(data_-data_min)/(data_max-data_min+eps)
       if saturate:
         scaled_0_1=1. / (1. + np.exp(-scaled_0_1*2.))
       #scale to 0-255 and cast
