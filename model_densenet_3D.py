@@ -404,19 +404,22 @@ def model(  data,
         output_dict['z_std']=z_std
 
     #add each skip connexion output for embedding
-    '''all_skips_list=[]
+    all_skips_list=[]
+    all_skips_list_flat=[]
     for id, skip_layer in enumerate(skip_connection_list):
         output_dict['skip_'+str(id)]=skip_layer
-        #finally concatenate all the skip lapeyrs
+        all_skips_list_flat.append(tf.layers.flatten(skip_layer))
+        '''#finally concatenate all the skip lapeyrs
         all_skips_list.append(tf.image.resize_nearest_neighbor(
                                                skip_layer,
                                                logits_semantic.get_shape().as_list()[1:4],
                                                align_corners=True,
                                               )
                         )
-    all_skips=tf.concat(all_skips_list, axis=-1)
-    output_dict['all_skips']=all_skips
+        '''
+    #all_skips=tf.concat(all_skips_list, axis=-1)
+    #output_dict['all_skips']=all_skips
     #concat code+skiplayers
-    output_dict['code_with_all_skips']=tf.concat([tf.layers.flatten(last_encoding_feature_maps),tf.layers.flatten(all_skips)], axis=1)
-    '''
+    output_dict['code_with_all_skips']=tf.concat([tf.layers.flatten(last_encoding_feature_maps)]+all_skips_list_flat, axis=1)
+
     return output_dict
