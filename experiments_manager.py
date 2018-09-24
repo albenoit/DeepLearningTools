@@ -545,10 +545,10 @@ def model_fn(features, labels, mode, params):
                     features_fov=get_feature_central_area(features, 'input')
                     model_outputs_fov={}
                     for output_key,output_feature in model_outputs_dict.items():
-                      #FIXME test may not be robust enough...
-                      if len(output_feature.get_shape().as_list())-2 == xdimensions:
+                      #check if spatial size matches between input and feature map, if yes, keep central area
+                      if output_feature.get_shape().as_list()[1:3] == features.get_shape().as_list()[1:3]:
                         model_outputs_fov[output_key]= get_feature_central_area(output_feature, output_key)
-                      else:#keep the data as is
+                      else:#otherwise keep the data as is
                         model_outputs_fov[output_key]=output_feature
                     #pick the central pixel Value
                     def get_feature_central_pixel(feature_map, feature_name):
