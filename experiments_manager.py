@@ -1072,7 +1072,7 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None):
       else:
         raise ValueError('Could not restart interrupted training session, working folder not found:'+str(model_dir))
     else:
-      print('Starting a new experiment')
+      print('Process starts...')
 
     print('Trying to load experiments settings file : '+str(filename))
     try:
@@ -1193,6 +1193,16 @@ if __name__ == "__main__":
     else:
         print('### TRAINING MODE ###')
         usersettings, sessionFolder, model_name = loadExperimentsSettings(FLAGS.usersettings, FLAGS.model_dir)
+
+        argv_app={'debug_server_addresses':FLAGS.debug_server_addresses, 'sessionFolder':sessionFolder, 'model_name':model_name, 'debug_sess':FLAGS.debug}
+        #add additionnal hyperparams coming from an optionnal
+        if hasattr(usersettings, 'hparams'):
+          print('adding hypermarameters declared from the experiments settings script')
+          argv_app.update(usersettings.hparams)
+          #update sessionFolder name string
+          for key, value in usersettings.hparams.items():
+            sessionFolder+='_'+key+str(value)
+            argv_app.update({'sessionFolder':sessionFolder})
         #copy settings and model file to the working folder
         if not FLAGS.restart_interrupted:
           os.makedirs(sessionFolder)
@@ -1202,11 +1212,6 @@ if __name__ == "__main__":
           settings_copy_fullpath=os.path.join(sessionFolder, settingsFile_saveName)
           shutil.copyfile(os.path.join(scripts_WD, FLAGS.usersettings), settings_copy_fullpath)
 
-        argv_app={'debug_server_addresses':FLAGS.debug_server_addresses, 'sessionFolder':sessionFolder, 'model_name':model_name, 'debug_sess':FLAGS.debug}
-        #add additionnal hyperparams coming from an optionnal
-        if hasattr(usersettings, 'hparams'):
-          print('adding hypermarameters declared from the experiments settings script')
-          argv_app.update(usersettings.hparams)
 
 
         tf.app.run(

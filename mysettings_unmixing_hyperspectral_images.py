@@ -26,7 +26,7 @@ tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
 serving_client_timeout_int_secs=20#timeout limit when a client requests a served model
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
-session_name='Carottes_edytem_DenseNetWithSkips_xcross'
+session_name='Carottes_edytem_DenseNet'
 
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
@@ -41,15 +41,20 @@ used_gpu_IDs=[0]
 #set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
 XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
-#-> define here the used model under variable 'model'
+
+''' define here some hyperparameters to adjust the experiment
+===> Note that this dictionnary will complete the session name
+'''
+hparams={'isBEGAN':False,#set True to activate BEGAN training instead of Autoencoding
+         'isVAE':True,#set True to activate VAE like generator architecture
+         'denseBlocks':True, #ste True to use dense connections (as for DenseNet) at a given input
+         'skipConnections':True, #set True to activate skip conectionx between the encoder and decoder
+
+         }
 #model_file='model_densenet.py'
 model_file='model_densenet_3D.py'
-isBEGAN=False #set True to activate BEGAN training instead of Autoencoding
-isVAE=True   #set True to activate VAE like generator architecture
-if isBEGAN:
-  session_name+='_BEGAN'
-if isVAE:
-  session_name+='_VAE'
+isBEGAN=False
+isVAE=True
 
 display_model_layers_info=False #a flag to enable the display of additionnal console information on the model properties (for debug purpose)
 
@@ -162,7 +167,7 @@ def getOptimizer(loss, learning_rate, global_step):
     '''define here the specific optimizer to be used
     '''
 
-    if isBEGAN:
+    if hparams['isBEGAN']:
       # Get required existing variables references
       k=tf.get_default_graph().get_tensor_by_name('optimizer_adversarial_balancing/k:0')
       G_loss=tf.get_default_graph().get_tensor_by_name('model_loss/Gloss:0')
@@ -217,7 +222,7 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     print('inputs.graph='+str(inputs.graph))
 
 
-    if isBEGAN:
+    if hparams['isBEGAN']:
       with tf.variable_scope("optimizer_adversarial_balancing", reuse=False):
           initial_k = tf.constant(0.)
           k=tf.get_variable(name='k', initializer=initial_k, trainable=False)
@@ -270,15 +275,16 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
                                           loss_collection=tf.GraphKeys.LOSSES,
                                           #reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS
                                           )
-          tf.summary.scalar('mse_loss', mse_loss)
 
-          cross_entropy_loss=-tf.reduce_mean(w * inputs_flat * tf.log(reconstruction_flat + 1e-8),
+          '''cross_entropy_loss=-tf.reduce_mean(w * inputs_flat * tf.log(reconstruction_flat + 1e-8),
                                                reduction_indices=[1]) - \
                                tf.reduce_mean(
                                    (1 - w) * (1 - inputs_flat) * tf.log(1 - reconstruction_flat + 1e-8),
                                    reduction_indices=[1])
+          '''
           #choose the appropriate loss:
-          encode_decode_loss = cross_entropy_loss
+          encode_decode_loss = mse_loss
+          tf.summary.scalar('reconstruction_loss', encode_decode_loss)
       with tf.name_scope('kl_Divergence_loss'):
           # KL Divergence loss
           kl_div_loss = 1 + z_std - tf.square(z_mean) - tf.exp(z_std)
@@ -301,7 +307,7 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
                                       #reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS
                                       )
 
-      tf.summary.scalar('mse_loss', reconstruction_loss)
+      tf.summary.scalar('reconstruction_loss', reconstruction_loss)
 
       return reconstruction_loss+weights_weight_decay*weights_loss
 
@@ -347,7 +353,7 @@ def get_eval_metric_ops(inputs, model_outputs_dict, labels):
     Returns:
         Dict of metric results keyed by name.
     """
-    if isBEGAN:
+    if hparams['isBEGAN']:
         D_real_energy=model_outputs_dict['D_real_energy']
         D_fake_energy=model_outputs_dict['D_fake_energy']
         #FIXME in the paper, equilibrium_gamma is not fixed but is : equilibrium_gamma=E[L(G(z))]/E[L(x)]
