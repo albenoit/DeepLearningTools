@@ -60,6 +60,12 @@ class ExperimentsSettingsChecker(object):
             self.has('tensorflow_server_address', 'a string specifying the IP adress of the tensorflow server to be contacted by a client')
             self.has('tensorflow_server_port', 'an integer that specifies the port use to communicate whith the tensorflow server')
 
+            #look for an optionnal hyperparameters dictionnary
+            if hasattr(self.experiments_settings, 'hparams'):
+              if isinstance(self.experiments_settings.hparams, dict):
+                print('Found custom hyperparameters:'+str(self.experiments_settings.hparams))
+
+            #look for premade estimators to be used in place of a custom one defined by self.experiments_settings.model_file
             if hasattr(self.experiments_settings, 'premade_estimator'):
               print('Using premade estimators, then not required to specify custom estimator parameters and functions')
             else:

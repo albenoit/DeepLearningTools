@@ -1201,7 +1201,15 @@ if __name__ == "__main__":
             shutil.copyfile(os.path.join(scripts_WD, usersettings.model_file), os.path.join(sessionFolder, usersettings.model_file))
           settings_copy_fullpath=os.path.join(sessionFolder, settingsFile_saveName)
           shutil.copyfile(os.path.join(scripts_WD, FLAGS.usersettings), settings_copy_fullpath)
+
+        argv_app={'debug_server_addresses':FLAGS.debug_server_addresses, 'sessionFolder':sessionFolder, 'model_name':model_name, 'debug_sess':FLAGS.debug}
+        #add additionnal hyperparams coming from an optionnal
+        if hasattr(usersettings, 'hparams'):
+          print('adding hypermarameters declared from the experiments settings script')
+          argv_app.update(usersettings.hparams)
+
+
         tf.app.run(
             main=run_experiment,
-            argv=[{'debug_server_addresses':FLAGS.debug_server_addresses, 'sessionFolder':sessionFolder, 'model_name':model_name, 'debug_sess':FLAGS.debug}]
+            argv=[argv_app]
     )
