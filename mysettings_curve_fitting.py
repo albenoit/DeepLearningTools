@@ -24,6 +24,12 @@ save_model_variables_to_pandas=True
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='my_test'
 
+''' define here some hyperparameters to adjust the experiment
+===> Note that this dictionnary will complete the session name
+'''
+hparams={'hiddenNeurons':10,#set the number of neurons per hidden layers
+         }
+         
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
@@ -74,7 +80,6 @@ raw_data_filename_extension=None
 nb_train_samples=1000 #manually adjust here the number of temporal items out of the temporal block size
 nb_test_samples=1000
 batch_size=200
-nb_classes=10
 reference_labels=['values']
 
 def numpycurve(x):

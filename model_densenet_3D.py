@@ -221,7 +221,6 @@ def avg_pool(input, s):
   return tf.nn.avg_pool(input, [ 1, s, s, 1 ], [1, s, s, 1 ], 'VALID')
 
 def model(  data,
-            n_outputs,
             hparams,
             mode
             ):

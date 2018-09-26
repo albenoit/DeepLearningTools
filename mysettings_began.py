@@ -22,6 +22,11 @@ serving_client_timeout_int_secs=1#timeout limit when a client requests a served 
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='BEGAN_'
 
+''' define here some hyperparameters to adjust the experiment
+===> Note that this dictionnary will complete the session name
+'''
+hparams={'generatorCodeSize':64,#set the size of the generator code
+         }
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
@@ -78,7 +83,7 @@ nb_train_samples=mnist.train.num_examples #nb_train_images*number_of_crops_per_i
 nb_test_samples=mnist.test.num_examples#to be adjusted for testing
 embedding_samples_stored_number=nb_test_samples
 batch_size=32
-nb_classes=64 #here, this will correspond to the generator code size
+
 reference_labels=['digit_values']
 ''' BEGAN specific optimization parameters :'''
 equilibrium_gamma=0.8
@@ -364,7 +369,7 @@ def get_input_pipeline_train_val_(batch_size, raw_data_files_folder, shuffle_bat
 -class Client_IO, a class to specifiy input data requests and response on the client side when serving a model
 For performance/enhancement of the model, have a look here for graph optimization: https://github.com/tensorflow/tensorflow/blob/r1.4/tensorflow/tools/graph_transforms/README.md
 '''
-serving_input_shape=[1,nb_classes]
+serving_input_shape=[1,hparams['generatorCodeSize']]
 def get_input_pipeline_serving():
     '''Build the serving inputs, expecting messages made of :
     -> a batch of size 1 of a single image in the uint8 format (no preliminary normalisation is expected).

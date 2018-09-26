@@ -117,9 +117,11 @@ def avg_pool(input, s):
   return tf.nn.avg_pool(input, [ 1, s, s, 1 ], [1, s, s, 1 ], 'VALID')
 
 def model(  data,
-            n_outputs,
             hparams,
             mode):
+
+    #retreive the number of target classes from the hparams structure
+    n_outputs=hparams.nbClasses
 
     from tensorflow.contrib.learn import ModeKeys
     is_training = mode == ModeKeys.TRAIN

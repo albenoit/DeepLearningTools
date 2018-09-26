@@ -28,6 +28,12 @@ serving_client_timeout_int_secs=20#timeout limit when a client requests a served
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='Carottes_edytem_DenseNet'
 
+''' define here some hyperparameters to adjust the experiment
+===> Note that this dictionnary will complete the session name
+'''
+hparams={'nbClasses':3,#set the number of classes in the considered dataset
+         }
+
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
@@ -49,8 +55,8 @@ hparams={'isBEGAN':False,#set True to activate BEGAN training instead of Autoenc
          'isVAE':True,#set True to activate VAE like generator architecture
          'denseBlocks':True, #ste True to use dense connections (as for DenseNet) at a given input
          'skipConnections':True, #set True to activate skip conectionx between the encoder and decoder
-
          }
+
 #model_file='model_densenet.py'
 model_file='model_densenet_3D.py'
 isBEGAN=False
@@ -99,7 +105,6 @@ number_of_crops_per_image=200
 nb_train_samples=nb_train_images*number_of_crops_per_image#nb_train_images*number_of_crops_per_image# number of images * number of crops per image
 nb_test_samples=2*nb_val_images*number_of_crops_per_image
 batch_size=4
-nb_classes=10
 input_nb_spectral_bands=128#specify here the number of spectral band (central bands) that should be considered for processing
 first_selected_band_id=7#the index of the first band to process (follows the input_nb_spectral_bands)
 #REMINDER : skip the first and last 10 bands
@@ -335,7 +340,7 @@ def get_validation_summaries(inputs, model_outputs_dict, labels):
           print('adapting HSI image to rgb image:',inputs,raw_images_display)
           return raw_images_display
 
-        reference_images_crops_regions_display=tf.saturate_cast((tf.squeeze(labels,-1)*255)/nb_classes, dtype=tf.uint8)
+        reference_images_crops_regions_display=tf.saturate_cast((tf.squeeze(labels,-1)*255)/hparams['nbClasses'], dtype=tf.uint8)
         print('*********reference shape='+str(reference_images_crops_regions_display.get_shape().as_list()))
         return ([tf.summary.image("input", get_hsi_rgb_image(inputs, 20)),
                 tf.summary.image("labels", reference_images_crops_regions_display),

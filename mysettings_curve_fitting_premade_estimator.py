@@ -31,6 +31,12 @@ display_model_layers_info=False#do not output ops and vars placement on console
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='premade_estimator'
 
+
+''' define here some hyperparameters to adjust the experiment
+===> Note that this dictionnary will complete the session name
+'''
+hparams={'hiddenNeurons':10,#set the number of neurons per hidden layers
+         }
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
@@ -44,9 +50,7 @@ used_gpu_IDs=[0]
 #set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
 XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
-nb_classes=1
-
-premade_estimator=tf.estimator.DNNRegressor(hidden_units=[10],
+premade_estimator=tf.estimator.DNNRegressor(hidden_units=[hparams['hiddenNeurons']],
                 feature_columns=[tf.feature_column.numeric_column('x')],
                 label_dimension=1,
                 weight_column=None,

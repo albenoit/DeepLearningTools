@@ -116,10 +116,13 @@ def avg_pool(input, s):
   return tf.nn.avg_pool(input, [ 1, 1, s, 1 ], [1, 1, s, 1 ], 'VALID')
 
 def model(  data,
-            n_outputs,
             hparams,
             mode
             ):
+
+    #retreive the dimension of the classification output from hparams
+    n_outputs=hparams.hiddenNeurons
+
     variable_placement="/cpu:0"
     from tensorflow.contrib.learn import ModeKeys
     is_training = mode == ModeKeys.TRAIN

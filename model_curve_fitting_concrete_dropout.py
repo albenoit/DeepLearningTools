@@ -6,7 +6,6 @@ from tensorflow.contrib.learn import ModeKeys
 
 # =============================== GLOBAL MODEL ====================================
 def model(data,
-            n_outputs,
             hparams,
             mode):
 
@@ -19,7 +18,7 @@ def model(data,
     l = 1e-6#-4
     wd = l**2. / X_dim
     dd = 2. / X_dim
-    h_dim=n_outputs #hidden layer size
+    h_dim=hparams.hiddenNeurons #hidden layer size
     print('Raw input dim, hdim='+str((X_dim, h_dim)))
     with tf.variable_scope('Encoder'):
         #encoder parameters and graph

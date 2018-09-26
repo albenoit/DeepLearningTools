@@ -36,7 +36,6 @@ class ExperimentsSettingsChecker(object):
             self.assertPositive_above_zero('batch_size', 'the number of samples processed for each batch')
             self.assertPositive_above_zero('nbEpoch', 'the number of times the training set is processed for training')
             self.assertPositive_above_zero('initial_learning_rate', 'the training speed factor')
-            self.assertPositive_above_zero('nb_classes', 'the number of classes for classification problems of the code size for embedding problems')
             self.has('random_seed', 'integer value or None. If not None, Operations that rely on a random seed actually derive it from this seed value')
             self.has('num_epochs_per_decay', 'integer value that, ONLY IF ABOVE 0 specifies after how many training epoch one must apply a decay to the learning rate')
             self.has('learning_rate_decay_factor', 'float value factor to be applied to the learning rate when decaying is applied')

@@ -221,7 +221,6 @@ def G(Y, reuse_params=False, is_training=True):
     return h_rev
 
 def model(data,
-            n_outputs,
             hparams,
             mode):
 

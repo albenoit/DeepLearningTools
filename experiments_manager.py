@@ -67,8 +67,7 @@ As a reminder, here are the functions prototypes:
 -define a model to be trained and served in a specific file and follow this prototype:
 --report model name in the settings file
 --def model( data, #the input data tensor
-            n_outputs, #dimension of the embedding code
-            hparams,  #external parameters that may be used to setup the model
+            hparams,  #external parameters that may be used to setup the model (number of classes and so depending on the task)
             mode), #mode set to switch between train, validate and inference mode
             wrt tf.estimator.tf.estimator.ModeKeys values
           => the model must return a dictionary of output tensors
@@ -308,7 +307,6 @@ def run_experiment(argv=None):
     nbIterationPerEpoch_train=getIterationsPerEpoch('train'),
     nbIterationPerEpoch_val=getIterationsPerEpoch('val'),
     learning_rate=usersettings.initial_learning_rate,
-    n_classes=usersettings.nb_classes,
     debug=usersettings.display_model_layers_info #can be forced to True if script option --debug is provided
     )
   #add additionnal hyperparams coming from argv
@@ -400,7 +398,6 @@ def model_fn(features, labels, mode, params):
     with tf.device(model_placement), tf.variable_scope(model_scope):
         model=loadModel(params.sessionFolder)
         model_outputs_dict=model(   data=features,
-                                    n_outputs=usersettings.nb_classes,
                                     hparams=params, #hyperparameters that may control model settings
                                     mode=mode
                                 )

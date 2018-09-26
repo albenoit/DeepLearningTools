@@ -17,6 +17,12 @@ serving_client_timeout_int_secs=5#timeout limit when a client requests a served 
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='Cityscapes_'
 
+''' define here some hyperparameters to adjust the experiment
+===> Note that this dictionnary will complete the session name
+'''
+hparams={'nbClasses':34,#set the number of classes in the considered dataset
+         }
+
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
@@ -78,7 +84,6 @@ number_of_crops_per_image=100
 nb_train_samples=nb_train_images*number_of_crops_per_image# number of images * number of crops per image
 nb_test_samples=7000#nb_val_images*number_of_crops_per_image
 batch_size=2
-nb_classes=34
 
 ####################################################
 ## Define here use case specific metrics, loss, etc.
@@ -154,8 +159,8 @@ def get_validation_summaries(inputs, model_outputs_dict, labels):
         raw_rgb_max= tf.reduce_max(inputs, axis=[1,2,3], keep_dims=True)
         raw_images_rgb_0_1=(inputs-raw_rgb_min)/(raw_rgb_max-raw_rgb_min)
         raw_images_display=tf.saturate_cast(raw_images_rgb_0_1*255.0, dtype=tf.uint8)
-        reference_images_crops_regions_display=tf.expand_dims(tf.saturate_cast((labels*255)/nb_classes, dtype=tf.uint8),-1)
-        semantic_segm_argmax_map_crops_display=tf.saturate_cast(tf.expand_dims((semantic_segm_argmax_map*255)/nb_classes,-1), dtype=tf.uint8)
+        reference_images_crops_regions_display=tf.expand_dims(tf.saturate_cast((labels*255)/hparams['nbClasses'], dtype=tf.uint8),-1)
+        semantic_segm_argmax_map_crops_display=tf.saturate_cast(tf.expand_dims((semantic_segm_argmax_map*255)/hparams['nbClasses'],-1), dtype=tf.uint8)
         print('*********reference shape='+str(reference_images_crops_regions_display.get_shape().as_list()))
         return ([tf.summary.image("input", raw_images_display),
                 tf.summary.image("references_center_crop_regions", reference_images_crops_regions_display),
@@ -190,7 +195,7 @@ def get_eval_metric_ops(inputs, model_outputs_dict, labels):
             'IoU' : tf.metrics.mean_iou(
                                 labels=labels,
                                 predictions=semantic_segm_argmax_map,
-                                num_classes=nb_classes,
+                                num_classes=hparams['nbClasses'],
                                 weights=None,
                                 metrics_collections=None,
                                 updates_collections=None,
