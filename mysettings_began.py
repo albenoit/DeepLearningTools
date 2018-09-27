@@ -20,7 +20,7 @@ tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
 serving_client_timeout_int_secs=1#timeout limit when a client requests a served model
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
-session_name='BEGAN_'
+session_name='BEGAN'
 
 ''' define here some hyperparameters to adjust the experiment
 ===> Note that this dictionnary will complete the session name

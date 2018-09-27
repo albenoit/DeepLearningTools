@@ -60,12 +60,14 @@ This script has some known problems, any suggestion is welcome:
 
 #TODO :
 
-To adapt to new use case, just update the mysettingsxxx file and adjust I/O functions.
-For any experiment, the availability of all the required fields in the settings file is checked by the experiments_settings_checker.py script. You can have a look there to ensure you prepared everything right.
+To adapt to new use case, just duplicate the closest mysettingsxxx file and adjust the configuration.
+For any experiment, the availability of all the required fields in the settings file is checked by the experiments_settings_checker.py script.
+You can have a look there to ensure you prepared everything right.
 
 As a reminder, here are the functions prototypes:
+
 -define a model to be trained and served in a specific file and follow this prototype:
---report model name in the settings file
+--report model name in the settings file using variable name model_file or thecify a premade estimator using variable name premade_estimator
 --def model( data, #the input data tensor
             hparams,  #external parameters that may be used to setup the model (number of classes and so depending on the task)
             mode), #mode set to switch between train, validate and inference mode
@@ -87,10 +89,12 @@ As a reminder, here are the functions prototypes:
 ---def finalize():
 -------> Note, the finalize method will be called once the number of expected
 iterations is reached and if any StopIteration exception is sent by the client
+-OPTIONNAL: add the dictionnary named 'hparams' in this settings file to carry those specific hyperparameters to the model
+and to complete the session name folder to facilitate experiments tracking and comparison
 
 Some examples of such functions are put in the README.md and in the versionned mysettings_xxx.py demos
 
-This demo relies on Tensorflow 1.4.1 and makes use of Estimators
+This demo relies on Tensorflow 1.7 and above and makes use of Estimators
 Look at https://github.com/GoogleCloudPlatform/cloudml-samples/blob/master/census/tensorflowcore/trainer/model.py
 Look at some general guidelines on Tenforflow here https://github.com/vahidk/EffectiveTensorflow
 Look at the related webpages : http://python.usyiyi.cn/documents/effective-tf/index.html
@@ -139,7 +143,7 @@ def loadModel(sessionFolder):
   try:
     model_def=imp.load_source('model_def', model_path)
   except Exception,e:
-    raise ValueError('Failed to load model file : '+str(usersettings.model_file)+str(e))
+    raise ValueError('loadModel: Failed to load model file {model} from sessionFolder {sess}, error message={err}'.format(model=usersettings.model_file, sess=sessionFolder, err=e))
   model=model_def.model
 
   print('loaded model file {file}'.format(file=model_path))
@@ -1187,6 +1191,9 @@ if __name__ == "__main__":
         print('-> python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53')
         print('3. interract with the tensorflow server, sending input buffers and receiving answers')
         print('-> python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/')
+        print('4. restart an interrupted training session')
+        print('-> python experiments_manager.py --restart_interrupted --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/')
+
     else:
         print('### TRAINING MODE ###')
         usersettings, sessionFolder, model_name = loadExperimentsSettings(FLAGS.usersettings, FLAGS.model_dir)
@@ -1197,8 +1204,17 @@ if __name__ == "__main__":
           print('adding hypermarameters declared from the experiments settings script')
           argv_app.update(usersettings.hparams)
           #update sessionFolder name string
-          for key, value in usersettings.hparams.items():
-            sessionFolder+='_'+key+str(value)
+          if not FLAGS.restart_interrupted:
+            sessionFolder_splits=sessionFolder.split('_')
+            sessionFolder_addon=''
+            for key, value in usersettings.hparams.items():
+              sessionFolder_addon='_'+key+str(value)
+            #insert sessionname addons in the original one
+            sessionFolder=''
+            for str_ in  sessionFolder_splits[:-1]:
+              sessionFolder+=str_+'_'
+            sessionFolder=sessionFolder[:-1]#remove the last '_'
+            sessionFolder+=sessionFolder_addon+'_'+sessionFolder_splits[-1]
             argv_app.update({'sessionFolder':sessionFolder})
         #copy settings and model file to the working folder
         if not FLAGS.restart_interrupted:

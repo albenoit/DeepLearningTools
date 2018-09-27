@@ -16,7 +16,7 @@ tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
 serving_client_timeout_int_secs=5#timeout limit when a client requests a served model
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
-session_name='Cityscapes_'
+session_name='Cityscapes_clippedGrad'
 
 ''' define here some hyperparameters to adjust the experiment
 ===> Note that this dictionnary will complete the session name
@@ -59,7 +59,7 @@ nb_summary_per_train_epoch=4
 patchSize=224
 
 #random seed used to init weights, etc. Use an integer value to make experiments reproducible
-random_seed=None
+random_seed=42
 
 # learning rate decaying parameters
 nbEpoch=50
