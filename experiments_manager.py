@@ -294,7 +294,7 @@ def getSessionConfig(params):
                               save_checkpoints_secs=None,
                               session_config=sessionConfig,
                               keep_checkpoint_max=5,
-                              keep_checkpoint_every_n_hours=10000,
+                              keep_checkpoint_every_n_hours=12,
                               log_step_count_steps=100,
                               train_distribute=None,
                               #TODO, activate when tf 1.10 available : device_fn=None
@@ -1208,7 +1208,7 @@ if __name__ == "__main__":
             sessionFolder_splits=sessionFolder.split('_')
             sessionFolder_addon=''
             for key, value in usersettings.hparams.items():
-              sessionFolder_addon='_'+key+str(value)
+              sessionFolder_addon+='_'+key+str(value)
             #insert sessionname addons in the original one
             sessionFolder=''
             for str_ in  sessionFolder_splits[:-1]:
