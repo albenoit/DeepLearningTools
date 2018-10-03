@@ -130,6 +130,8 @@ def imread_from_gdal(filename, debug_mode=False):
   '''
 
   ds = gdal.Open(str(filename))
+  if ds is None:
+      raise ValueError('Could no read file '+filename)
   raster_array=ds.ReadAsArray().transpose([1,2,0])
   if debug_mode == True:
       print('Reading image with GDAL : {file}'.format(file=filename))
@@ -164,9 +166,16 @@ def get_sample_entropy(sample):
     with tf.name_scope('sample_entropy'):
         #count unique values occurences
         unique_values, values_idx, counts=tf.unique_with_counts(sample)
-        #abort if empty
-        classes_prob=tf.divide(tf.cast(counts, dtype=tf.float32), tf.cast(tf.reduce_sum(counts), dtype=tf.float32))
-        normalized_entropy= tf.divide(-tf.reduce_sum(classes_prob*tf.log(classes_prob)), tf.log(tf.cast(tf.shape(counts)[0], dtype=tf.float32)))
+        
+        def normalised_entropy(counts):
+            classes_prob=tf.divide(tf.cast(counts, dtype=tf.float32), tf.cast(tf.reduce_sum(counts), dtype=tf.float32))
+            entropy= -tf.reduce_sum(classes_prob*tf.log(classes_prob))
+            return tf.divide(entropy,tf.log(tf.cast(tf.shape(counts)[0], dtype=tf.float32)))
+
+        #check if more than one class
+        normalized_entropy=tf.cond(tf.greater(tf.shape(counts)[0], 1), lambda :normalised_entropy(counts), lambda :0.0)
+
+        #normalized_entropy=tf.Print(normalized_entropy, [counts, normalized_entropy, tf.py_func(get_samples_entropies, [tf.expand_dims(sample,0)], tf.float32)], message='tf_entropyVShandmade')
         return normalized_entropy
 
 def get_sample_entropy_test(values=[0,0,0,1,1,1]):
@@ -417,7 +426,7 @@ class FileListProcessor_Semantic_Segmentation:
               raw_ref_image = tf.py_func(imread_from_opencv, [raw_img_filename, self.opencv_read_flags], tf.float32, name='raw_ref_data_imread_opencv')
             elif self.use_alternative_imread == 'gdal':
               # use GDAL image reading methodcropss WARNING, take care of the channels order that may change !!!
-              raw_ref_image = tf.py_func(imread_from_gdal, [raw_img_filename], tf.float32, name='raw_ref_data_imread_opencv')
+              raw_ref_image = tf.py_func(imread_from_gdal, [raw_img_filename], tf.float32, name='raw_ref_data_imread_gdal')
             else:
               raise ValueError('Neither OpenCV nor GDAL selected to read data and ground truth from the same image')
             print('raw data channels='+str(self.single_image_raw_depth))
@@ -489,6 +498,23 @@ class FileListProcessor_Semantic_Segmentation:
                     print('FileListProcessor_Semantic_Segmentation: crops with Nan values will be avoided')
                     def concat_only_no_nans_crop(batch_in, crop_candidate):
                         return tf.cond(tf.reduce_any(tf.is_nan(crop_candidate)),
+                                            lambda : batch_in,
+                                            lambda : tf.concat([batch_in, crop_candidate],0))
+                    if self.balance_classes_distribution is True and self.no_reference is False:
+                        ref_slice=tf.slice(crop,
+                                            begin=[0,0,self.single_image_raw_depth],
+                                            size=[-1,-1,self.single_image_reference_depth])
+
+                        batch = tf.cond(tf.greater(get_sample_entropy(tf.reshape(ref_slice,[-1])), self.classes_entropy_threshold, name='minimum_labels_entropy_selection'),
+                                                   lambda : concat_only_no_nans_crop(batch, tf.expand_dims(self.__image_transform(crop),0)),#if entropy is enough
+                                                   lambda : batch)
+                    else:
+                        batch =  concat_only_no_nans_crop(batch, tf.expand_dims(self.__image_transform(crop),0))
+                #added part to check black pixek number on crop
+                elif self.manage_nan_values is 'avoid_black_border':
+                    print('FileListProcessor_Semantic_Segmentation: crops with black pixel number more the threshold 0.3 of the pixel number values will be avoided')
+                    def concat_only_no_nans_crop(batch_in, crop_candidate):
+                        return tf.cond(tf.less(tf.count_nonzero(crop_candidate), self.patchSize*self.patchSize*0.3),
                                             lambda : batch_in,
                                             lambda : tf.concat([batch_in, crop_candidate],0))
                     if self.balance_classes_distribution is True and self.no_reference is False:
