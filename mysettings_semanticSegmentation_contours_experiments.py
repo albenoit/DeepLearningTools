@@ -90,6 +90,7 @@ nb_train_samples=nb_train_images*number_of_crops_per_image# number of images * n
 nb_test_samples=7000#nb_val_images*number_of_crops_per_image
 batch_size=3
 
+class_weights=[0.01, 0.98, 0.01]
 ####################################################
 ## Define here use case specific metrics, loss, etc.
 #with tf.name_scope("loss"):
@@ -163,12 +164,14 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
 
     #weighted cross entropy with class weights from https://stackoverflow.com/questions/35155655/loss-function-for-class-imbalanced-binary-classifier-in-tensor-flow/35168022#35168022
     def weighted_cross_entropy_with_logits(logits, labels, class_weights):
+      class_weights_mat=tf.reshape(tf.constant(class_weights), (len(class_weights),1,1))
       cross_entropy_loss=tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels)
-      return tf.reduce_sum(cross_entropy_loss*class_weights) / batch_size
+      print('cross_entropy_loss='+str(cross_entropy_loss))
+      return tf.reduce_sum(cross_entropy_loss*class_weights_mat) / batch_size
     def unweighted_cross_entropy_with_logits(logits, labels):
       return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits_semantic_crops_labels, labels=semantic_labels))
 
-    if 'class_weights' in locals():
+    if 'class_weights' in globals():
       raw_input('Using weighted class loss')
       cross_entropy_segmentation_labels_loss=weighted_cross_entropy_with_logits(logits=logits_semantic_crops_labels, labels=semantic_labels, class_weights=class_weights)
       cross_entropy_segmentation_contours_loss=weighted_cross_entropy_with_logits(logits=logits_semantic_crops_contours, labels=semantic_contours, class_weights=class_weights)
