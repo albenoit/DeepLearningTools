@@ -46,14 +46,15 @@ XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 ===> Note that this dictionnary will complete the session name
 '''
 hparams={'isBEGAN':False,#set True to activate BEGAN training instead of Autoencoding
-         'isVAE':True,#set True to activate VAE like generator architecture
-         'denseBlocks':True, #ste True to use dense connections (as for DenseNet) at a given input
-         'skipConnections':True, #set True to activate skip conectionx between the encoder and decoder
+         'isVAE':False,#set True to activate VAE like generator architecture
+         'denseBlocks':False, #ste True to use dense connections (as for DenseNet) at a given input
+         'skipConnections':False, #set True to activate skip conectionx between the encoder and decoder
          'nbClasses':3,#the number of known classes
+         'codeLayers':3,
          }
 
 #model_file='model_densenet.py'
-model_file='model_densenet_3D.py'
+model_file='model_ResidualAE.py'#'model_densenet_3D.py'
 isBEGAN=False
 isVAE=True
 
@@ -93,8 +94,8 @@ raw_data_dir_val = "/home/alben/workspace/Datasets/hyperspectral/carottes/train/
 raw_data_filename_extension='*.tif'
 ref_data_filename_extension='*.tif'
 #load all image files to use for training or testing
-nb_train_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train, file_extension=raw_data_filename_extension))
-nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val, file_extension=raw_data_filename_extension))
+nb_train_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
+nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
 reference_labels=['inconnu_lamine_crue']
 number_of_crops_per_image=200
 nb_train_samples=nb_train_images*number_of_crops_per_image#nb_train_images*number_of_crops_per_image# number of images * number of crops per image
@@ -309,6 +310,11 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
 
       tf.summary.scalar('reconstruction_loss', reconstruction_loss)
 
+      for key, value in model_outputs_dict.iteritems():
+        if 'residual_' in key:
+          residual_loss=tf.nn.l2_loss(value)
+          reconstruction_loss+=residual_loss
+          tf.summary.scalar(key, residual_loss)
       return reconstruction_loss+weights_weight_decay*weights_loss
 
 def get_validation_summaries(inputs, model_outputs_dict, labels):
@@ -409,7 +415,10 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
     @param raw_data_files_folder : the folder where files are stored
     @param shuffle_batches : a boolean that activates batch shuffling
     '''
-
+    if nb_train_images==0:
+        raise ValueError('No training image found, abording!')
+    if nb_val_images==0:
+        raise ValueError('No training image found, abording!')
     # get model field of view computed at the training step or compute it with the test_patch_overlapping_ratio
     def get_fov(isTraining):
         fov=0

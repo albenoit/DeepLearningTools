@@ -57,7 +57,7 @@ nb_summary_per_train_epoch=4
 patchSize=224
 
 #random seed used to init weights, etc. Use an integer value to make experiments reproducible
-random_seed=None
+random_seed=42
 
 # learning rate decaying parameters
 nbEpoch=50
@@ -76,14 +76,15 @@ reference_data_dir_val_ = "../../../../Datasets/CityScapes/gtFine_trainvaltest/g
 raw_data_filename_extension='*.png'
 ref_data_filename_extension='*labelIds.png'
 #load all image files to use for training or testing
-nb_train_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train_, file_extension=raw_data_filename_extension))
-nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val_, file_extension=raw_data_filename_extension))
+nb_train_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train_, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
+nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val_, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
 reference_labels=['semantic_labels']
+
 raw_data_dir_val=(raw_data_dir_val_, reference_data_dir_val_)
 number_of_crops_per_image=100
 nb_train_samples=nb_train_images*number_of_crops_per_image# number of images * number of crops per image
 nb_test_samples=7000#nb_val_images*number_of_crops_per_image
-batch_size=2
+batch_size=3
 
 ####################################################
 ## Define here use case specific metrics, loss, etc.
@@ -214,7 +215,10 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
     @param raw_data_files_folder : the folder where CSV files are stored
     @param shuffle_batches : a boolean that activates batch shuffling
     '''
-
+    if nb_train_images==0:
+        raise ValueError('No training image found, abording!')
+    if nb_val_images==0:
+        raise ValueError('No training image found, abording!')
     # get model field of view computed at the training step or compute it with the test_patch_overlapping_ratio
     def get_fov(isTraining):
         fov=0

@@ -22,6 +22,7 @@ session_name='Cityscapes_clippedGrad'
 ===> Note that this dictionnary will complete the session name
 '''
 hparams={'nbClasses':34,#set the number of classes in the considered dataset
+         'labelSmoothing':0,
          }
 
 ''''set the list of GPUs involved in the process. HOWTO:
@@ -79,8 +80,8 @@ reference_data_dir_val_ = "../../../../Datasets/CityScapes/gtFine_trainvaltest/g
 raw_data_filename_extension='*.png'
 ref_data_filename_extension='*labelIds.png'
 #load all image files to use for training or testing
-nb_train_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train_, file_extension=raw_data_filename_extension))
-nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val_, file_extension=raw_data_filename_extension))
+nb_train_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train_, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
+nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val_, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
 reference_labels=['semantic_labels', 'semantic_contours']
 
 raw_data_dir_val=(raw_data_dir_val_, reference_data_dir_val_)
@@ -165,7 +166,7 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     tf.summary.scalar('semantic_areas_loss', cross_entropy_segmentation_labels_loss)
     tf.summary.scalar('semantic_contours_loss', cross_entropy_segmentation_contours_loss)
 
-    return  cross_entropy_segmentation_labels_loss+cross_entropy_segmentation_contours_loss+weights_weight_decay*weights_loss
+    return  cross_entropy_segmentation_labels_loss+0*cross_entropy_segmentation_contours_loss+weights_weight_decay*weights_loss
 
 def get_validation_summaries(inputs, model_outputs_dict, labels):
     ''' add here (if required) some summaries to be applied on the validation dataset
@@ -265,7 +266,10 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
     @param raw_data_files_folder : the folder where CSV files are stored
     @param shuffle_batches : a boolean that activates batch shuffling
     '''
-
+    if nb_train_images==0:
+        raise ValueError('No training image found, abording!')
+    if nb_val_images==0:
+        raise ValueError('No training image found, abording!')
     # get model field of view computed at the training step or compute it with the test_patch_overlapping_ratio
     def get_fov(isTraining):
         fov=0
