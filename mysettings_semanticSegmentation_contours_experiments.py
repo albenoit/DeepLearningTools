@@ -160,8 +160,22 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     #-> restrict to the center part of the images
     logits_semantic_crops_labels=tf.slice(model_outputs_dict['logits_semantic_regions_map'], begin=[0,field_of_view/2, field_of_view/2, 0], size =[-1,patchSize-field_of_view, patchSize-field_of_view, -1])
     logits_semantic_crops_contours=tf.slice(model_outputs_dict['logits_semantic_contours_map'], begin=[0,field_of_view/2, field_of_view/2, 0], size =[-1,patchSize-field_of_view, patchSize-field_of_view, -1])
-    cross_entropy_segmentation_labels_loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits_semantic_crops_labels, labels=semantic_labels))
-    cross_entropy_segmentation_contours_loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits_semantic_crops_contours, labels=semantic_contours))
+
+    #weighted cross entropy with class weights from https://stackoverflow.com/questions/35155655/loss-function-for-class-imbalanced-binary-classifier-in-tensor-flow/35168022#35168022
+    def weighted_cross_entropy_with_logits(logits, labels, class_weights):
+      cross_entropy_loss=tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels)
+      return tf.reduce_sum(cross_entropy_loss*class_weights) / batch_size
+    def unweighted_cross_entropy_with_logits(logits, labels):
+      return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits_semantic_crops_labels, labels=semantic_labels))
+
+    if 'class_weights' in locals():
+      raw_input('Using weighted class loss')
+      cross_entropy_segmentation_labels_loss=weighted_cross_entropy_with_logits(logits=logits_semantic_crops_labels, labels=semantic_labels, class_weights=class_weights)
+      cross_entropy_segmentation_contours_loss=weighted_cross_entropy_with_logits(logits=logits_semantic_crops_contours, labels=semantic_contours, class_weights=class_weights)
+    else:
+      raw_input('Using unweighted class loss')
+      cross_entropy_segmentation_labels_loss=unweighted_cross_entropy_with_logits(logits=logits_semantic_crops_labels, labels=semantic_labels)
+      cross_entropy_segmentation_contours_loss=unweighted_cross_entropy_with_logits(logits=logits_semantic_crops_contours, labels=semantic_contours)
 
     tf.summary.scalar('semantic_areas_loss', cross_entropy_segmentation_labels_loss)
     tf.summary.scalar('semantic_contours_loss', cross_entropy_segmentation_contours_loss)
