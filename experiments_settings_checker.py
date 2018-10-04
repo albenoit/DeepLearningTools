@@ -29,8 +29,8 @@ class ExperimentsSettingsChecker(object):
             print('* look at the experiments_settings_checker script to see all the required fields')
 
             #check train and validation dataset parameters
-            self.assertPositive_above_zero('nb_train_samples', 'the number of samples used for training')
-            self.assertPositive_above_zero('nb_test_samples', 'the number of samples used for validation')
+            self.assertPositive_above_equal_zero('nb_train_samples', 'the number of samples used for training')
+            self.assertPositive_above_equal_zero('nb_test_samples', 'the number of samples used for validation')
 
             #check standard training parameters
             self.assertPositive_above_zero('batch_size', 'the number of samples processed for each batch')
