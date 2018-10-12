@@ -1050,12 +1050,13 @@ def do_inference(host, port, model_name, concurrency, num_tests):
   return 0
 
 
-def loadExperimentsSettings(filename, restart_from_sessionFolder=None):
+def loadExperimentsSettings(filename, restart_from_sessionFolder=None, isServingModel=False):
     ''' load experiments parameters from the mysettingsxxx.py script
         also mask GPUs to only use the ones specified in the settings file
       Args:
         filename: the settings file, if restarting an interrupted training session, you should target the experiments_settings.py copy available in the experiment folder to restart"
         restart_from_sessionFolder: [OPTIONNAL] set the  session folder of a previously interrupted training session to restart
+        isServingModel: [OPTIONNAL] set True in the case of using model serving (server or client mode) so that some settings are not checked
     '''
 
     if restart_from_sessionFolder is not None:
@@ -1083,7 +1084,7 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None):
     print('loaded settings file {file}'.format(file=filename))
 
     settings_checker=ExperimentsSettingsChecker(usersettings)
-    settings_checker.validate_settings()
+    settings_checker.validate_settings(isServingModel)
 
     if len(usersettings.used_gpu_IDs)>=1:
         print('Forcing system to only focus on the target GPU {gpuID} thus avoiding memory allocation issues on the other GPUs'.format(gpuID=usersettings.used_gpu_IDs))
@@ -1129,7 +1130,7 @@ if __name__ == "__main__":
     if FLAGS.start_server is True:
         print('### START TENSORFLOW SERVER MODE ###')
 
-        usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName))
+        usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName), isServingModel=True)
 
         #target the served models folder
         model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/best_model')
@@ -1169,7 +1170,7 @@ if __name__ == "__main__":
         print('### PREDICT MODE, interacting with a tensorflow server ###')
         print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME')
 
-        usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName))
+        usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName), isServingModel=True)
 
         #FIXME errors reported on gRPC: https://github.com/grpc/grpc/issues/13752 ... stay tuned, had to install a specific gpio version (pip install grpcio==1.7.3)
         server_ready=WaitForServerReady(usersettings.tensorflow_server_address, usersettings.tensorflow_server_port)
