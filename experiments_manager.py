@@ -119,7 +119,7 @@ global usersettings
 embeddingsFolder='embeddings'
 settingsFile_saveName='experiment_settings.py'
 
-MOVING_AVERAGE_DECAY=0.9999
+MOVING_AVERAGE_DECAY=0.998
 # Show debugging output
 tf.logging.set_verbosity(tf.logging.DEBUG)
 
@@ -416,12 +416,13 @@ def model_fn(features, labels, mode, params):
 
         with tf.device("/cpu:0"),tf.variable_scope('moving_average_trainables_saver'), tf.device("/cpu:0"):
 
+            #define the moving average operator and its variables to smooth
             ema = tf.train.ExponentialMovingAverage(
-                decay=MOVING_AVERAGE_DECAY, num_updates=global_step)
-            variables_to_average = (tf.trainable_variables() +
-                                    tf.moving_average_variables())
-            with tf.control_dependencies([train_op]), tf.name_scope('moving_average'):
-              maintain_averages_op = ema.apply(variables_to_average)
+                decay=MOVING_AVERAGE_DECAY, num_updates=tf.train.get_global_step())
+            variables_to_average = tf.trainable_variables()
+            #define the smoothing op and add to UPDATE_OPS collection that are run after each training step
+            maintain_averages_op = ema.apply(variables_to_average)
+            tf.add_to_collection('WEIGHTS_EMA_UPDATE_OP', maintain_averages_op)
 
             if params.debug: #plot the first layer weights sum to compare the variable and the ema version
                 tf.summary.scalar(trainables[0].name, tf.reduce_sum(trainables[0]))
@@ -430,7 +431,11 @@ def model_fn(features, labels, mode, params):
             #add maintain_averages_op to collection tf.GraphKeys.UPDATE_OPS to force running before the optimization step
             tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, maintain_averages_op)
 
-            if mode != tf.estimator.ModeKeys.TRAIN : #restore moving averaged variables to predict
+            '''FIXME : for now, this is the only way i found to force the use of the smoothed weights for prediction
+               smmothed weights are loaded for each prediction call... ugly not ?
+               A better way would be to replace the weights by their smoothed version when writing the served model
+            '''
+            if mode == tf.estimator.ModeKeys.PREDICT : #restore moving averaged variables to predict
                 def _restore_vars(ema):
                     ema_variables = tf.get_collection(tf.GraphKeys.MOVING_AVERAGE_VARIABLES)
                     return tf.group(*[tf.assign(x, ema.average(x)) for x in ema_variables])
@@ -835,6 +840,7 @@ def model_fn(features, labels, mode, params):
                   # Add it to the evaluation_hook list
                   evaluation_hooks.append(eval_summary_hook)
 
+
                 # smoothed parameters load eval hook
                 class LoadEMAHook(tf.train.SessionRunHook):
                   def __init__(self, model_dir):
@@ -844,14 +850,23 @@ def model_fn(features, labels, mode, params):
                   def begin(self):
                     ema = tf.train.ExponentialMovingAverage(MOVING_AVERAGE_DECAY)
                     variables_to_restore = ema.variables_to_restore()
+                    print('Variables to restore:')
+                    print(variables_to_restore)
                     self._load_ema = tf.contrib.framework.assign_from_checkpoint_fn(
-                        tf.train.latest_checkpoint(self._model_dir), variables_to_restore)
+                        tf.train.latest_checkpoint(self._model_dir),
+                        variables_to_restore,
+                        ignore_missing_vars=True)
 
                   def after_create_session(self, sess, coord):
-                    tf.logging.info('********** Reloading EMA... ************')
+                    tf.logging.info('********** Reloading moving averaged parameters ************')
                     self._load_ema(sess)
-                  if usersettings.predict_using_smoothed_parameters is True:
-                    evaluation_hooks=eval_finalize_hook+[LoadEMAHook(params.sessionFolder)]
+                    tf.logging.info('Done')
+
+                if usersettings.predict_using_smoothed_parameters is True:
+                    evaluation_hooks.append(LoadEMAHook(params.sessionFolder))
+                    #ema_variables = tf.get_collection(tf.GraphKeys.MOVING_AVERAGE_VARIABLES)
+                    #return tf.group(*[tf.assign(x, ema.average(x)) for x in ema_variables])
+
 
     with tf.name_scope('model_outputs_postprocessing'):
         exported_outputs=usersettings.model_outputs_postprocessing_for_serving(model_outputs_dict)
@@ -899,7 +914,12 @@ def get_train_op_fn(loss, params):
         model_extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         #define the optimizer, no more forcing to be on the CPU side: (do not force on specific device since backprop, etc should be done where forwrd pass is done
         with tf.control_dependencies(model_extra_update_ops):
-              optimizer = usersettings.getOptimizer(loss=loss, learning_rate=lr, global_step=global_step)
+          optimizer = usersettings.getOptimizer(loss=loss, learning_rate=lr, global_step=global_step)
+        #update weights moving averages is expected to after the parameters update
+        if usersettings.predict_using_smoothed_parameters is True:
+          with tf.control_dependencies([optimizer]):
+            optimizer = tf.group(*tf.get_collection('WEIGHTS_EMA_UPDATE_OP'))
+
     return optimizer
 
 ###########################################################

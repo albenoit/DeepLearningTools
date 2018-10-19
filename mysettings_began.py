@@ -71,7 +71,7 @@ weights_weight_decay=0.0001
 initial_learning_rate=1e-5
 num_epochs_per_decay=100 #FIXME, initial value = 3000 #number of epoch keeping the same learning rate
 learning_rate_decay_factor=0.95 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
-predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
+predict_using_smoothed_parameters=True#set True to use trained parameters values smoothed along the training steps (better results expected)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> train and val sets of data
 from tensorflow.examples.tutorials.mnist import input_data

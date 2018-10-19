@@ -28,8 +28,9 @@ session_name='my_test'
 ===> Note that this dictionnary will complete the session name
 '''
 hparams={'hiddenNeurons':10,#set the number of neurons per hidden layers
+         'predictSmoothParams':True #set True to activate parameters moving averages use for prediction
          }
-         
+
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
@@ -70,7 +71,7 @@ weights_weight_decay=0.0001
 initial_learning_rate=0.1
 num_epochs_per_decay=150 #number of epoch keepng the same learning rate
 learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
-predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed (EMA) along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
+predict_using_smoothed_parameters=hparams['predictSmoothParams']#set True to use trained parameters values smoothed (EMA) along the training steps (better results expected)
 
 #set here paths to your data used for train, val
 #-> a first set of data
