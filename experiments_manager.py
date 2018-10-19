@@ -436,6 +436,7 @@ def model_fn(features, labels, mode, params):
                A better way would be to replace the weights by their smoothed version when writing the served model
             '''
             if mode == tf.estimator.ModeKeys.PREDICT : #restore moving averaged variables to predict
+                print('*** Adding an op to load smoother weights before prediction ***')
                 def _restore_vars(ema):
                     ema_variables = tf.get_collection(tf.GraphKeys.MOVING_AVERAGE_VARIABLES)
                     return tf.group(*[tf.assign(x, ema.average(x)) for x in ema_variables])
