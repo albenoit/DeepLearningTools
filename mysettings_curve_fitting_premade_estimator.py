@@ -6,7 +6,7 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 #-> set here your own working folder
-workingFolder='experiments/curves_fitting'
+workingFolder='experiments/curve_fitting'
 
 #-> port number to be used when interracting with the tensorflow-server
 tensorflow_server_address='127.0.0.1'

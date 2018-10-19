@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import collections #used to stack MC samples in the serving/test phase
 import seaborn as sns
 #-> set here your own working folder
-workingFolder='experiments/curves_fitting'
+workingFolder='experiments/curve_fitting'
 
 #-> port number to be used when interracting with the tensorflow-server
 tensorflow_server_address='127.0.0.1'

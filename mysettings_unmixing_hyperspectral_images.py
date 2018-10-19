@@ -37,7 +37,7 @@ with other processing jobs, yours and the ones of your colleagues.
 Then, connect to the processing node and type in command line 'nvidia-smi'
 to check which gpu is free (very few used memory and GPU )
 '''
-used_gpu_IDs=[0]
+used_gpu_IDs=[]
 #set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
 XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
@@ -50,13 +50,15 @@ hparams={'isBEGAN':False,#set True to activate BEGAN training instead of Autoenc
          'denseBlocks':False, #ste True to use dense connections (as for DenseNet) at a given input
          'skipConnections':False, #set True to activate skip conectionx between the encoder and decoder
          'nbClasses':3,#the number of known classes
-         'codeLayers':3,
+         'codeLayers':3,#the number of model layers (check model file to see how its used)
+         'nbUnits':10,#the number of units per layer (check model file to see how its used)
+         'isPyramid':True,
+         'predictSmoothParams':True #set True to activate parameters moving averages use for prediction
          }
 
 #model_file='model_densenet.py'
 model_file='model_ResidualAE.py'#'model_densenet_3D.py'
-isBEGAN=False
-isVAE=True
+
 
 display_model_layers_info=False #a flag to enable the display of additionnal console information on the model properties (for debug purpose)
 
@@ -81,12 +83,12 @@ server_crops_per_batch=4#define here how many crops are sent to the server at a 
 random_seed=42
 
 # learning rate decaying parameters
-nbEpoch=50
+nbEpoch=100
 weights_weight_decay=0.0001
 initial_learning_rate=0.0001
 num_epochs_per_decay=20 #number of epoch keepng the same learning rate
 learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
-predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
+predict_using_smoothed_parameters=hparams['predictSmoothParams']#set True to use trained parameters values smoothed along the training steps (better results expected)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> a first set of data
 raw_data_dir_train = "/home/alben/workspace/Datasets/hyperspectral/carottes/train/SWIR/"#"/uds_data/listic/datasets/hyperspectral/carottes/train/SWIR/"

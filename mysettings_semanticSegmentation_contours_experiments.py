@@ -69,7 +69,7 @@ initial_learning_rate=0.0001
 num_epochs_per_decay=10 #number of epoch keepng the same learning rate
 learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
 grad_clip_norm=1.0
-predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
+predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> a first set of data
 raw_data_dir_train_ = "../../../../Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
@@ -90,7 +90,7 @@ nb_train_samples=nb_train_images*number_of_crops_per_image# number of images * n
 nb_test_samples=7000#nb_val_images*number_of_crops_per_image
 batch_size=3
 
-class_weights=[0.01, 0.98, 0.01]
+#class_weights=[0.01, 0.98, 0.01]
 ####################################################
 ## Define here use case specific metrics, loss, etc.
 #with tf.name_scope("loss"):
@@ -163,17 +163,27 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     logits_semantic_crops_contours=tf.slice(model_outputs_dict['logits_semantic_contours_map'], begin=[0,field_of_view/2, field_of_view/2, 0], size =[-1,patchSize-field_of_view, patchSize-field_of_view, -1])
 
     #weighted cross entropy with class weights from https://stackoverflow.com/questions/35155655/loss-function-for-class-imbalanced-binary-classifier-in-tensor-flow/35168022#35168022
-    def weighted_cross_entropy_with_logits(logits, labels, class_weights):
-      class_weights_mat=tf.reshape(tf.constant(class_weights), (len(class_weights),1,1))
-      cross_entropy_loss=tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels)
-      print('cross_entropy_loss='+str(cross_entropy_loss))
-      return tf.reduce_sum(cross_entropy_loss*class_weights_mat) / batch_size
+    #check https://www.jeremyjordan.me/semantic-segmentation/#loss
+    #https://github.com/carpenterlab/unet4nuclei/blob/master/unet4nuclei/utils/objectives.py
+    def weighted_crossentropy(logits, labels, class_weights):
+      class_weights = tf.constant([[[[1., 1., 10.]]]])
+      truth=tf.cast(tf.expand_dims(labels, -1), tf.float32)
+      unweighted_losses = tf.nn.softmax_cross_entropy_with_logits_v2(labels=truth, logits=logits)
+      print('unweighted_losses='+str(unweighted_losses))
+      weights = tf.reduce_sum(class_weights * truth, axis=-1)
+      print('weights='+str(weights))
+      weighted_losses = weights * unweighted_losses
+      print('weighted_losses='+str(weighted_losses))
+      loss = tf.reduce_mean(weighted_losses)
+      raw_input('loss='+str(loss))
+      return loss
+
     def unweighted_cross_entropy_with_logits(logits, labels):
       return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits_semantic_crops_labels, labels=semantic_labels))
 
     if 'class_weights' in globals():
       raw_input('Using weighted class loss')
-      cross_entropy_segmentation_labels_loss=weighted_cross_entropy_with_logits(logits=logits_semantic_crops_labels, labels=semantic_labels, class_weights=class_weights)
+      cross_entropy_segmentation_labels_loss=weighted_crossentropy(logits=logits_semantic_crops_labels, labels=semantic_labels, class_weights=class_weights)
       cross_entropy_segmentation_contours_loss=weighted_cross_entropy_with_logits(logits=logits_semantic_crops_contours, labels=semantic_contours, class_weights=class_weights)
     else:
       raw_input('Using unweighted class loss')
@@ -204,9 +214,9 @@ def get_validation_summaries(inputs, model_outputs_dict, labels):
         raw_rgb_max= tf.reduce_max(inputs, axis=[1,2,3], keep_dims=True)
         raw_images_rgb_0_1=(inputs-raw_rgb_min)/(raw_rgb_max-raw_rgb_min)
         raw_images_display=tf.saturate_cast(raw_images_rgb_0_1*255.0, dtype=tf.uint8)
-        reference_images_crops_regions_display=tf.expand_dims(tf.saturate_cast((labels_regions*255)/hparams['nbClasses'], dtype=tf.uint8),-1)
+        reference_images_crops_regions_display=tf.expand_dims(tf.saturate_cast((labels_regions*255)/(hparams['nbClasses']-1), dtype=tf.uint8),-1)
         reference_images_crops_contours_display=tf.expand_dims(tf.saturate_cast(labels_contours*255, dtype=tf.uint8),-1)
-        semantic_segm_argmax_map_crops_display=tf.saturate_cast(tf.expand_dims((semantic_segm_argmax_map*255)/hparams['nbClasses'],-1), dtype=tf.uint8)
+        semantic_segm_argmax_map_crops_display=tf.saturate_cast(tf.expand_dims((semantic_segm_argmax_map*255)/(hparams['nbClasses']-1),-1), dtype=tf.uint8)
         semantic_contours_map_crops_display=tf.saturate_cast(tf.expand_dims(semantic_segm_argmax_contours_map*255,-1), dtype=tf.uint8)
         print('*********reference shape='+str(reference_images_crops_regions_display.get_shape().as_list()))
         return ([tf.summary.image("input", raw_images_display),

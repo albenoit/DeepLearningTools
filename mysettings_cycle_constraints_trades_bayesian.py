@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import DataProvider_input_pipeline
 import model_utils
 #-> set here your own working folder
-workingFolder='experiments/curves_fitting'
+workingFolder='experiments/curve_fitting'
 
 #-> port number to be used when interracting with the tensorflow-server
 tensorflow_server_address='127.0.0.1'
@@ -35,7 +35,7 @@ session_name='LSTM'
 '''
 hparams={'hiddenNeurons':10,#set the number of neurons per hidden layers
          }
-         
+
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered

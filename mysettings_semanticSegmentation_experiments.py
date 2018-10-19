@@ -65,7 +65,7 @@ weights_weight_decay=0.0001
 initial_learning_rate=0.0001
 num_epochs_per_decay=10 #number of epoch keepng the same learning rate
 learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
-predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
+predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> a first set of data
 raw_data_dir_train_ = "../../../../Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
@@ -160,8 +160,8 @@ def get_validation_summaries(inputs, model_outputs_dict, labels):
         raw_rgb_max= tf.reduce_max(inputs, axis=[1,2,3], keep_dims=True)
         raw_images_rgb_0_1=(inputs-raw_rgb_min)/(raw_rgb_max-raw_rgb_min)
         raw_images_display=tf.saturate_cast(raw_images_rgb_0_1*255.0, dtype=tf.uint8)
-        reference_images_crops_regions_display=tf.expand_dims(tf.saturate_cast((labels*255)/hparams['nbClasses'], dtype=tf.uint8),-1)
-        semantic_segm_argmax_map_crops_display=tf.saturate_cast(tf.expand_dims((semantic_segm_argmax_map*255)/hparams['nbClasses'],-1), dtype=tf.uint8)
+        reference_images_crops_regions_display=tf.expand_dims(tf.saturate_cast((labels*255)/(hparams['nbClasses']-1), dtype=tf.uint8),-1)
+        semantic_segm_argmax_map_crops_display=tf.saturate_cast(tf.expand_dims((semantic_segm_argmax_map*255)/(hparams['nbClasses']-1),-1), dtype=tf.uint8)
         print('*********reference shape='+str(reference_images_crops_regions_display.get_shape().as_list()))
         return ([tf.summary.image("input", raw_images_display),
                 tf.summary.image("references_center_crop_regions", reference_images_crops_regions_display),
