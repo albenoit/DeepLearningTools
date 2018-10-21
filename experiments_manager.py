@@ -55,7 +55,7 @@ is targeted when starting the script (this filename is set in var FLAGS.usersett
 #KNOWN ISSUES :
 
 This script has some known problems, any suggestion is welcome:
--moving average parameters saving is maybe not correctly done. I am not sure that the smoothed variables are saved instead of the current parameters
+-moving average parameters reloading for model serving is not optimized, this should be enhanced.
 -for now tensorflow_server only works on CPU so using GPU only for training and validation. Track : https://github.com/tensorflow/serving/issues/668
 
 #TODO :

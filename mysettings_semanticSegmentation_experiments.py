@@ -194,14 +194,14 @@ def get_eval_metric_ops(inputs, model_outputs_dict, labels):
                         name='Accuracy_metric'
                         ),
             'IoU' : tf.metrics.mean_iou(
-                                labels=labels,
-                                predictions=semantic_segm_argmax_map,
-                                num_classes=hparams['nbClasses'],
-                                weights=None,
-                                metrics_collections=None,
-                                updates_collections=None,
-                                name='IoU_metric')
-            }
+                        labels=labels,
+                        predictions=semantic_segm_argmax_map,
+                        num_classes=hparams['nbClasses'],
+                        weights=None,
+                        metrics_collections=None,
+                        updates_collections=None,
+                        name='IoU_metric'),
+           }
 
 '''Define here the input pipelines :
 -1. a common function for train and validation modes
