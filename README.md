@@ -1,19 +1,20 @@
 # What's that ?
 
-A set of scripts that demonstrate the use of Tensorflow experiments and estimators on 1D data
+A set of scripts that demonstrate the use of Tensorflow experiments and estimators on your data (1D, 2D, 3D...)
 @brief : the main script that enables training, validation and serving Tensorflow based models merging all needs in a
 single script to train, evaluate, export and serve, taking large inspirations of official Tensorflow demos.
 @author : Alexandre Benoit, LISTIC lab, FRANCE
 
-Several ideas are put together:
+Several ideas put together:
 
-* experiments and estimators to manage training, validation and export in a easier way (but experiments are still in the contrib module so subject to strong changes)
-* using moving averages to store parameters with values smoothed along the last training steps (FIXME : ensure those values are used for real by the estimator, actually the graph shows 2 parameter savers...).
-* visualization including embedding projections to observe some data projections on the TensorBoard
-* tensorflow-serving-api to use to serve the model and dynamically load updated models
-* some tensorflow-serving client codes to reuse the trained model on single or streaming data
+* training a model with tf.estimator to manage training, validation and export in a easier way.
+* using moving averages to store parameters with values smoothed along the last training steps.
+* automatic storage of all the model outputs on the validation dataset in order to observe some data projections on the TensorBoard.
+* tensorflow-serving-api to use to serve the model and dynamically load updated models.
+* some tensorflow-serving client codes to reuse the trained model on single or streaming data.
+* each experiment is strored in a specific folder for model versionning and comparison.
 
-# Machine Setup (tested with tensorflow 1.4.1)
+# Machine Setup (validated with tensorflow 1.7+)
 ## Main requirements:
 1. install python 2.7 and python pip
 2. install Tensorflow and Tensorflow serving using pip : pip install tensorflow-gpu tensorflow-serving-api
@@ -61,26 +62,26 @@ python experiments_manager.py --predict --model_dir=experiments/1Dsignals_cluste
 # How tu use it to train/test/serve a new model for a new use case ?
 
 The main script is experiments_manager.py can be used in 3 modes, here are some command examples:
-1. train a model in a context specified in a parameter script such as mysettings_1D_experiments.py (details provided in the following TODO section):
+1. train a model in a context specified in a parameter script such as mysettings_curve_fitting.py (details provided in the following TODO section):
 ```
-python experiments_manager.py --usersettings=mysettings_1D_experiments.py
+python experiments_manager.py --usersettings=mysettings_curve_fitting.py
 ```
 2. start a Tensorflow server on the trained/training model :
 ```
-python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53
+python experiments_manager.py --start_server --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53
 ```
 3. interact with the Tensorflow server, sending input buffers and receiving answers
 ```
-python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/
+python experiments_manager.py --predict --model_dir=experiments/curve_fitting/my_test_2018-01-03--14\:40\:53/
 ```
 
-## NOTE : 
+## NOTE :
 
 once trained (or along training), start the Tensorboard to parse logs of
 the experiments folder (provided example is experiments/1Dsignals_clustering):
 from the scripts directory using command:
 ```
-tensorboard  --logdir=experiments/1Dsignals_clustering
+tensorboard  --logdir=experiments/curve_fitting
 ```
 Then, open a web browser and reach http://127.0.0.1:6006/ to monitor training
 values and observe the obtained embedding.
@@ -89,14 +90,15 @@ values and observe the obtained embedding.
 
 1. The main code for training, validation and prediction is specified in the main script (experiments_manager.py).
 2. Most of the use case specific parameters and Input/Output functions have been
-moved to a separated settings script such as 'mysettings_1D_experiments.py' that
-is targeted when starting the script (this filename is set in var FLAGS.usersettings in the main script).
+moved to a separated settings script such as 'mysettings_1D_experiments.py' and
+'mysettings_curve_fitting.py' that is targeted when starting the script (this
+  filename is set in var FLAGS.usersettings in the main script).
 3. The model to be trained and served is specified in a different script targeted by the settings file.
 
 # KNOWN ISSUES :
 
 This script has some known problems, any suggestion is welcome:
-* moving average parameters saving is maybe not correctly done. I am not sure that the smoothed variables are saved instead of the current parameters
+* moving average parameters saving is not optimized for the served model but filtered parameters are loaded is required to (if usersettings.predict_using_smoothed_parameters=True).
 * for now tensorflow_server only works on CPU so using GPU only for training and validation. Track : https://github.com/tensorflow/serving/issues/668
 
 # TODO :
