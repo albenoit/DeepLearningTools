@@ -55,20 +55,21 @@ is targeted when starting the script (this filename is set in var FLAGS.usersett
 #KNOWN ISSUES :
 
 This script has some known problems, any suggestion is welcome:
--moving average parameters saving is maybe not correctly done. I am not sure that the smoothed variables are saved instead of the current parameters
+-moving average parameters reloading for model serving is not optimized, this should be enhanced.
 -for now tensorflow_server only works on CPU so using GPU only for training and validation. Track : https://github.com/tensorflow/serving/issues/668
 
 #TODO :
 
-To adapt to new use case, just update the mysettingsxxx file and adjust I/O functions.
-For any experiment, the availability of all the required fields in the settings file is checked by the experiments_settings_checker.py script. You can have a look there to ensure you prepared everything right.
+To adapt to new use case, just duplicate the closest mysettingsxxx file and adjust the configuration.
+For any experiment, the availability of all the required fields in the settings file is checked by the experiments_settings_checker.py script.
+You can have a look there to ensure you prepared everything right.
 
 As a reminder, here are the functions prototypes:
+
 -define a model to be trained and served in a specific file and follow this prototype:
---report model name in the settings file
+--report model name in the settings file using variable name model_file or thecify a premade estimator using variable name premade_estimator
 --def model( data, #the input data tensor
-            n_outputs, #dimension of the embedding code
-            hparams,  #external parameters that may be used to setup the model
+            hparams,  #external parameters that may be used to setup the model (number of classes and so depending on the task)
             mode), #mode set to switch between train, validate and inference mode
             wrt tf.estimator.tf.estimator.ModeKeys values
           => the model must return a dictionary of output tensors
@@ -86,10 +87,14 @@ As a reminder, here are the functions prototypes:
 ---def getInputData(self, idx):
 ---def decodeResponse(self, result):
 ---def finalize():
+-------> Note, the finalize method will be called once the number of expected
+iterations is reached and if any StopIteration exception is sent by the client
+-OPTIONNAL: add the dictionnary named 'hparams' in this settings file to carry those specific hyperparameters to the model
+and to complete the session name folder to facilitate experiments tracking and comparison
 
 Some examples of such functions are put in the README.md and in the versionned mysettings_xxx.py demos
 
-This demo relies on Tensorflow 1.4.1 and makes use of Estimators
+This demo relies on Tensorflow 1.7 and above and makes use of Estimators
 Look at https://github.com/GoogleCloudPlatform/cloudml-samples/blob/master/census/tensorflowcore/trainer/model.py
 Look at some general guidelines on Tenforflow here https://github.com/vahidk/EffectiveTensorflow
 Look at the related webpages : http://python.usyiyi.cn/documents/effective-tf/index.html
@@ -114,7 +119,7 @@ global usersettings
 embeddingsFolder='embeddings'
 settingsFile_saveName='experiment_settings.py'
 
-MOVING_AVERAGE_DECAY=0.9999
+MOVING_AVERAGE_DECAY=0.998
 # Show debugging output
 tf.logging.set_verbosity(tf.logging.DEBUG)
 
@@ -138,7 +143,7 @@ def loadModel(sessionFolder):
   try:
     model_def=imp.load_source('model_def', model_path)
   except Exception,e:
-    raise ValueError('Failed to load model file : '+str(usersettings.model_file)+str(e))
+    raise ValueError('loadModel: Failed to load model file {model} from sessionFolder {sess}, error message={err}'.format(model=usersettings.model_file, sess=sessionFolder, err=e))
   model=model_def.model
 
   print('loaded model file {file}'.format(file=model_path))
@@ -233,25 +238,20 @@ def getEvalSpecs(params, global_hooks):
         exports_to_keep=5
         )
       )
-  #-> a final exporter at the end of the training
-  exporters.append(tf.estimator.FinalExporter(
-        name='final_model',
-        serving_input_receiver_fn=usersettings.get_input_pipeline_serving,
-        assets_extra=None,
-        as_text=False,
-        )
-      )
-  '''TODO : when possible, move to thus one available in tf 1.10:
-  tf.estimator.BestExporter(#choosing here to only export better models
-      name='best_exporter',
-      serving_input_receiver_fn=usersettings.get_input_pipeline_serving,
-      event_file_pattern='eval/*.tfevents.*',
-      compare_fn=_loss_smaller,
-      assets_extra=None,
-      as_text=False,
-      exports_to_keep=5
-      )
-  '''
+
+  try: #when possible, keep the best model (available in tf 1.10):
+      tf.estimator.BestExporter(#choosing here to only export better models
+          name='best_model',
+          serving_input_receiver_fn=usersettings.get_input_pipeline_serving,
+          event_file_pattern='eval/*.tfevents.*',
+          compare_fn=_loss_smaller,
+          assets_extra=None,
+          as_text=False,
+          exports_to_keep=5
+          )
+  except:
+     print('tf.estimator.BestExporter is not available on this tensorflow version, tf>1.1 required')
+     pass
   return tf.estimator.EvalSpec( input_fn=eval_input_fn,
                                 steps=params.nbIterationPerEpoch_val,
                                 name=None,
@@ -294,7 +294,7 @@ def getSessionConfig(params):
                               save_checkpoints_secs=None,
                               session_config=sessionConfig,
                               keep_checkpoint_max=5,
-                              keep_checkpoint_every_n_hours=10000,
+                              keep_checkpoint_every_n_hours=12,
                               log_step_count_steps=100,
                               train_distribute=None,
                               #TODO, activate when tf 1.10 available : device_fn=None
@@ -311,7 +311,6 @@ def run_experiment(argv=None):
     nbIterationPerEpoch_train=getIterationsPerEpoch('train'),
     nbIterationPerEpoch_val=getIterationsPerEpoch('val'),
     learning_rate=usersettings.initial_learning_rate,
-    n_classes=usersettings.nb_classes,
     debug=usersettings.display_model_layers_info #can be forced to True if script option --debug is provided
     )
   #add additionnal hyperparams coming from argv
@@ -374,7 +373,9 @@ def model_fn(features, labels, mode, params):
         (EstimatorSpec): Model to be run by Estimator.
     """
 
-    print('############ Received features='+str(type(features)))
+    print('###################################################')
+    print('Defining the custom model_fn with mode : '+str(mode))
+    print('=> input features='+str(features))
     if isinstance(features,dict):
         #basic case (for serving especially) where input is a dict with only the 'feature' item
         if 'feature' in features and len(features)==1:
@@ -401,7 +402,6 @@ def model_fn(features, labels, mode, params):
     with tf.device(model_placement), tf.variable_scope(model_scope):
         model=loadModel(params.sessionFolder)
         model_outputs_dict=model(   data=features,
-                                    n_outputs=usersettings.nb_classes,
                                     hparams=params, #hyperparameters that may control model settings
                                     mode=mode
                                 )
@@ -416,12 +416,13 @@ def model_fn(features, labels, mode, params):
 
         with tf.device("/cpu:0"),tf.variable_scope('moving_average_trainables_saver'), tf.device("/cpu:0"):
 
+            #define the moving average operator and its variables to smooth
             ema = tf.train.ExponentialMovingAverage(
-                decay=MOVING_AVERAGE_DECAY, num_updates=global_step)
-            variables_to_average = (tf.trainable_variables() +
-                                    tf.moving_average_variables())
-            with tf.control_dependencies([train_op]), tf.name_scope('moving_average'):
-              maintain_averages_op = ema.apply(variables_to_average)
+                decay=MOVING_AVERAGE_DECAY, num_updates=tf.train.get_global_step())
+            variables_to_average = tf.trainable_variables()
+            #define the smoothing op and add to UPDATE_OPS collection that are run after each training step
+            maintain_averages_op = ema.apply(variables_to_average)
+            tf.add_to_collection('WEIGHTS_EMA_UPDATE_OP', maintain_averages_op)
 
             if params.debug: #plot the first layer weights sum to compare the variable and the ema version
                 tf.summary.scalar(trainables[0].name, tf.reduce_sum(trainables[0]))
@@ -430,7 +431,12 @@ def model_fn(features, labels, mode, params):
             #add maintain_averages_op to collection tf.GraphKeys.UPDATE_OPS to force running before the optimization step
             tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, maintain_averages_op)
 
-            if mode != tf.estimator.ModeKeys.TRAIN : #restore moving averaged variables to predict
+            '''FIXME : for now, this is the only way i found to force the use of the smoothed weights for prediction
+               smmothed weights are loaded for each prediction call... ugly not ?
+               A better way would be to replace the weights by their smoothed version when writing the served model
+            '''
+            if mode == tf.estimator.ModeKeys.PREDICT : #restore moving averaged variables to predict
+                print('*** Adding an op to load smoother weights before prediction ***')
                 def _restore_vars(ema):
                     ema_variables = tf.get_collection(tf.GraphKeys.MOVING_AVERAGE_VARIABLES)
                     return tf.group(*[tf.assign(x, ema.average(x)) for x in ema_variables])
@@ -457,7 +463,7 @@ def model_fn(features, labels, mode, params):
                 print('Found the following regularisation losses')
                 for layer_loss in regularization_losses:
                     print(layer_loss)
-            print('Found {nb_losses} layers regularisation_losses'.format(nb_losses=len(regularization_losses)))
+            print('Found {nb_losses} layers regularisation_losses within collection tf.GraphKeys.REGULARIZATION_LOSSES'.format(nb_losses=len(regularization_losses)))
             weights_loss=tf.reduce_sum(regularization_losses)#tf.losses.get_regularization_loss()
             tf.summary.scalar('Regularization_loss', weights_loss)
           #finalize total loss
@@ -520,6 +526,8 @@ def model_fn(features, labels, mode, params):
                 #FIXME, the following criteria is stil hazardous and may nt adapt to new use cases
                 denseLabels= (xdimensions>=2 and xdimensions_labels>=2) and len(features.get_shape().as_list())>=4
                 if denseLabels is True: #multiple samples/labels per data sample use case
+                    print('*** Dense labels case study')
+                    print("Now preparing data embedding from the central pixels of the validation data samples")
                     #crop raw data as for labels whatever the dimension of the data (considering initial shape [batch, [xdimensions], channels])
                     xdimensions=(len(features.get_shape().as_list())-2)
                     def get_feature_central_area(feature_map, feature_name):
@@ -533,15 +541,22 @@ def model_fn(features, labels, mode, params):
                         print('--> Extracting central patch AREA of feature map \'{name}\' : {tensor}'.format(name=feature_name, tensor=feature_map))
                         central_value=None
                         if usersettings.patchSize-usersettings.field_of_view>0:
+                            additionnal_dims_size=features.get_shape().as_list()[3:-1]#remove spatial border effects but keep all the other dimensios as is
                             central_value=tf.slice( feature_map,
-                                                  begin=[0]+[usersettings.field_of_view//2]*xdimensions+[0],
-                                                  size=[-1]+[usersettings.patchSize-usersettings.field_of_view]*xdimensions+[-1])
+                                                  begin=[0]+[usersettings.field_of_view//2]*2+[0]*len(additionnal_dims_size)+[0],
+                                                  size=[-1]+[usersettings.patchSize-usersettings.field_of_view]*2+additionnal_dims_size+[-1])
                         else:
                             central_value=feature_map
                         print('---> central value shape='+str(central_value.get_shape().as_list()))
                         return central_value
                     features_fov=get_feature_central_area(features, 'input')
-                    model_outputs_fov={output_key: get_feature_central_area(output_feature, output_key) for output_key,output_feature in model_outputs_dict.items()}
+                    model_outputs_fov={}
+                    for output_key,output_feature in model_outputs_dict.items():
+                      #check if spatial size matches between input and feature map, if yes, keep central area
+                      if output_feature.get_shape().as_list()[1:3] == features.get_shape().as_list()[1:3]:
+                        model_outputs_fov[output_key]= get_feature_central_area(output_feature, output_key)
+                      else:#otherwise keep the data as is
+                        model_outputs_fov[output_key]=output_feature
                     #pick the central pixel Value
                     def get_feature_central_pixel(feature_map, feature_name):
                         ''' returns the central pixel of the input feature map
@@ -553,16 +568,26 @@ def model_fn(features, labels, mode, params):
                         print('--> Extracting central patch VALUE of feature map \'{name}\' : {tensor}'.format(name=feature_name, tensor=feature_map))
 
                         #get center coordinates
-                        central_data_idx=(np.array(feature_map.get_shape().as_list()[1:1+xdimensions])/2).tolist()
-                        print('---> central patch VALUE index='+str(central_data_idx))
+                        central_data_idx=(np.array(feature_map.get_shape().as_list()[1:3])/2).tolist()
+                        print('---> central patch coordinates='+str(central_data_idx))
+                        central_data_dims=len(features.get_shape().as_list()[3:])
+
                         #return the central slice
                         central_value= tf.slice( feature_map,
-                                      begin=[0]+central_data_idx+[0],
-                                      size=[-1]+[1]*xdimensions+[-1])
+                                      begin=[0]+central_data_idx+[0]*central_data_dims,
+                                      size=[-1]+[1,1]+[-1]*central_data_dims)
                         print('---> central patch VALUE shape='+str(central_value))
                         return central_value
 
-                    model_outputs_center_val_dict={output_key: get_feature_central_pixel(output_feature, output_key) for output_key,output_feature in model_outputs_dict.items()}
+                    model_outputs_center_val_dict={}
+                    for output_key,output_feature in model_outputs_dict.items():
+                      #FIXME test may not be robust enough...
+                      if len(output_feature.get_shape().as_list())-2 == xdimensions:
+                        model_outputs_center_val_dict[output_key]= get_feature_central_pixel(output_feature, output_key)
+                      else:#keep the data as is
+                        print('Could not extract central pixel of feature {feat}'.format(feat=output_feature))
+                        model_outputs_center_val_dict[output_key]=output_feature
+                    print('...Central pixel extraction OK')
                     labels_center_val=get_feature_central_pixel(labels, 'labels')
                     features_center_val=get_feature_central_pixel(features_fov, 'input')
                     '''#resize labels map to the size of the code to pick a rough label value consistent with the code
@@ -594,6 +619,7 @@ def model_fn(features, labels, mode, params):
                     eval_metric_ops = usersettings.get_eval_metric_ops(inputs=features_fov, model_outputs_dict=model_outputs_fov, labels=labels)
 
                 else: #sample level classification
+                    print('*** No dense labels case study')
                     stored_embedding_samples=params.nbIterationPerEpoch_val*usersettings.batch_size
                     flatten_features=get_flatten_feature(features, 'input_features')
                     flatten_labels=get_flatten_feature(labels, 'labels')
@@ -612,14 +638,6 @@ def model_fn(features, labels, mode, params):
                     flatten_saved_samples_dict['input_samples']=flatten_features
                     flatten_saved_samples_dict['labels']=flatten_labels
                     print('About to save, each iteration, the following data:'+str(flatten_saved_samples_dict))
-                    ''' WHEN AVAILABLE? ADD IMAGE summaries
-                       ---> https://github.com/tensorflow/tensorflow/issues/15332
-                       ---> https://github.com/tensorflow/tensorflow/issues/14042
-                       #add image summaries if inputs are images
-                    val_summaries=usersettings.get_validation_summaries(inputs=features, predictions=predictions, labels=labels, embedding_code=embedding_code)
-                    if val_summaries is not None:
-                        print('new summaries added!!!')
-                    '''
 
                     '''-> prepare large buffers to store all evaluation samples for plotting
                       --> those buffer are LOCAL_VARIABLES dedicated to the EVAL mode
@@ -651,8 +669,8 @@ def model_fn(features, labels, mode, params):
                                                                         name=name)
                         #-> define the final assign op that dequeues all the sample and store into the buffer
                         assign_samples=whole_samples_to_store.assign(samples_saving_queue.dequeue_up_to(stored_embedding_samples))#flatten_raw_images)
-                        assign_samples=tf.Print(assign_samples,[samples_saving_queue.size()], message="###################################################### Samples queue AFTER dequeue")#-> define a histogram on this buffer for monitoring purpose
-                        assign_samples=tf.Print(assign_samples,[assign_samples, samples_saving_queue.size()], message="###################################################### Samples queue AFTER dequeue")#-> define a histogram on this buffer for monitoring purpose
+                        #assign_samples=tf.Print(assign_samples,[samples_saving_queue.size()], message="###################################################### Samples queue AFTER dequeue")#-> define a histogram on this buffer for monitoring purpose
+                        #assign_samples=tf.Print(assign_samples,[assign_samples, samples_saving_queue.size()], message="###################################################### Samples queue AFTER dequeue")#-> define a histogram on this buffer for monitoring purpose
                         samples_hist=tf.summary.histogram(name+'_values',whole_samples_to_store)
 
                         return {'variable_buffer':whole_samples_to_store,
@@ -812,13 +830,17 @@ def model_fn(features, labels, mode, params):
 
                 if hasattr(usersettings, 'get_validation_summaries'):
                   with tf.name_scope('eval_addon_summaries'):
-                    eval_addon_summaries, save_steps=usersettings.get_validation_summaries(inputs=features_fov, model_outputs_dict=model_outputs_fov, labels=labels)
+                    if denseLabels is True:
+                      eval_addon_summaries, save_steps=usersettings.get_validation_summaries(inputs=features_fov, model_outputs_dict=model_outputs_fov, labels=labels)
+                    else:
+                      eval_addon_summaries, save_steps=usersettings.get_validation_summaries(inputs=features, model_outputs_dict=model_outputs_dict, labels=labels)
                   eval_summary_hook = tf.train.SummarySaverHook(
                                 save_steps=save_steps,
                                 output_dir= os.path.join(params.sessionFolder,embeddingsFolder,'eval_addon_summaries'),
                                 summary_op=tf.summary.merge(eval_addon_summaries, 'eval_addon_summaries'))
                   # Add it to the evaluation_hook list
                   evaluation_hooks.append(eval_summary_hook)
+
 
                 # smoothed parameters load eval hook
                 class LoadEMAHook(tf.train.SessionRunHook):
@@ -829,14 +851,23 @@ def model_fn(features, labels, mode, params):
                   def begin(self):
                     ema = tf.train.ExponentialMovingAverage(MOVING_AVERAGE_DECAY)
                     variables_to_restore = ema.variables_to_restore()
+                    print('Variables to restore:')
+                    print(variables_to_restore)
                     self._load_ema = tf.contrib.framework.assign_from_checkpoint_fn(
-                        tf.train.latest_checkpoint(self._model_dir), variables_to_restore)
+                        tf.train.latest_checkpoint(self._model_dir),
+                        variables_to_restore,
+                        ignore_missing_vars=True)
 
                   def after_create_session(self, sess, coord):
-                    tf.logging.info('********** Reloading EMA... ************')
+                    tf.logging.info('********** Reloading moving averaged parameters ************')
                     self._load_ema(sess)
-                  if usersettings.predict_using_smoothed_parameters is True:
-                    evaluation_hooks=eval_finalize_hook+[LoadEMAHook(params.sessionFolder)]
+                    tf.logging.info('Done')
+
+                if usersettings.predict_using_smoothed_parameters is True:
+                    evaluation_hooks.append(LoadEMAHook(params.sessionFolder))
+                    #ema_variables = tf.get_collection(tf.GraphKeys.MOVING_AVERAGE_VARIABLES)
+                    #return tf.group(*[tf.assign(x, ema.average(x)) for x in ema_variables])
+
 
     with tf.name_scope('model_outputs_postprocessing'):
         exported_outputs=usersettings.model_outputs_postprocessing_for_serving(model_outputs_dict)
@@ -884,7 +915,12 @@ def get_train_op_fn(loss, params):
         model_extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         #define the optimizer, no more forcing to be on the CPU side: (do not force on specific device since backprop, etc should be done where forwrd pass is done
         with tf.control_dependencies(model_extra_update_ops):
-              optimizer = usersettings.getOptimizer(loss=loss, learning_rate=lr, global_step=global_step)
+          optimizer = usersettings.getOptimizer(loss=loss, learning_rate=lr, global_step=global_step)
+        #update weights moving averages is expected to after the parameters update
+        if usersettings.predict_using_smoothed_parameters is True:
+          with tf.control_dependencies([optimizer]):
+            optimizer = tf.group(*tf.get_collection('WEIGHTS_EMA_UPDATE_OP'))
+
     return optimizer
 
 ###########################################################
@@ -992,21 +1028,25 @@ def do_inference(host, port, model_name, concurrency, num_tests):
   notDone=True
   predictionIdx=0
   while notDone:
-      predictionIdx=predictionIdx+1
-      start_time=time.time()
-      sample=client_io.getInputData(predictionIdx)
-      if FLAGS.debug:
-          print('Input data is ready (data, shape)'+str((sample, sample.shape)))
-          print('Time to prepare collect data request:',round(time.time() - start_time, 2))
-          start_time=time.time()
-      request = predict_pb2.PredictRequest()
-      request.model_spec.name = model_name
-      request.model_spec.signature_name = usersettings.served_head
-      request.inputs[usersettings.input_data_name].CopyFrom(
-            tf.make_tensor_proto(sample, shape=sample.shape))
-      if FLAGS.debug:
-        print('Time to prepare request:',round(time.time() - start_time, 2))
-
+      try:
+        predictionIdx=predictionIdx+1
+        start_time=time.time()
+        sample=client_io.getInputData(predictionIdx)
+        if FLAGS.debug:
+            print('Input data is ready (data, shape)'+str((sample, sample.shape)))
+            print('Time to prepare collect data request:',round(time.time() - start_time, 2))
+            start_time=time.time()
+        request = predict_pb2.PredictRequest()
+        request.model_spec.name = model_name
+        request.model_spec.signature_name = usersettings.served_head
+        request.inputs[usersettings.input_data_name].CopyFrom(
+              tf.make_tensor_proto(sample, shape=sample.shape))
+        if FLAGS.debug:
+          print('Time to prepare request:',round(time.time() - start_time, 2))
+      except StopIteration:
+        print('End of the process detection, finalizing the finalize method')
+        notDone=True
+        break
       #asynchronous message reception, may hide some AbortionError details and only provide CancellationError(code=StatusCode.CANCELLED, details="Cancelled")
       '''result_future = stub.Predict.future(request, usersettings.serving_client_timeout_int_secs)  # 5 seconds
       result_future.add_done_callback(
@@ -1031,12 +1071,13 @@ def do_inference(host, port, model_name, concurrency, num_tests):
   return 0
 
 
-def loadExperimentsSettings(filename, restart_from_sessionFolder=None):
+def loadExperimentsSettings(filename, restart_from_sessionFolder=None, isServingModel=False):
     ''' load experiments parameters from the mysettingsxxx.py script
         also mask GPUs to only use the ones specified in the settings file
       Args:
         filename: the settings file, if restarting an interrupted training session, you should target the experiments_settings.py copy available in the experiment folder to restart"
         restart_from_sessionFolder: [OPTIONNAL] set the  session folder of a previously interrupted training session to restart
+        isServingModel: [OPTIONNAL] set True in the case of using model serving (server or client mode) so that some settings are not checked
     '''
 
     if restart_from_sessionFolder is not None:
@@ -1054,7 +1095,7 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None):
       else:
         raise ValueError('Could not restart interrupted training session, working folder not found:'+str(model_dir))
     else:
-      print('Starting a new experiment')
+      print('Process starts...')
 
     print('Trying to load experiments settings file : '+str(filename))
     try:
@@ -1064,7 +1105,7 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None):
     print('loaded settings file {file}'.format(file=filename))
 
     settings_checker=ExperimentsSettingsChecker(usersettings)
-    settings_checker.validate_settings()
+    settings_checker.validate_settings(isServingModel)
 
     if len(usersettings.used_gpu_IDs)>=1:
         print('Forcing system to only focus on the target GPU {gpuID} thus avoiding memory allocation issues on the other GPUs'.format(gpuID=usersettings.used_gpu_IDs))
@@ -1110,30 +1151,33 @@ if __name__ == "__main__":
     if FLAGS.start_server is True:
         print('### START TENSORFLOW SERVER MODE ###')
 
-        usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName))
+        usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName), isServingModel=True)
 
         #target the served models folder
-        model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/final_model')
+        model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/best_model')
         if not(os.path.exists(model_folder)):
           model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/latest_models')
         print('Considering served model parent directory:'+model_folder)
         #check if at least one served model exists in the target models directory
-        try:
-          #check served model existance
-          if not(os.path.exists(model_folder)):
-            raise ValueError('served models directory not found : '+model_folder)
-          #look for a model in the directory
-          one_model=next(os.walk(model_folder))[1][0]
-          one_model_path=os.path.join(model_folder, one_model)
-          if not(os.path.exists(one_model_path)):
-            raise ValueError('served models directory not found : '+one_model_path)
-          print('Found at least one servable model directory '+str(one_model_path))
-
-          # print servable informations
-          #propose some commands to get information on the served model
-          print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME')
-        except Exception, e:
-          raise ValueError('Could not find servable model, error='+str(e.message))
+        stillWait=True
+        while stillWait is True:
+          print('Looking for a servable model in '+os.path.join(scripts_WD,FLAGS.model_dir,'export/'))
+          try:
+            #check served model existance
+            if not(os.path.exists(model_folder)):
+              raise ValueError('served models directory not found : '+model_folder)
+            #look for a model in the directory
+            one_model=next(os.walk(model_folder))[1][0]
+            one_model_path=os.path.join(model_folder, one_model)
+            if not(os.path.exists(one_model_path)):
+              raise ValueError('served models directory not found : '+one_model_path)
+            print('Found at least one servable model directory '+str(one_model_path))
+            stillWait=False
+            # print servable informations
+            #propose some commands to get information on the served model
+            print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME')
+          except Exception, e:
+            raise ValueError('Could not find servable model, error='+str(e.message))
 
         get_served_model_info(one_model_path, usersettings.served_head)
         tensorflow_start_cmd="tensorflow_model_server --port={port} --model_name={model} --model_base_path={model_dir}".format(port=usersettings.tensorflow_server_port,
@@ -1145,9 +1189,9 @@ if __name__ == "__main__":
 
     elif FLAGS.predict is True or FLAGS.predict_stream !=0:
         print('### PREDICT MODE, interacting with a tensorflow server ###')
-        print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAM, you can then add option --signature_def MODEL_NAME')
+        print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME')
 
-        usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName))
+        usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName), isServingModel=True)
 
         #FIXME errors reported on gRPC: https://github.com/grpc/grpc/issues/13752 ... stay tuned, had to install a specific gpio version (pip install grpcio==1.7.3)
         server_ready=WaitForServerReady(usersettings.tensorflow_server_address, usersettings.tensorflow_server_port)
@@ -1169,9 +1213,31 @@ if __name__ == "__main__":
         print('-> python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53')
         print('3. interract with the tensorflow server, sending input buffers and receiving answers')
         print('-> python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/')
+        print('4. restart an interrupted training session')
+        print('-> python experiments_manager.py --restart_interrupted --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/')
+
     else:
         print('### TRAINING MODE ###')
         usersettings, sessionFolder, model_name = loadExperimentsSettings(FLAGS.usersettings, FLAGS.model_dir)
+
+        argv_app={'debug_server_addresses':FLAGS.debug_server_addresses, 'sessionFolder':sessionFolder, 'model_name':model_name, 'debug_sess':FLAGS.debug}
+        #add additionnal hyperparams coming from an optionnal
+        if hasattr(usersettings, 'hparams'):
+          print('adding hypermarameters declared from the experiments settings script')
+          argv_app.update(usersettings.hparams)
+          #update sessionFolder name string
+          if not FLAGS.restart_interrupted:
+            sessionFolder_splits=sessionFolder.split('_')
+            sessionFolder_addon=''
+            for key, value in usersettings.hparams.items():
+              sessionFolder_addon+='_'+key+str(value)
+            #insert sessionname addons in the original one
+            sessionFolder=''
+            for str_ in  sessionFolder_splits[:-1]:
+              sessionFolder+=str_+'_'
+            sessionFolder=sessionFolder[:-1]#remove the last '_'
+            sessionFolder+=sessionFolder_addon+'_'+sessionFolder_splits[-1]
+            argv_app.update({'sessionFolder':sessionFolder})
         #copy settings and model file to the working folder
         if not FLAGS.restart_interrupted:
           os.makedirs(sessionFolder)
@@ -1180,7 +1246,10 @@ if __name__ == "__main__":
             shutil.copyfile(os.path.join(scripts_WD, usersettings.model_file), os.path.join(sessionFolder, usersettings.model_file))
           settings_copy_fullpath=os.path.join(sessionFolder, settingsFile_saveName)
           shutil.copyfile(os.path.join(scripts_WD, FLAGS.usersettings), settings_copy_fullpath)
+
+
+
         tf.app.run(
             main=run_experiment,
-            argv=[{'debug_server_addresses':FLAGS.debug_server_addresses, 'sessionFolder':sessionFolder, 'model_name':model_name, 'debug_sess':FLAGS.debug}]
+            argv=[argv_app]
     )

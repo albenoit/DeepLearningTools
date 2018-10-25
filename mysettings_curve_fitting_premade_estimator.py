@@ -6,7 +6,7 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 #-> set here your own working folder
-workingFolder='experiments/curves_fitting'
+workingFolder='experiments/curve_fitting'
 
 #-> port number to be used when interracting with the tensorflow-server
 tensorflow_server_address='127.0.0.1'
@@ -31,6 +31,12 @@ display_model_layers_info=False#do not output ops and vars placement on console
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='premade_estimator'
 
+
+''' define here some hyperparameters to adjust the experiment
+===> Note that this dictionnary will complete the session name
+'''
+hparams={'hiddenNeurons':10,#set the number of neurons per hidden layers
+         }
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
@@ -44,9 +50,7 @@ used_gpu_IDs=[0]
 #set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
 XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
-nb_classes=1
-
-premade_estimator=tf.estimator.DNNRegressor(hidden_units=[10],
+premade_estimator=tf.estimator.DNNRegressor(hidden_units=[hparams['hiddenNeurons']],
                 feature_columns=[tf.feature_column.numeric_column('x')],
                 label_dimension=1,
                 weight_column=None,
@@ -71,7 +75,7 @@ weights_weight_decay=0.0001
 initial_learning_rate=0.1
 num_epochs_per_decay=150 #number of epoch keepng the same learning rate
 learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
-predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed (EMA) along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
+predict_using_smoothed_parameters=False# ONLY FOR CUSTOM MODELS (not in this demo): set True to use trained parameters values smoothed (EMA) along the training steps (better results expected)
 
 #set here paths to your data used for train, val
 #-> a first set of data

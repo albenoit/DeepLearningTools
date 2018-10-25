@@ -20,8 +20,13 @@ tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
 serving_client_timeout_int_secs=1#timeout limit when a client requests a served model
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
-session_name='BEGAN_'
+session_name='BEGAN'
 
+''' define here some hyperparameters to adjust the experiment
+===> Note that this dictionnary will complete the session name
+'''
+hparams={'generatorCodeSize':64,#set the size of the generator code
+         }
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
@@ -66,7 +71,7 @@ weights_weight_decay=0.0001
 initial_learning_rate=1e-5
 num_epochs_per_decay=100 #FIXME, initial value = 3000 #number of epoch keeping the same learning rate
 learning_rate_decay_factor=0.95 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
-predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
+predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> train and val sets of data
 from tensorflow.examples.tutorials.mnist import input_data
@@ -78,7 +83,7 @@ nb_train_samples=mnist.train.num_examples #nb_train_images*number_of_crops_per_i
 nb_test_samples=mnist.test.num_examples#to be adjusted for testing
 embedding_samples_stored_number=nb_test_samples
 batch_size=32
-nb_classes=64 #here, this will correspond to the generator code size
+
 reference_labels=['digit_values']
 ''' BEGAN specific optimization parameters :'''
 equilibrium_gamma=0.8
@@ -142,9 +147,8 @@ def getOptimizer(loss, learning_rate, global_step):
     #for tensor in tf.get_default_graph().as_graph_def().node:
     #    print('tensor:'+str(tensor.name))
 
-    with tf.variable_scope("optimizer_adversarial_balancing", reuse=True):
-        k=tf.get_variable(name='k')
-
+    # Get required existing variables references
+    k=tf.get_default_graph().get_tensor_by_name('optimizer_adversarial_balancing/k:0')
     G_loss=tf.get_default_graph().get_tensor_by_name('model_loss/Gloss:0')
     G_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/BEGAN/G/')
     G_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope='model/BEGAN/G/')
@@ -252,7 +256,7 @@ def get_validation_summaries(inputs, model_outputs_dict, labels):
     '''
     with tf.name_scope('eval_summaries_addon'):
       G_fake_samples = model_outputs_dict['generator_fake_samples']
-      return ([tf.summary.image('fake_sample', G_fake_samples, max_outputs=summary_fake_samples_max_number)
+      return ([tf.summary.image('fake_sample', G_fake_samples, max_outputs=summary_fake_samples_max_number),
               tf.summary.histogram('G_hist', G_fake_samples)] # for checking out of bound
               , nb_test_samples/4)
 
@@ -365,7 +369,7 @@ def get_input_pipeline_train_val_(batch_size, raw_data_files_folder, shuffle_bat
 -class Client_IO, a class to specifiy input data requests and response on the client side when serving a model
 For performance/enhancement of the model, have a look here for graph optimization: https://github.com/tensorflow/tensorflow/blob/r1.4/tensorflow/tools/graph_transforms/README.md
 '''
-serving_input_shape=[1,nb_classes]
+serving_input_shape=[1,hparams['generatorCodeSize']]
 def get_input_pipeline_serving():
     '''Build the serving inputs, expecting messages made of :
     -> a batch of size 1 of a single image in the uint8 format (no preliminary normalisation is expected).

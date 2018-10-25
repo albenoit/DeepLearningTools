@@ -168,11 +168,10 @@ class Began(object):
 
 
 def model(data,
-            n_outputs,
             hparams,
             mode):
 
     #allocate a BEGAN class instance and return the target model:
     return Began(data,
-                n_outputs,
+                hparams.generatorCodeSize,
                 hparams).get_model_graph(mode)

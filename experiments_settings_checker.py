@@ -22,21 +22,20 @@ class ExperimentsSettingsChecker(object):
     def __init__(self,experiments_settings):
         self.experiments_settings=experiments_settings
 
-    def validate_settings(self):
+    def validate_settings(self, isServingModel):
             print('******************************************************')
             print('* Checking the experiments settings file...')
             print('* look at the README.md file to read a working example')
             print('* look at the experiments_settings_checker script to see all the required fields')
 
             #check train and validation dataset parameters
-            self.assertPositive_above_zero('nb_train_samples', 'the number of samples used for training')
-            self.assertPositive_above_zero('nb_test_samples', 'the number of samples used for validation')
+            self.assertPositive_above_equal_zero('nb_train_samples', 'the number of samples used for training')
+            self.assertPositive_above_equal_zero('nb_test_samples', 'the number of samples used for validation')
 
             #check standard training parameters
             self.assertPositive_above_zero('batch_size', 'the number of samples processed for each batch')
             self.assertPositive_above_zero('nbEpoch', 'the number of times the training set is processed for training')
             self.assertPositive_above_zero('initial_learning_rate', 'the training speed factor')
-            self.assertPositive_above_zero('nb_classes', 'the number of classes for classification problems of the code size for embedding problems')
             self.has('random_seed', 'integer value or None. If not None, Operations that rely on a random seed actually derive it from this seed value')
             self.has('num_epochs_per_decay', 'integer value that, ONLY IF ABOVE 0 specifies after how many training epoch one must apply a decay to the learning rate')
             self.has('learning_rate_decay_factor', 'float value factor to be applied to the learning rate when decaying is applied')
@@ -60,6 +59,12 @@ class ExperimentsSettingsChecker(object):
             self.has('tensorflow_server_address', 'a string specifying the IP adress of the tensorflow server to be contacted by a client')
             self.has('tensorflow_server_port', 'an integer that specifies the port use to communicate whith the tensorflow server')
 
+            #look for an optionnal hyperparameters dictionnary
+            if hasattr(self.experiments_settings, 'hparams'):
+              if isinstance(self.experiments_settings.hparams, dict):
+                print('Found custom hyperparameters:'+str(self.experiments_settings.hparams))
+
+            #look for premade estimators to be used in place of a custom one defined by self.experiments_settings.model_file
             if hasattr(self.experiments_settings, 'premade_estimator'):
               print('Using premade estimators, then not required to specify custom estimator parameters and functions')
             else:
@@ -71,7 +76,8 @@ class ExperimentsSettingsChecker(object):
 
               #check model
               self.has('model_file', 'model_file must be set as a filename targetting the model description to optimise')
-              assert os.path.exists(self.experiments_settings.model_file), '{model} targetted by model_file filename does not exist'.format(experiments_settings.model_file)
+              if isServingModel is False:
+                assert os.path.exists(self.experiments_settings.model_file), '{model} targetted by model_file filename does not exist'.format(model=self.experiments_settings.model_file)
               self.assertPositive_above_zero('patchSize', 'the extend (in pixels/data samples width) of the input data samples provided to the model')
               self.assertPositive_above_equal_zero('field_of_view', 'the width/field of view of the model. With convolutionnal models, this corresponds to the neighborhood width in the input space that is taken into account to take a decision')
 

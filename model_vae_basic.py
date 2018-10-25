@@ -70,10 +70,9 @@ def P(z, input_data_dim, z_dim, h_dim):
 # =============================== GLOBAL MODEL ====================================
 
 def model(data,
-            n_outputs,
             hparams,
             mode):
-
+    nbhiddenNeurons=hparams.hiddenNeurons
     #get input data dim
     data_initial_shape=data.get_shape().as_list()
     data_initial_shape[0]=-1
@@ -81,12 +80,12 @@ def model(data,
     X_dim=data_flatten.get_shape().as_list()[-1]
 
     #encode input data
-    z_mu, z_logvar = Q(data_flatten, input_data_dim=X_dim, z_dim=n_outputs, h_dim=2*n_outputs)
+    z_mu, z_logvar = Q(data_flatten, input_data_dim=X_dim, z_dim=nbhiddenNeurons, h_dim=2*nbhiddenNeurons)
     print('z_mu, z_logvar='+str((z_mu, z_logvar)))
     #sample from a gaussian setup by the codes
     z_sample = sample_z(z_mu, z_logvar)
     #generate
-    _, logits = P(z_sample, input_data_dim=X_dim, z_dim=n_outputs, h_dim=2*n_outputs)
+    _, logits = P(z_sample, input_data_dim=X_dim, z_dim=nbhiddenNeurons, h_dim=2*nbhiddenNeurons)
 
     #reshape to the initial shape
     logits=tf.reshape(logits,data_initial_shape)

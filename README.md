@@ -1,19 +1,20 @@
 # What's that ?
 
-A set of scripts that demonstrate the use of Tensorflow estimators on various data and tasks 
+A set of scripts that demonstrate the use of Tensorflow experiments and estimators on your data (1D, 2D, 3D...)
 @brief : the main script that enables training, validation and serving Tensorflow based models merging all needs in a
 single script to train, evaluate, export and serve, taking large inspirations of official Tensorflow demos.
 @author : Alexandre Benoit, LISTIC lab, FRANCE
 
-Several ideas are put together:
+Several ideas put together:
 
-* estimators to manage training, validation and export in a easier way using the tf.estimator.train_and_evaluate functionnality
-* using moving averages to store parameters with values smoothed along the last training steps (FIXME : ensure those values are used for real by the estimator, actually the graph shows 2 parameter savers...).
-* visualization including embedding projections to observe some data projections on the TensorBoard
-* tensorflow-serving-api to use to serve the model and dynamically load updated models
-* some tensorflow-serving client codes to reuse the trained model on single or streaming data
+* training a model with tf.estimator to manage training, validation and export in a easier way.
+* using moving averages to store parameters with values smoothed along the last training steps.
+* automatic storage of all the model outputs on the validation dataset in order to observe some data projections on the TensorBoard.
+* tensorflow-serving-api to use to serve the model and dynamically load updated models.
+* some tensorflow-serving client codes to reuse the trained model on single or streaming data.
+* each experiment is stored in a specific folder for model versionning and comparison.
 
-# Machine Setup (tested with tensorflow 1.4.1)
+# Machine Setup (validated with tensorflow 1.7+)
 ## Main requirements:
 1. install python 2.7 and python pip
 2. install Tensorflow and Tensorflow serving using pip : pip install tensorflow-gpu tensorflow-serving-api
@@ -37,13 +38,13 @@ https://github.com/mind/wheels#mkl
 
 A pretrained autoencoder network working on time series is provided with the codes to see what you can get :
 1. open a terminal and go into the source code directory
-2. start the tensorboard on the experiments/1Dsignals_clustering folder using commands
+2. start the tensorboard on the experiments/1Dsignals_clustering folder using command
 ```
 tensorboard --logdir=experiments/1Dsignals_clustering
 ```
 
 3. open a web browser and get to http://127.0.0.1:6006/ and observe:
-  * on the "Scalars" section the evolution of the train and test loss, Mean Squared Error (MSE) and some other monitors evolution measured along a training and validation session
+  * on the "Scalars" section the evolution of the train and test loss, Mean Squared Error (MSE) and some other monitors evolution measured along training and validation session
   * go to the "Graphs" section to observe the network training and testing architectures
   * go to the "Distributions" and "Histograms" sections to observe the evolution of the learned parameters along training
   * go to the "Projector" section and choose on the left pane a saved tensor (input data, embedding code or reconstructed data) to project them using PCA or t-SNE and interact with the interface (select points, etc.) to observe the projected time series blocks and their neighborhood.
@@ -61,26 +62,26 @@ python experiments_manager.py --predict --model_dir=experiments/1Dsignals_cluste
 # How tu use it to train/test/serve a new model for a new use case ?
 
 The main script is experiments_manager.py can be used in 3 modes, here are some command examples:
-1. train a model in a context specified in a parameter script such as mysettings_1D_experiments.py (details provided in the following TODO section):
+1. train a model in a context specified in a parameter script such as mysettings_curve_fitting.py (details provided in the following TODO section):
 ```
-python experiments_manager.py --usersettings=mysettings_1D_experiments.py
+python experiments_manager.py --usersettings=mysettings_curve_fitting.py
 ```
 2. start a Tensorflow server on the trained/training model :
 ```
-python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53
+python experiments_manager.py --start_server --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53
 ```
-3. interact with the Tensorflow server, sending input buffers and receiving answers
+3. interact with the Tensorflow server, sending input buffers and receiving answers,
 ```
-python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/
+python experiments_manager.py --predict --model_dir=experiments/curve_fitting/my_test_2018-01-03--14\:40\:53/
 ```
 
-## NOTE : 
+## NOTE :
 
-once trained (or along training), start the Tensorboard to parse logs of
+once trained (or along training), start the Tensorboard parsing logs of
 the experiments folder (provided example is experiments/1Dsignals_clustering):
 from the scripts directory using command:
 ```
-tensorboard  --logdir=experiments/1Dsignals_clustering
+tensorboard  --logdir=experiments/curve_fitting
 ```
 Then, open a web browser and reach http://127.0.0.1:6006/ to monitor training
 values and observe the obtained embedding.
@@ -89,20 +90,20 @@ values and observe the obtained embedding.
 
 1. The main code for training, validation and prediction is specified in the main script (experiments_manager.py).
 2. Most of the use case specific parameters and Input/Output functions have been
-moved to a separated settings script such as 'mysettings_1D_experiments.py' that
-is targeted when starting the script (this filename is set in var FLAGS.usersettings in the main script).
+moved to a separated settings script such as 'mysettings_1D_experiments.py' and
+'mysettings_curve_fitting.py' that is targeted when starting the script (this
+  filename is set in var FLAGS.usersettings in the main script).
 3. The model to be trained and served is specified in a different script targeted by the settings file.
 
 # KNOWN ISSUES :
 
 This script has some known problems, any suggestion is welcome:
-* moving average parameters saving is maybe not correctly done. I am not sure that the smoothed variables are saved instead of the current parameters
+* moving average parameters saving is not optimized for the served model but filtered parameters are loaded is required to (if usersettings.predict_using_smoothed_parameters=True).
 * for now tensorflow_server only works on CPU so using GPU only for training and validation. Track : https://github.com/tensorflow/serving/issues/668
-* the model_fn function should be refactored to enhance clarity and maintainability. Also, conversion for feature columns to tensors should be carried out at the model definition level (later than currently in order to improve model flexibility)
 
 # TODO :
 
-To adapt to new use case, just update the mysettingsxxx.py file and adjust I/O functions.
+To adapt to new case studies, just update the mysettingsxxx.py file and adjust I/O functions.
 For any experiment, the availability of all the required fields in the settings file is checked by the experiments_settings_checker.py script. You can have a look there to ensure you prepared everything right.
 In addition and as a reminder, here are the functions prototypes:
 ```
@@ -178,7 +179,7 @@ def model_outputs_postprocessing_for_serving(model_outputs_dict):
     Args:
         model_outputs_dict: the original model outputs dictionary
     Returns:
-       the postprocessed outputs dictionnary
+       the postprocessed outputs dictionary
     '''
     #in this use case, we have two outputs:
     #->  code that is kept as is
@@ -197,7 +198,7 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     '''a specific loss for data reconstruction when dealing with autoencoders
     Args:
         inputs: the input data samples batch
-        model_outputs_dict: the dictionnary of model outputs, field names must comply with the ones defined in the model_file
+        model_outputs_dict: the dictionary of model outputs, field names must comply with the ones defined in the model_file
         labels: the reference data / ground truth if available
         weights_loss: the model weights loss that may be used for regularization
     '''
@@ -236,8 +237,8 @@ def get_eval_metric_ops(inputs, model_outputs_dict, labels):
     '''Return a dict of the evaluation Ops.
     Args:
         inputs: the input data samples batch
-        model_outputs_dict: the dictionnary of model outputs, field names must comply with the ones defined in the model_file
-        labels: the reference data / ground truth if available
+        model_outputs_dict: the dictionary of model outputs, field names must comply with the ones defined in the model_file
+        labels: the reference data / ground truth if available.
     Returns:
         Dict of metric results keyed by name.
     '''
@@ -294,7 +295,7 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
 def get_input_pipeline_serving():
     '''Build the serving inputs, expecting messages made of :
     -> a batch of size 1.
-    -> a data buffer of type float32 of the same shape as each of the elements used along training (no preliminary normalisation is expected)
+    -> a data buffer of type float32 of the same shape as each of the elements used along training (no preliminary normalization is expected)
     '''
     serialized_tf_example = tf.placeholder(
         dtype=tf.float32,
@@ -348,12 +349,11 @@ class Client_IO:
 
     def finalize(self):
         ''' a function called when the prediction loop ends '''
-        print('Prediction process ended successfuly')
+        print('Prediction process ended successfully')
 ```
 
 # Final notes:
-This demo has been tested on Tensorflow 1.4.1 and 1.5 and makes use of tf.estimator
-available in the contrib module that is expected to evolve along Tensorflow versions.
+
 * Look at https://github.com/GoogleCloudPlatform/cloudml-samples/blob/master/census/tensorflowcore/trainer/model.py
 * Look at some general guidelines on Tenforflow here https://github.com/vahidk/EffectiveTensorflow
 * Look at the related webpages : http://python.usyiyi.cn/documents/effective-tf/index.html

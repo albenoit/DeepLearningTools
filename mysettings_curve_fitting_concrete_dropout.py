@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import collections #used to stack MC samples in the serving/test phase
 import seaborn as sns
 #-> set here your own working folder
-workingFolder='experiments/curves_fitting'
+workingFolder='experiments/curve_fitting'
 
 #-> port number to be used when interracting with the tensorflow-server
 tensorflow_server_address='127.0.0.1'
@@ -26,6 +26,11 @@ save_model_variables_to_pandas=True
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='concrete_dropout'
 
+''' define here some hyperparameters to adjust the experiment
+===> Note that this dictionnary will complete the session name
+'''
+hparams={'hiddenNeurons':10,#set the number of neurons per hidden layers
+         }
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
@@ -66,7 +71,7 @@ weights_weight_decay=0.0001
 initial_learning_rate=0.1
 num_epochs_per_decay=150 #number of epoch keepng the same learning rate
 learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
-predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed (EMA) along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
+predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed (EMA) along the training steps (better results expected)
 
 #set here paths to your data used for train, val
 #-> a first set of data
@@ -76,7 +81,6 @@ raw_data_filename_extension=None
 nb_train_samples=1000 #manually adjust here the number of temporal items out of the temporal block size
 nb_test_samples=1000
 batch_size=200
-nb_classes=10
 reference_labels=['values']
 
 test_repetitions=20

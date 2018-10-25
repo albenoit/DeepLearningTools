@@ -26,7 +26,6 @@ def bias_variable(shape):
 # =============================== GLOBAL MODEL ====================================
 
 def model(data,
-            n_outputs,
             hparams,
             mode):
 
@@ -35,7 +34,7 @@ def model(data,
     print('Model input data shape='+str(data_initial_shape))
     X_dim=data.get_shape().as_list()[-1]
 
-    h_dim=n_outputs #hidden layer size
+    h_dim=hparams.hiddenNeurons #hidden layer size
 
     h=tf.layers.Dense(units=h_dim,
                     activation=tf.nn.relu)(data)

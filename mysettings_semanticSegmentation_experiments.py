@@ -17,6 +17,12 @@ serving_client_timeout_int_secs=5#timeout limit when a client requests a served 
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='Cityscapes_'
 
+''' define here some hyperparameters to adjust the experiment
+===> Note that this dictionnary will complete the session name
+'''
+hparams={'nbClasses':34,#set the number of classes in the considered dataset
+         }
+
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
@@ -51,7 +57,7 @@ nb_summary_per_train_epoch=4
 patchSize=224
 
 #random seed used to init weights, etc. Use an integer value to make experiments reproducible
-random_seed=None
+random_seed=42
 
 # learning rate decaying parameters
 nbEpoch=50
@@ -59,7 +65,7 @@ weights_weight_decay=0.0001
 initial_learning_rate=0.0001
 num_epochs_per_decay=10 #number of epoch keepng the same learning rate
 learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
-predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
+predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> a first set of data
 raw_data_dir_train_ = "../../../../Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
@@ -70,15 +76,15 @@ reference_data_dir_val_ = "../../../../Datasets/CityScapes/gtFine_trainvaltest/g
 raw_data_filename_extension='*.png'
 ref_data_filename_extension='*labelIds.png'
 #load all image files to use for training or testing
-nb_train_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train_, file_extension=raw_data_filename_extension))
-nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val_, file_extension=raw_data_filename_extension))
+nb_train_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train_, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
+nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val_, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
 reference_labels=['semantic_labels']
+
 raw_data_dir_val=(raw_data_dir_val_, reference_data_dir_val_)
 number_of_crops_per_image=100
 nb_train_samples=nb_train_images*number_of_crops_per_image# number of images * number of crops per image
 nb_test_samples=7000#nb_val_images*number_of_crops_per_image
-batch_size=2
-nb_classes=34
+batch_size=3
 
 ####################################################
 ## Define here use case specific metrics, loss, etc.
@@ -154,8 +160,8 @@ def get_validation_summaries(inputs, model_outputs_dict, labels):
         raw_rgb_max= tf.reduce_max(inputs, axis=[1,2,3], keep_dims=True)
         raw_images_rgb_0_1=(inputs-raw_rgb_min)/(raw_rgb_max-raw_rgb_min)
         raw_images_display=tf.saturate_cast(raw_images_rgb_0_1*255.0, dtype=tf.uint8)
-        reference_images_crops_regions_display=tf.expand_dims(tf.saturate_cast((labels*255)/nb_classes, dtype=tf.uint8),-1)
-        semantic_segm_argmax_map_crops_display=tf.saturate_cast(tf.expand_dims((semantic_segm_argmax_map*255)/nb_classes,-1), dtype=tf.uint8)
+        reference_images_crops_regions_display=tf.expand_dims(tf.saturate_cast((labels*255)/(hparams['nbClasses']-1), dtype=tf.uint8),-1)
+        semantic_segm_argmax_map_crops_display=tf.saturate_cast(tf.expand_dims((semantic_segm_argmax_map*255)/(hparams['nbClasses']-1),-1), dtype=tf.uint8)
         print('*********reference shape='+str(reference_images_crops_regions_display.get_shape().as_list()))
         return ([tf.summary.image("input", raw_images_display),
                 tf.summary.image("references_center_crop_regions", reference_images_crops_regions_display),
@@ -188,14 +194,14 @@ def get_eval_metric_ops(inputs, model_outputs_dict, labels):
                         name='Accuracy_metric'
                         ),
             'IoU' : tf.metrics.mean_iou(
-                                labels=labels,
-                                predictions=semantic_segm_argmax_map,
-                                num_classes=nb_classes,
-                                weights=None,
-                                metrics_collections=None,
-                                updates_collections=None,
-                                name='IoU_metric')
-            }
+                        labels=labels,
+                        predictions=semantic_segm_argmax_map,
+                        num_classes=hparams['nbClasses'],
+                        weights=None,
+                        metrics_collections=None,
+                        updates_collections=None,
+                        name='IoU_metric'),
+           }
 
 '''Define here the input pipelines :
 -1. a common function for train and validation modes
@@ -209,7 +215,10 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
     @param raw_data_files_folder : the folder where CSV files are stored
     @param shuffle_batches : a boolean that activates batch shuffling
     '''
-
+    if nb_train_images==0:
+        raise ValueError('No training image found, abording!')
+    if nb_val_images==0:
+        raise ValueError('No training image found, abording!')
     # get model field of view computed at the training step or compute it with the test_patch_overlapping_ratio
     def get_fov(isTraining):
         fov=0
