@@ -1,18 +1,21 @@
 # What's that ?
 
-A set of scripts that demonstrate the use of Tensorflow experiments and estimators on your data (1D, 2D, 3D...)
-@brief : the main script that enables training, validation and serving Tensorflow based models merging all needs in a
-single script to train, evaluate, export and serve, taking large inspirations of official Tensorflow demos.
+A set of scripts that demonstrate the use of Tensorflow estimators on your data (1D, 2D, 3D...).
+The proposed tool-chain enables different experiments (model training/validating) to be launched in a unified way.
+All the resulting experiments logs can compared while models are versioned and easy to deploy in production.
+
+@brief : the main script 'experiments_manager.py' enables training, validating and serving Tensorflow models.
+
 @author : Alexandre Benoit, LISTIC lab, FRANCE
 
 Several ideas put together:
 
 * training a model with tf.estimator to manage training, validation and export in a easier way.
 * using moving averages to store parameters with values smoothed along the last training steps.
-* automatic storage of all the model outputs on the validation dataset in order to observe some data projections on the TensorBoard.
-* tensorflow-serving-api to use to serve the model and dynamically load updated models.
+* automatic storage of all the model outputs on the validation dataset in order to observe some data projections on the TensorBoard for embedding understanding.
+* tensorflow-serving-api used to serve the model and dynamically load updated models sometimes also while training is still running.
 * some tensorflow-serving client codes to reuse the trained model on single or streaming data.
-* each experiment is stored in a specific folder for model versionning and comparison.
+* each experiment is stored in a specific folder for model versioning and comparison.
 
 # Machine Setup (validated with tensorflow 1.7+)
 ## Main requirements:
@@ -27,10 +30,10 @@ https://github.com/mind/wheels/releases/
 * Install as the following adjust but the last link to your target version:
 
 ```
-pip install --ignore-installed --upgrade \ https://github.com/mind/wheels/releases/download/tf1.4.1-gpu-cuda9/tensorflow-1.4.1-cp27-cp27mu-linux_x86_64.whl
+pip install --ignore-installed --upgrade \ https://github.com/mind/wheels/releases/download/tf1.8-gpu-nomkl/tensorflow-1.8.0-cp27-cp27mu-linux_x86_64.whl
 ```
 
-* Get the Intel MKL library installed :
+* Get the Intel MKL library installed (optionnal and depends on the chosen Tensorflow package version):
 https://github.com/mind/wheels#mkl
 
 
@@ -52,11 +55,11 @@ tensorboard --logdir=experiments/1Dsignals_clustering
 4. serve and interact with this trained model:
   * start the tensorflow-server on this model using command:
 ```
-python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018--05--11\:34\:05/
+python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_hiddenNeurons23_2018-10-25--17:39:51
 ```
   * start a client and ask to encode an input signal using command:
 ```
-python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-05--11\:34\:05/
+python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_hiddenNeurons23_2018-10-25--17:39:51
 ```
 
 # How tu use it to train/test/serve a new model for a new use case ?
