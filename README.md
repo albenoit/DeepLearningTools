@@ -2,7 +2,7 @@
 
 A set of scripts that demonstrate the use of Tensorflow estimators on your data (1D, 2D, 3D...).
 The proposed tool-chain enables different experiments (model training/validating) to be launched in a unified way.
-All the resulting experiments logs can compared while models are versioned and easy to deploy in production.
+All the resulting experiments logs can be compared while models are versioned and easy to deploy in production.
 
 @brief : the main script 'experiments_manager.py' enables training, validating and serving Tensorflow models.
 
