@@ -252,13 +252,16 @@ def getEvalSpecs(params, global_hooks):
   except:
      print('tf.estimator.BestExporter is not available on this tensorflow version, tf>1.1 required')
      pass
+  wait_sec=60
+  if hasattr(usersettings, 'eval_not_rerun_until_sec'):
+     wait_sec=usersettings.eval_not_rerun_until_sec
   return tf.estimator.EvalSpec( input_fn=eval_input_fn,
                                 steps=params.nbIterationPerEpoch_val,
                                 name=None,
                                 hooks=eval_hooks,
                                 exporters=exporters,
                                 start_delay_secs=120,
-                                throttle_secs=60)
+                                throttle_secs=wait_sec)
 
 def getSessionConfig(params):
   '''
