@@ -1,12 +1,14 @@
 # What's that ?
 
 A set of scripts that demonstrate the use of Tensorflow estimators on your data (1D, 2D, 3D...).
-The proposed tool-chain enables different experiments (model training/validating) to be launched in a unified way.
-All the resulting experiments logs can be compared while models are versioned and easy to deploy in production.
+The proposed tool-chain enables different experiments (model training/validating) to be launched in a unified way. All models are automatically exported periodically to enable model deployment (serving in production).
+All the resulting experiments logs can be compared. Model versioning is enabled.
 
 @brief : the main script 'experiments_manager.py' enables training, validating and serving Tensorflow models.
 
 @author : Alexandre Benoit, LISTIC lab, FRANCE
+
+A quick presentation of the system is available [here](https://docs.google.com/presentation/d/1tFetD27PK9kt29rdwwZ6QKLYNDyJkHoCLT8GHweve_8/edit?usp=sharing), details are given below.
 
 Several ideas put together:
 
@@ -101,8 +103,8 @@ moved to a separated settings script such as 'mysettings_1D_experiments.py' and
 # KNOWN ISSUES :
 
 This script has some known problems, any suggestion is welcome:
-* moving average parameters saving is not optimized for the served model but filtered parameters are loaded is required to (if usersettings.predict_using_smoothed_parameters=True).
-* for now tensorflow_server only works on CPU so using GPU only for training and validation. Track : https://github.com/tensorflow/serving/issues/668
+* moving average parameters saving is not optimized for the served model but filtered parameters are loaded anyway if required (if usersettings.predict_using_smoothed_parameters=True).
+* for now prebuilt tensorflow_server packages only work on CPUs. Then, the main script enables to train and validate on a given GPU following the setting parameter used_gpu_IDs. However, the model exportation for serving step forces to built model for CPU only. Track : https://github.com/tensorflow/serving/issues/668
 
 # TODO :
 
