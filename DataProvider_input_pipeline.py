@@ -3,6 +3,12 @@
 @brief  : a set of tools to preprocess data and build up input data pipelines
 '''
 
+# python 2&3 compatibility management
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import six
+
 #### WARNING, you may have to remove one of the cv2 or gdal import depending on your machine compatibility
 import cv2
 from osgeo import gdal
@@ -57,7 +63,7 @@ def plot_sample_channel_histograms(data_sample, filenameID=''):
     @param filenameID, the histogram filename prefix to be used
     '''
 
-    for channelID in xrange(data_sample.shape[-1]):
+    for channelID in six.moves.range(data_sample.shape[-1]):
         plt.figure('Channel ID='+str(channelID))
         plt.hist(data_sample[:,:,channelID])
         plt.title('Channel ID='+str(channelID))
@@ -166,7 +172,7 @@ def get_sample_entropy(sample):
     with tf.name_scope('sample_entropy'):
         #count unique values occurences
         unique_values, values_idx, counts=tf.unique_with_counts(sample)
-        
+
         def normalised_entropy(counts):
             classes_prob=tf.divide(tf.cast(counts, dtype=tf.float32), tf.cast(tf.reduce_sum(counts), dtype=tf.float32))
             entropy= -tf.reduce_sum(classes_prob*tf.log(classes_prob))
@@ -198,7 +204,7 @@ def get_samples_entropies(samples_batch):
     entropies=np.zeros(nb_samples, dtype=np.float32)
     flatten_samples=np.reshape(samples_batch, [nb_samples, -1]).astype(np.int)
 
-    for it in xrange(nb_samples):
+    for it in six.moves.range(nb_samples):
         #print('processing sample '+str(it))
         classes_id_count=np.unique(flatten_samples[it], return_counts=True)
         if len(classes_id_count[0])==1:
@@ -441,7 +447,7 @@ class FileListProcessor_Semantic_Segmentation:
         '''
         with tf.name_scope('generate_crops'):
             if self.field_of_view > 0:
-                radius_of_view = (self.field_of_view-1)/2
+                radius_of_view = (self.field_of_view-1)//2
             else:
                 radius_of_view=0
 
@@ -936,7 +942,7 @@ def breakup(x, lookback_len):
   '''
   #get the sequence length
   N = tf.shape(x)[0]
-  windows = [tf.slice(x, [b], [lookback_len]) for b in xrange(0, N-lookback_len)]
+  windows = [tf.slice(x, [b], [lookback_len]) for b in six.moves.range(0, N-lookback_len)]
   return tf.stack(windows)
 
 def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_values, nblines_per_block, queue_capacity, shuffle_batches, na_value_string='N/A', labels_cols_nb=1, device="/cpu:0", breakup_fact=1):
@@ -962,7 +968,7 @@ def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_va
         #stack all but first column in a single tensor
         print('FileListProcessor_csv_time_series: features='+str(features))
 
-        timestamplabels=[tf.cast(features[i], dtype=tf.string) for i in range(labels_cols_nb)]
+        timestamplabels=[tf.cast(features[i], dtype=tf.string) for i in six.moves.range(labels_cols_nb)]
         timestamps=tf.string_join(timestamplabels)
         raw_data_sample=tf.cast(tf.stack(features[labels_cols_nb:], axis=1), dtype=tf.float32)
 

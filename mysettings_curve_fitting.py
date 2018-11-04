@@ -2,6 +2,12 @@
 @author: Alexandre Benoit, LISTIC lab, FRANCE
 @brief : simple personnal file that defines experiment specific keys to be used with our programs
 '''
+# python 2&3 compatibility management
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import six
+
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
@@ -28,7 +34,7 @@ session_name='my_test'
 ===> Note that this dictionnary will complete the session name
 '''
 hparams={'hiddenNeurons':10,#set the number of neurons per hidden layers
-         'predictSmoothParams':False #set True to activate parameters moving averages use for prediction
+         'predictSmoothParams':True #set True to activate parameters moving averages use for prediction
          }
 
 ''''set the list of GPUs involved in the process. HOWTO:

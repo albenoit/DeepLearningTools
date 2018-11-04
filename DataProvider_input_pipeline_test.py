@@ -1,3 +1,9 @@
+# python 2&3 compatibility management
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import six
+
 #script aiming at testing FileListProcessor_input_test
 import cv2
 import matplotlib.pyplot as plt
@@ -169,7 +175,7 @@ data_provider.start(session=sess, coordinator=coord)
 #run one deep net iteration
 try:
 
-  for step in xrange(10):
+  for step in six.moves.range(10):
       #stop condition
       if coord.should_stop():
           break

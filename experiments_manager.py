@@ -103,6 +103,13 @@ Tensorflow trained graphs can be optimized for inference, some tutorials such as
 Glossary : https://developers.google.com/machine-learning/glossary/#custom_estimator
 """
 
+# python 2&3 compatibility management
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import six
+
+#script imports
 from experiments_settings_checker import ExperimentsSettingsChecker
 import os, shutil
 import datetime, time
@@ -571,7 +578,7 @@ def model_fn(features, labels, mode, params):
                         print('--> Extracting central patch VALUE of feature map \'{name}\' : {tensor}'.format(name=feature_name, tensor=feature_map))
 
                         #get center coordinates
-                        central_data_idx=(np.array(feature_map.get_shape().as_list()[1:3])/2).tolist()
+                        central_data_idx=(np.array(feature_map.get_shape().as_list()[1:3], dtype=np.int16)//2).tolist()
                         print('---> central patch coordinates='+str(central_data_idx))
                         central_data_dims=len(features.get_shape().as_list()[3:])
 
@@ -609,7 +616,7 @@ def model_fn(features, labels, mode, params):
                       and try to keep connections between codes and labels before storing
                     '''
                     #deduce the maximum number of samples to store
-                    stored_embedding_samples=params.nbIterationPerEpoch_val*usersettings.batch_size
+                    stored_embedding_samples=int(params.nbIterationPerEpoch_val*usersettings.batch_size)
                     flatten_features=get_flatten_feature(features_center_val, 'input_features')
                     flatten_labels=get_flatten_feature(labels_center_val, 'labels')
                     flatten_saved_samples_dict={}
@@ -623,7 +630,7 @@ def model_fn(features, labels, mode, params):
 
                 else: #sample level classification
                     print('*** No dense labels case study')
-                    stored_embedding_samples=params.nbIterationPerEpoch_val*usersettings.batch_size
+                    stored_embedding_samples=int(params.nbIterationPerEpoch_val*usersettings.batch_size)
                     flatten_features=get_flatten_feature(features, 'input_features')
                     flatten_labels=get_flatten_feature(labels, 'labels')
                     flatten_saved_samples_dict={}
@@ -942,7 +949,7 @@ def WaitForServerReady(host, port):
   from grpc.framework.interfaces.face import face
   from tensorflow_serving.apis import predict_pb2
   from tensorflow_serving.apis import prediction_service_pb2
-  for _ in range(0, usersettings.wait_for_server_ready_int_secs):
+  for _ in six.moves.range(0, usersettings.wait_for_server_ready_int_secs):
     request = predict_pb2.PredictRequest()
     request.model_spec.name = 'server_not_real_model_name'
 
@@ -957,7 +964,7 @@ def WaitForServerReady(host, port):
     except face.AbortionError as error:
       # Missing model error will have details containing 'Servable'
       if 'Servable' in error.details:
-        print 'Server is ready'
+        print('Server is ready')
         return True
       else:
         print('Error:'+str(error.details))
@@ -1104,7 +1111,7 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None, isServing
     try:
         usersettings=imp.load_source('settings', filename)
     except Exception,e:
-        raise ValueError('Failed to load {settings} file : '.format(settings=filename, error=e))
+        raise ValueError('Failed to load {settings} file. Error message is {error}. This generally comes from a) file does not exist, b)basic python syntax errors'.format(settings=filename, error=e))
     print('loaded settings file {file}'.format(file=filename))
 
     settings_checker=ExperimentsSettingsChecker(usersettings)

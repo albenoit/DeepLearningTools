@@ -6,6 +6,12 @@ TODO: GANs are difficult to train, one should have a look at some recommendation
 https://github.com/soumith/ganhacks
 https://mlnotebook.github.io/post/GAN4/
 '''
+# python 2&3 compatibility management
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import six
+
 import tensorflow as tf
 import numpy as np
 

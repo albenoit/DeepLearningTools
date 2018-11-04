@@ -2,6 +2,11 @@
 @author : Alexandre Benoit, LISTIC lab, FRANCE
 @brief  : a set of tools to validate the experiments settings file used to train and serve a given model
 '''
+# python 2&3 compatibility management
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import six
 
 import os
 class ExperimentsSettingsChecker(object):

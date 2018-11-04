@@ -3,6 +3,12 @@ inspired from https://github.com/LaurentMazare/deep-models/blob/master/densenet/
 and and https://github.com/SimJeg/FC-DenseNet/blob/master/FC-DenseNet.py
 @author Alexandre Benoit, LISTIC
 """
+# python 2&3 compatibility management
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import six
+
 import tensorflow as tf
 import numpy as np
 
@@ -99,7 +105,7 @@ def block(input, layers, growth, is_training, keep_prob, variable_placement, blo
         feature_maps = input
         block_feature_maps=[]
         print('NEW BLOCK:')
-        for idx in xrange(layers):
+        for idx in six.moves.range(layers):
             print('--> new layer : applying layer with {growth} neurons on input features of shape {inshape}'.format(growth=growth, inshape=feature_maps.get_shape().as_list()))
             new_feature_maps = composite_function(feature_maps, growth, 3, is_training, keep_prob, variable_placement, name=idx)
             if idx<(layers-1):
@@ -136,7 +142,7 @@ def model(  data,
 
     ######### DenseNet user config
     #basic architexture for testing purpose
-    nb_layers_sequence_encoding=[4,5]
+    nb_layers_sequence_encoding=[2,3]
     bottleneck_nb_layers=1
     growth_rate=10
     output_only_inputs_last_decoding_block=True
@@ -166,7 +172,7 @@ def model(  data,
             #replaced by the stride>1 at the previous convolution: feature_maps=tf.nn.avg_pool(feature_maps, [ 1, 1, 3, 1 ], strides=[1, 1, 2, 1 ], padding='SAME')
             print('Input block output shape='+str(feature_maps.get_shape().as_list()))
             field_of_view+=(first_filters_size-1)
-        for blockID in xrange(number_of_encoding_blocks):
+        for blockID in six.moves.range(number_of_encoding_blocks):
             feature_maps_block = block(feature_maps, n_layers_per_block[blockID], growth_rate, is_training, keep_prob, variable_placement, blockID)
             #concatenate with the input features
             feature_maps_block=tf.concat([feature_maps_block, feature_maps], axis=3, name='encoding_block_layers_concat_'+str(blockID))
@@ -200,7 +206,7 @@ def model(  data,
         # We store now the output of the next dense block in a list. We will only upsample these new feature maps
         block_to_upsample = []
         decoding_feature_maps=last_encoding_feature_maps
-        for blockID in xrange(number_of_encoding_blocks):
+        for blockID in six.moves.range(number_of_encoding_blocks):
             nlayers=n_layers_per_block[number_of_encoding_blocks + blockID+1]
             print('creating a block with {nlayers} layers'.format(nlayers=nlayers))
 

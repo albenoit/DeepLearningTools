@@ -2,6 +2,12 @@
 @author: Alexandre Benoit, LISTIC lab, FRANCE
 @brief : simple personnal file that defines experiment specific keys to be used with our programs
 '''
+# python 2&3 compatibility management
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import six
+
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt

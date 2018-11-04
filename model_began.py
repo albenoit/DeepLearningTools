@@ -3,6 +3,13 @@ Initial code From https://github.com/khanrc/tf.gans-comparison
 Adapted to the experiment manager framework
 '''
 # coding: utf-8
+
+# python 2&3 compatibility management
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import six
+
 import tensorflow as tf
 import numpy as np
 slim = tf.contrib.slim

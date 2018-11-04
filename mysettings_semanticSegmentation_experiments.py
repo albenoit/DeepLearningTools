@@ -2,10 +2,16 @@
 @author: Alexandre Benoit, LISTIC lab, FRANCE
 @brief : simple personnal file that defines experiment specific keys to be used with our programs
 '''
+# python 2&3 compatibility management
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import six
+
 import DataProvider_input_pipeline
 import tensorflow as tf
 import numpy as np
-
+import model_utils
 #-> set here your own working folder
 workingFolder='experiments/semantic_segmentation'
 
@@ -38,7 +44,7 @@ XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
 #-> define here the used model under variable 'model'
 #model_file='model_densenet.py'
-model_file='model_densenet_experiments.py'
+model_file='model_densenet_experiments.py' #TODO : get into this file to change the model complexity (default config is VERY simple only for demo/laptop training)
 display_model_layers_info=False #a flag to enable the display of additionnal console information on the model properties (for debug purpose)
 
 field_of_view=109
@@ -84,6 +90,7 @@ raw_data_dir_val=(raw_data_dir_val_, reference_data_dir_val_)
 number_of_crops_per_image=100
 nb_train_samples=nb_train_images*number_of_crops_per_image# number of images * number of crops per image
 nb_test_samples=7000#nb_val_images*number_of_crops_per_image
+eval_not_rerun_until_sec=60# TODO, for long runs (days) change to a largeur value (3600s*12) for example to wait for 12h between 2 evaluations
 batch_size=3
 
 ####################################################
@@ -125,6 +132,9 @@ def model_outputs_postprocessing_for_serving(model_outputs_dict):
 def getOptimizer(loss, learning_rate, global_step):
     '''define here the specific optimizer to be used
     '''
+    #get gradient summary information and the gradient norm
+    tvars, raw_grads, gradient_norm=model_utils.track_gradients(loss)
+
     return tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
 
 def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
@@ -138,7 +148,7 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
     labels=tf.squeeze(labels, squeeze_dims=-1)
 
     #-> restrict to the center part of the images
-    logits_semantic_crops=tf.slice(model_outputs_dict['logits_semantic_map'], begin=[0,field_of_view/2, field_of_view/2, 0], size =[-1,patchSize-field_of_view, patchSize-field_of_view, -1])
+    logits_semantic_crops=tf.slice(model_outputs_dict['logits_semantic_map'], begin=[0,field_of_view//2, field_of_view//2, 0], size =[-1,patchSize-field_of_view, patchSize-field_of_view, -1])
     cross_entropy_segmentation_loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits_semantic_crops, labels=labels))
 
     return cross_entropy_segmentation_loss+weights_weight_decay*weights_loss
@@ -280,7 +290,7 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
                 #-> get reference data restricted to the center part of the images
                 reference_crops=tf.cast(
                                         tf.slice( data_batch,
-                                            begin=[0,field_of_view/2, field_of_view/2, data_provider.single_image_raw_depth],
+                                            begin=[0,field_of_view//2, field_of_view//2, data_provider.single_image_raw_depth],
                                             size=[-1,patchSize-field_of_view, patchSize-field_of_view,data_provider.single_image_reference_depth])
                                     ,dtype=tf.int32)
         return raw_images, reference_crops

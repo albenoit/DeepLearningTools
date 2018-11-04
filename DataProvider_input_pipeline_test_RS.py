@@ -1,3 +1,9 @@
+# python 2&3 compatibility management
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import six
+
 #script aiming at testing FileListProcessor_input_test
 import cv2
 import matplotlib.pyplot as plt
@@ -93,7 +99,7 @@ if processCommands.check_data:
 
 #init the input pipeline
 if not(processCommands.mode_test):
-    print "Testing the TRAIN pipeline mode"
+    print("Testing the TRAIN pipeline mode")
     data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation(dataset_raw_train, None,
 		                                                    shuffle_samples=True,
 		                                                    patch_ratio_vs_input=patchSize,
@@ -113,7 +119,7 @@ if not(processCommands.mode_test):
 		                                                    field_of_view=0,
                                                             manage_nan_values=nan_management)
 else:
-    print "Testing the TEST pipeline mode"
+    print("Testing the TEST pipeline mode")
     data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation(dataset_raw_train, None,
 		                                                    shuffle_samples=False,
 		                                                    patch_ratio_vs_input=patchSize,
@@ -157,7 +163,7 @@ class_count=np.zeros(nb_classes)
 #run one deep net iteration
 try:
 
-  for step in xrange(10):
+  for step in six.moves.range(10):
       #stop condition
       if coord.should_stop():
           break

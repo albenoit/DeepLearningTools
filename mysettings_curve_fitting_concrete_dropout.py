@@ -2,6 +2,12 @@
 @author: Alexandre Benoit, LISTIC lab, FRANCE
 @brief : simple personnal file that defines experiment specific keys to be used with our programs
 '''
+# python 2&3 compatibility management
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import six
+
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
@@ -261,7 +267,7 @@ def test(Y_true, MC_samples):
     assert len(Y_true.shape) == 2
     k = MC_samples.shape[0]
     N = Y_true.shape[0]
-    D = MC_samples.shape[2]/2
+    D = MC_samples.shape[2]//2
     mean = MC_samples[:, :, D:]  # K x N x D
     logvar = MC_samples[:, :, :D]
     test_ll = -0.5 * np.exp(-logvar) * (mean - Y_true[None])**2. - 0.5 * logvar - 0.5 * np.log(2 * np.pi)
@@ -328,7 +334,7 @@ class Client_IO:
         self.ax1.legend()
         #self.ax1.plot(X_val[indx, 0], np.mean(means, 0)[indx, 0], color='skyblue', lw=1)
         #sns.tsplot(data=means, time=X_val, ci=[25, 50, 75, 90], color="m", ax=self.ax2, n_boot=means.shape[0])
-        for i in range(1,3):#sigma=[1,2,3]
+        for i in six.moves.range(1,3):#sigma=[1,2,3]
             ymin, ymax = np.min(mean_MC - i * epistemic_uncertainties, axis=1), np.max(mean_MC + i * epistemic_uncertainties, axis=1)
             self.ax2.fill_between(X_val, ymin,ymax,color='skyblue',alpha=(4.-i)/4., label='std*'+str(i))#i/3)
         print('Xval.shape='+str(X_val.shape))
@@ -367,7 +373,7 @@ class Client_IO:
             print('---> PRETEST : (target, MCsamples) shapes='+str((self.target.shape, MC_samples.shape)))
             #---> PRETEST : (target, MCsamples) shapes=((200, 1), (20, 200, 2))
             pppp, rmse = test(self.target, MC_samples) # per point predictive probability
-            D=MC_samples.shape[2]/2
+            D=MC_samples.shape[2]//2
             print('pppp, rmse='+str((pppp, rmse)))
             means = MC_samples[:, :, :D]  # K x N
             print('MC_samples means (KxN?)='+str(MC_samples.shape))
