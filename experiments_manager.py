@@ -362,6 +362,18 @@ def run_experiment(argv=None):
         config=run_config
     )
 
+  try:
+    #introduce the experimental early stopping module (available starting from tf 1.10)
+    es_metric='loss'
+    if hasattr(usersettings, 'earlystopping_metric'):
+      es_metric=usersettings.earlystopping_metric
+    hook = tf.contrib.estimator.stop_if_no_decrease_hook(estimator,
+                                                         metric_name=es_metric,
+                                                         max_steps_without_decrease=eval_spec.start_delay_secs*6,
+                                                         run_every_secs=eval_spec.start_delay_secs)
+  except:
+    print('FAILED TO ADD EARLY STOPPING HOOK (too old Tensorflow version), training without this')
+    pass
   #start the train/val/export session
   tf.estimator.train_and_evaluate(
             estimator,
@@ -972,7 +984,7 @@ def WaitForServerReady(host, port):
     time.sleep(1)
 
 
-def _create_rpc_callback():
+def _create_rpc_callback(client, debug):
   """Creates RPC callback function.
   Args:
   Returns:
@@ -984,6 +996,7 @@ def _create_rpc_callback():
     Args:
       result_future: Result future of the RPC.
     """
+    print('Received response:'+str(result_future))
     exception = result_future.exception()
     if exception:
       #result_counter.inc_error()
@@ -992,7 +1005,7 @@ def _create_rpc_callback():
       try:
           if FLAGS.debug:
               print(result_future.result())
-          response=usersettings.received_prediction_serving(result_future)
+          response=client.decodeResponse(result_future.result())
       except Exception,e:
           raise ValueError('Exception encountered on client callback : '.format(error=e))
   return _callback
@@ -1007,32 +1020,19 @@ def do_inference(host, port, model_name, concurrency, num_tests):
   Raises:
     IOError: An error occurred processing test data set.
   """
-  from grpc.beta import implementations
-  from grpc.framework.interfaces.face import face
-  from tensorflow_serving.apis import predict_pb2
-  from tensorflow_serving.apis import prediction_service_pb2
-
+  from tensorflow_serving.apis import predict_pb2 #for single head models
+  from tensorflow_serving.apis import inference_pb2 #for multi head models
+  from tensorflow_serving.apis import prediction_service_pb2_grpc
+  import grpc
 
   print('Trying to interract with server:{srv} on port {port} for prediction...'.format(srv=host,
                                                          port=port))
-  '''channels created from implementations.insecure_channel for now does not suppport large messages, following https://github.com/grpc/grpc/issues/13497
-  #-> then, the bellow function overrides to solve the problem
-  channel = implementations.insecure_channel(host, int(port))
-  FIXME : to be updated when libraries get more stable
+  ''' test scripts may help : https://github.com/tensorflow/serving/blob/master/tensorflow_serving/model_servers/tensorflow_model_server_test.py
   '''
-  import grpc.beta.implementations
-  from grpc._cython import cygrpc
 
-  def insecure_channel(host, port):
-        channel = grpc.insecure_channel(
-            target=host if port is None else '%s:%d' % (host, port),
-            options=[(cygrpc.ChannelArgKey.max_send_message_length, -1),
-                     (cygrpc.ChannelArgKey.max_receive_message_length, -1)])
-        return grpc.beta.implementations.Channel(channel)
-  channel = insecure_channel(host, int(port))
-  #channel = implementations.insecure_channel(host, int(port))
-  stub = prediction_service_pb2.beta_create_PredictionService_stub(channel)
-
+  server=host+':'+str(port)
+  channel = grpc.insecure_channel(server)
+  stub = prediction_service_pb2_grpc.PredictionServiceStub(channel)
   #allocate a clientIO instance defined for the experiment
   client_io=usersettings.Client_IO(FLAGS.debug)
   notDone=True
@@ -1046,10 +1046,20 @@ def do_inference(host, port, model_name, concurrency, num_tests):
             print('Input data is ready (data, shape)'+str((sample, sample.shape)))
             print('Time to prepare collect data request:',round(time.time() - start_time, 2))
             start_time=time.time()
-        request = predict_pb2.PredictRequest()
-        request.model_spec.name = model_name
-        request.model_spec.signature_name = usersettings.served_head
-        request.inputs[usersettings.input_data_name].CopyFrom(
+        if hasattr(usersettings, 'multihead'):
+          request = inference_pb2.MultiInferenceRequest()
+          raise ValueError('NOT YET IMPLEMENTED')
+          request.tasks.add().model_spec.name = 'default'
+          request.tasks[0].model_spec.signature_name = 'regress_x_to_y'
+          request.tasks[0].method_name = 'tensorflow/serving/regress'
+          request.tasks.add().model_spec.name = 'default'
+          request.tasks[1].model_spec.signature_name = 'classify_x_to_y'
+          request.tasks[1].method_name = 'tensorflow/serving/classify'
+        else:
+          request = predict_pb2.PredictRequest()
+          request.model_spec.name = model_name
+          request.model_spec.signature_name = usersettings.served_head
+          request.inputs[usersettings.input_data_name].CopyFrom(
               tf.make_tensor_proto(sample, shape=sample.shape))
         if FLAGS.debug:
           print('Time to prepare request:',round(time.time() - start_time, 2))
@@ -1058,28 +1068,29 @@ def do_inference(host, port, model_name, concurrency, num_tests):
         notDone=True
         break
       #asynchronous message reception, may hide some AbortionError details and only provide CancellationError(code=StatusCode.CANCELLED, details="Cancelled")
-      '''result_future = stub.Predict.future(request, usersettings.serving_client_timeout_int_secs)  # 5 seconds
-      result_future.add_done_callback(
-            _create_rpc_callback())
-      '''
-      #synchronous approach... that may provide more details on AbortionError
-      if FLAGS.debug:
-          print(stub.Predict(request, usersettings.serving_client_timeout_int_secs))
+      if hasattr(usersettings, 'client_async'):
+        result_future = stub.Predict.future(request, usersettings.serving_client_timeout_int_secs)  # 5 seconds
+        result_future.add_done_callback(
+            _create_rpc_callback(client_io, FLAGS.debug))
+
+      else:
+        #synchronous approach... that may provide more details on AbortionError
+        if FLAGS.debug:
           start_time=time.time()
-      answer=stub.Predict(request, usersettings.serving_client_timeout_int_secs)
-      if FLAGS.debug:
-        print('Time to send request/decode response:',round(time.time() - start_time, 2))
-        start_time=time.time()
-      client_io.decodeResponse(answer)
-      if FLAGS.debug:
-        print('Time to decode response:',round(time.time() - start_time, 2))
+        answer=stub.Predict(request, usersettings.serving_client_timeout_int_secs)
+        if FLAGS.debug:
+          print('Time to send request/decode response:',round(time.time() - start_time, 2))
+          start_time=time.time()
+
+        client_io.decodeResponse(answer)
+        if FLAGS.debug:
+          print('Time to decode response:',round(time.time() - start_time, 2))
 
       if num_tests>=0:
           if predictionIdx>=num_tests:
               notDone=False
   client_io.finalize()
   return 0
-
 
 def loadExperimentsSettings(filename, restart_from_sessionFolder=None, isServingModel=False):
     ''' load experiments parameters from the mysettingsxxx.py script
@@ -1204,9 +1215,10 @@ if __name__ == "__main__":
         usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName), isServingModel=True)
 
         #FIXME errors reported on gRPC: https://github.com/grpc/grpc/issues/13752 ... stay tuned, had to install a specific gpio version (pip install grpcio==1.7.3)
-        server_ready=WaitForServerReady(usersettings.tensorflow_server_address, usersettings.tensorflow_server_port)
+        '''server_ready=WaitForServerReady(usersettings.tensorflow_server_address, usersettings.tensorflow_server_port)
         if server_ready is False:
             raise ValueError('Could not reach tensorflow server')
+        '''
         print('Prediction mode using model : '+FLAGS.model_dir)
         predictions_dir=os.path.join(FLAGS.model_dir,
                                 'predictions_'+datetime.datetime.now().strftime("%Y-%m-%d--%H:%M:%S"))
