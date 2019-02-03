@@ -16,7 +16,7 @@ experiment_setting_files_to_test=[
                 #WARNING : the following depend on some specific data that have to be downloaded and targetted in the settings script:
                 {'script':'examples/segmentation/mysettings_semanticSegmentation.py', 'hparams':{'nbEpoch':2}},
                 #FIXME:the premade estimator based model in examples/regression/mysettings_curve_fitting_premade_estimator.py impact on the following tests, possible cause : usersettings global variable in experiments_manager.py should be removed
-                #{'script':'examples/regression/mysettings_curve_fitting_premade_estimator.py', 'hparams':None},
+                {'script':'examples/regression/mysettings_curve_fitting_premade_estimator.py', 'hparams':None},
 
                 ]
 

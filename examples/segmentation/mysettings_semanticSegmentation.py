@@ -72,11 +72,11 @@ learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM
 predict_using_smoothed_parameters=hparams['smoothedParams']#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> a first set of data
-raw_data_dir_train_ = "/uds_data/listic/datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
-reference_data_dir_train_ = "/uds_data/listic/datasets/CityScapes/gtFine_trainvaltest/gtFine/train/"
+raw_data_dir_train_ = "/PATH/TO/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
+reference_data_dir_train_ = "/PATH/TO/CityScapes/gtFine_trainvaltest/gtFine/train/"
 raw_data_dir_train=(raw_data_dir_train_, reference_data_dir_train_)
-raw_data_dir_val_ = "/uds_data/listic/datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/val/"
-reference_data_dir_val_ = "/uds_data/listic/datasets/CityScapes/gtFine_trainvaltest/gtFine/val/"
+raw_data_dir_val_ = "/PATH/TO/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/val/"
+reference_data_dir_val_ = "/PATH/TO/CityScapes/gtFine_trainvaltest/gtFine/val/"
 raw_data_filename_extension='*.png'
 ref_data_filename_extension='*labelIds.png'
 #load all image files to use for training or testing
