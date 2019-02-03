@@ -174,7 +174,7 @@ def getIterationsPerEpoch(mode):
   nbIterationPerEpoch=nbSamples/(usersettings.batch_size)
   print('One {mod} epoch performed in {iterations} iterations'.format(mod=mode, iterations=nbIterationPerEpoch))
   if nbIterationPerEpoch==0:
-    raise ValueError('usersettings.nb_{mod}_samples is too low v.s. batch_size, check those values'.format(mod=mode))
+    raise ValueError('usersettings.nb_{mod}_samples is too low v.s. batch_size, check those values AND check if input files have been found (see log above)'.format(mod=mode))
 
   return nbIterationPerEpoch
 
