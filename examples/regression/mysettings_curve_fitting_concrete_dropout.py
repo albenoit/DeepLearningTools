@@ -36,6 +36,7 @@ session_name='concrete_dropout'
 ===> Note that this dictionnary will complete the session name
 '''
 hparams={'hiddenNeurons':10,#set the number of neurons per hidden layers
+         'nbEpoch':300,
          }
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
@@ -52,7 +53,7 @@ XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
 #-> define here the used model under variable 'model'
 #model_file='model_densenet.py'
-model_file='model_curve_fitting_concrete_dropout.py'
+model_file='examples/regression/model_curve_fitting_concrete_dropout.py'
 field_of_view=20#unused
 display_model_layers_info=False
 #-> define here a string name used for the train, eval and served models
@@ -72,7 +73,7 @@ patchSize=224
 random_seed=42
 
 # learning rate decaying parameters
-nbEpoch=300
+nbEpoch=hparams['nbEpoch']
 weights_weight_decay=0.0001
 initial_learning_rate=0.1
 num_epochs_per_decay=150 #number of epoch keepng the same learning rate
@@ -345,7 +346,7 @@ class Client_IO:
         #self.ax2.scatter(X_val, ymax, c='b', alpha=0.2, lw=0)
         self.ax2.set_title('Prediction mean and epistemic uncertainty levels ')
         ymin_a, ymax_a = np.min(mean_MC - aleatoric_uncertainties, axis=1), np.max(mean_MC + aleatoric_uncertainties, axis=1)
-        self.ax3.fill_between(X_val, ymin_a,ymax_a,color='skyblue',alpha=0.5, label='epistemic uncertainty')
+        self.ax3.fill_between(X_val, ymin_a,ymax_a,color='skyblue',alpha=0.5, label='aleatoric uncertainty')
         self.ax3.scatter(X_val, Y_target, c='r', lw=1, label='Noisy target')
         self.ax3.scatter(X_val, mean_MC, c='g', alpha=0.2, lw=0, label='MC mean')
         self.ax3.legend()#self.ax2.scatter(X_val, ymin, c='b', alpha=0.2, lw=0)

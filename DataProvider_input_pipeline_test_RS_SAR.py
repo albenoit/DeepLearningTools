@@ -1,3 +1,9 @@
+# python 2&3 compatibility management
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import six
+
 #script aiming at testing FileListProcessor_input_test
 import cv2
 import matplotlib.pyplot as plt
@@ -17,13 +23,13 @@ os.chdir(sessionFolder)
 '''first focus on a set of folders with raw ad reference data,
 here all data parameters are hard written since all data is supposed to be versionned
 '''
-raw_data_dir_train = "../../datasamples/Total/Out_put/"
+raw_data_dir_train = "/home/alben/workspace/DeepLearningRessources/trunk/TensorFlow/listic-deeptool/datasamples/SAR/Out_put/"
 nb_classes=2#23 landcover classes + the clouds class
 patchSize=400
-patchesPerImage=10
+patchesPerImage=1000
 allow_display=True
 process_labels_histogram=False
-nan_management='avoid'
+nan_management='zeros'
 
 parser = argparse.ArgumentParser(description='DataProvider_input_pipeline_test')
 parser.add_argument('--avoid-display', dest='avoid_display', action='store_true',
@@ -87,31 +93,11 @@ if processCommands.check_data:
 
 #init the input pipeline
 if not(processCommands.mode_test):
-    print "Testing the TRAIN pipeline mode"
+    print("Testing the TRAIN pipeline mode")
     data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation(dataset_raw_train, None,
 		                                                    shuffle_samples=True,
 		                                                    patch_ratio_vs_input=patchSize,
 		                                                    max_patches_per_image=patchesPerImage,
-		                                                    image_area_coverage_factor=2.0,
-		                                                    num_preprocess_threads=1,
-		                                                    apply_random_flip_left_right=False,
-		                                                    apply_random_flip_up_down=False,
-		                                                    apply_random_brightness=None,
-		                                                    apply_random_saturation=None,
-		                                                    apply_whitening=False,
-		                                                    batch_size_train=1,
-		                                                    use_alternative_imread='gdal',
-		                                                    balance_classes_distribution=True,
-		                                                    classes_entropy_threshold=0.3,
-		                                                    opencv_read_flags=-99,
-		                                                    field_of_view=0,
-                                                        manage_nan_values=nan_management)
-else:
-    print "Testing the TEST pipeline mode"
-    data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation(dataset_raw_train, None,
-		                                                    shuffle_samples=False,
-		                                                    patch_ratio_vs_input=patchSize,
-		                                                    max_patches_per_image=1,
 		                                                    image_area_coverage_factor=1.0,
 		                                                    num_preprocess_threads=1,
 		                                                    apply_random_flip_left_right=False,
@@ -119,7 +105,27 @@ else:
 		                                                    apply_random_brightness=None,
 		                                                    apply_random_saturation=None,
 		                                                    apply_whitening=False,
-		                                                    batch_size_train=1,
+		                                                    batch_size=1,
+		                                                    use_alternative_imread='gdal',
+		                                                    balance_classes_distribution=True,
+		                                                    classes_entropy_threshold=0.3,
+		                                                    opencv_read_flags=-99,
+		                                                    field_of_view=0,
+                                                        manage_nan_values=nan_management)
+else:
+    print("Testing the TEST pipeline mode")
+    data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation(dataset_raw_train, None,
+		                                                    shuffle_samples=False,
+		                                                    patch_ratio_vs_input=patchSize,
+		                                                    max_patches_per_image=100,
+		                                                    image_area_coverage_factor=1.0,
+		                                                    num_preprocess_threads=1,
+		                                                    apply_random_flip_left_right=False,
+		                                                    apply_random_flip_up_down=False,
+		                                                    apply_random_brightness=None,
+		                                                    apply_random_saturation=None,
+		                                                    apply_whitening=False,
+		                                                    batch_size=1,
 		                                                    use_alternative_imread='gdal',
 		                                                    balance_classes_distribution=False,
 		                                                    classes_entropy_threshold=0.3,
@@ -128,7 +134,7 @@ else:
                                                         manage_nan_values=nan_management)
 
 #retreive a single sample (testing)
-deepnet_feed=data_provider.deepnet_data_queue.dequeue()
+deepnet_feed=tf.squeeze(data_provider.dataset_iterator.get_next(),0)
 
 #create a session with controlled memory allocation (only uses what is required)
 session_config = tf.ConfigProto()
@@ -138,20 +144,19 @@ sess=tf.InteractiveSession(config=session_config)
 #summary writer
 writer = tf.summary.FileWriter(sessionFolder, sess.graph)
 
-init_op=[tf.global_variables_initializer(), tf.local_variables_initializer()]
+init_op=[tf.global_variables_initializer(), tf.local_variables_initializer(), data_provider.getIteratorInitializer()]
 sess.run(init_op)
 #initialize and feed the filenames string queue
 # create coordinated threads to feed the queue
 # -> fcreate the coordinator
 
 coord = tf.train.Coordinator()
-data_provider.start(session=sess, coordinator=coord)
 
 class_count=np.zeros(nb_classes)
 #run one deep net iteration
 try:
 
-  for step in xrange(10):
+  for step in six.moves.range(10):
       #stop condition
       if coord.should_stop():
           break
@@ -187,9 +192,9 @@ except Exception, e:
 finally:
     # Terminate as usual.  It is innocuous to request stop twice.
     coord.request_stop()
-    coord.join(data_provider.enqueue_threads)
 sess.close()
 
+cv2.waitKey()
 print('######## Stopped process at step '+str(step))
 
 if process_labels_histogram is True:

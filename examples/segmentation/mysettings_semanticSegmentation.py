@@ -6,12 +6,10 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import six
-
 import DataProvider_input_pipeline
 import tensorflow as tf
 import numpy as np
-import model_utils
+
 #-> set here your own working folder
 workingFolder='experiments/semantic_segmentation'
 
@@ -21,13 +19,14 @@ tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
 serving_client_timeout_int_secs=5#timeout limit when a client requests a served model
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
-session_name='Cityscapes_'
+session_name='Cityscapes'
 
 ''' define here some hyperparameters to adjust the experiment
 ===> Note that this dictionnary will complete the session name
 '''
 hparams={'nbClasses':34,#set the number of classes in the considered dataset
-         }
+         'smoothedParams':True,
+         'nbEpoch':50}
 
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
@@ -40,11 +39,10 @@ to check which gpu is free (very few used memory and GPU )
 '''
 used_gpu_IDs=[0]
 #set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
-XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
+XLA_FLAG=tf.OptimizerOptions.ON_1#OFF
 
 #-> define here the used model under variable 'model'
-#model_file='model_densenet.py'
-model_file='model_densenet_experiments.py' #TODO : get into this file to change the model complexity (default config is VERY simple only for demo/laptop training)
+model_file='examples/segmentation/model_densenet_2D.py'
 display_model_layers_info=False #a flag to enable the display of additionnal console information on the model properties (for debug purpose)
 
 field_of_view=109
@@ -66,19 +64,19 @@ patchSize=224
 random_seed=42
 
 # learning rate decaying parameters
-nbEpoch=50
+nbEpoch=hparams['nbEpoch']
 weights_weight_decay=0.0001
 initial_learning_rate=0.0001
 num_epochs_per_decay=10 #number of epoch keepng the same learning rate
 learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
-predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected)
+predict_using_smoothed_parameters=hparams['smoothedParams']#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> a first set of data
-raw_data_dir_train_ = "../../../../Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
-reference_data_dir_train_ = "../../../../Datasets/CityScapes/gtFine_trainvaltest/gtFine/train/"
+raw_data_dir_train_ = "/uds_data/listic/datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
+reference_data_dir_train_ = "/uds_data/listic/datasets/CityScapes/gtFine_trainvaltest/gtFine/train/"
 raw_data_dir_train=(raw_data_dir_train_, reference_data_dir_train_)
-raw_data_dir_val_ = "../../../../Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/val/"
-reference_data_dir_val_ = "../../../../Datasets/CityScapes/gtFine_trainvaltest/gtFine/val/"
+raw_data_dir_val_ = "/uds_data/listic/datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/val/"
+reference_data_dir_val_ = "/uds_data/listic/datasets/CityScapes/gtFine_trainvaltest/gtFine/val/"
 raw_data_filename_extension='*.png'
 ref_data_filename_extension='*labelIds.png'
 #load all image files to use for training or testing
@@ -90,8 +88,8 @@ raw_data_dir_val=(raw_data_dir_val_, reference_data_dir_val_)
 number_of_crops_per_image=100
 nb_train_samples=nb_train_images*number_of_crops_per_image# number of images * number of crops per image
 nb_test_samples=7000#nb_val_images*number_of_crops_per_image
-eval_not_rerun_until_sec=60# TODO, for long runs (days) change to a largeur value (3600s*12) for example to wait for 12h between 2 evaluations
-batch_size=3
+eval_not_rerun_until_sec=3600*12 #wait for 12h between 2 evaluations (long runs)
+batch_size=4
 
 ####################################################
 ## Define here use case specific metrics, loss, etc.
@@ -133,6 +131,7 @@ def getOptimizer(loss, learning_rate, global_step):
     '''define here the specific optimizer to be used
     '''
     #get gradient summary information and the gradient norm
+    import model_utils
     tvars, raw_grads, gradient_norm=model_utils.track_gradients(loss)
 
     return tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
@@ -145,7 +144,7 @@ def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
         labels: the reference data / ground truth if available
         weights_loss: the model weights loss that may be used for regularization
     '''
-    labels=tf.squeeze(labels, squeeze_dims=-1)
+    labels=tf.squeeze(labels, axis=[-1])
 
     #-> restrict to the center part of the images
     logits_semantic_crops=tf.slice(model_outputs_dict['logits_semantic_map'], begin=[0,field_of_view//2, field_of_view//2, 0], size =[-1,patchSize-field_of_view, patchSize-field_of_view, -1])
@@ -166,8 +165,8 @@ def get_validation_summaries(inputs, model_outputs_dict, labels):
     semantic_segm_argmax_map=tf.cast(tf.argmax(model_outputs_dict['logits_semantic_map'],3, name='argmax_image'), tf.int32)
 
     with tf.name_scope('image_summaries'):
-        raw_rgb_min= tf.reduce_min(inputs, axis=[1,2,3], keep_dims=True)
-        raw_rgb_max= tf.reduce_max(inputs, axis=[1,2,3], keep_dims=True)
+        raw_rgb_min= tf.reduce_min(inputs, axis=[1,2,3], keepdims=True)
+        raw_rgb_max= tf.reduce_max(inputs, axis=[1,2,3], keepdims=True)
         raw_images_rgb_0_1=(inputs-raw_rgb_min)/(raw_rgb_max-raw_rgb_min)
         raw_images_display=tf.saturate_cast(raw_images_rgb_0_1*255.0, dtype=tf.uint8)
         reference_images_crops_regions_display=tf.expand_dims(tf.saturate_cast((labels*255)/(hparams['nbClasses']-1), dtype=tf.uint8),-1)
@@ -204,14 +203,14 @@ def get_eval_metric_ops(inputs, model_outputs_dict, labels):
                         name='Accuracy_metric'
                         ),
             'IoU' : tf.metrics.mean_iou(
-                        labels=labels,
-                        predictions=semantic_segm_argmax_map,
-                        num_classes=hparams['nbClasses'],
-                        weights=None,
-                        metrics_collections=None,
-                        updates_collections=None,
-                        name='IoU_metric'),
-           }
+                                labels=labels,
+                                predictions=semantic_segm_argmax_map,
+                                num_classes=hparams['nbClasses'],
+                                weights=None,
+                                metrics_collections=None,
+                                updates_collections=None,
+                                name='IoU_metric')
+            }
 
 '''Define here the input pipelines :
 -1. a common function for train and validation modes
@@ -225,6 +224,19 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
     @param raw_data_files_folder : the folder where CSV files are stored
     @param shuffle_batches : a boolean that activates batch shuffling
     '''
+
+    class IteratorInitializerHook(tf.train.SessionRunHook):
+        """Hook to initialise data iterator after Session is created."""
+
+        def __init__(self):
+            super(IteratorInitializerHook, self).__init__()
+            self.iterator_initializer_func = None
+
+        def after_create_session(self, session, coord):
+            """Initialise the iterator after the session has been created."""
+            self.iterator_initializer_func(session)
+    iterator_initializer_hook = IteratorInitializerHook()
+
     if nb_train_images==0:
         raise ValueError('No training image found, abording!')
     if nb_val_images==0:
@@ -259,7 +271,11 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
             raise ValueError('Raw images and reference image numbers differ, check datasets')
 
         #init the input pipeline
+        dataset_nbEpoch=nbEpoch#for the training dataset
+        if isTraining is False:
+          dataset_nbEpoch=1
         data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation(raw_data_files, dataset_references_train,
+                nbEpoch=dataset_nbEpoch,
                 shuffle_samples=shuffle_batches,
                 patch_ratio_vs_input=patchSize,
                 max_patches_per_image=number_of_crops_per_image,
@@ -270,7 +286,7 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
                 apply_random_brightness=apply_pixel_transforms(isTraining),
                 apply_random_saturation=apply_pixel_transforms(isTraining),
                 apply_whitening=True,
-                batch_size_train=batch_size,
+                batch_size=batch_size,
                 use_alternative_imread='opencv',
                 balance_classes_distribution=isTraining,
                 classes_entropy_threshold=0.6,
@@ -281,7 +297,7 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
         #retreive a batch of samples
         with tf.name_scope("retrieve_batch"):
             # batch sample retrieval
-            data_batch=data_provider.deepnet_data_queue.dequeue_many(batch_size)
+            data_batch=data_provider.dataset_iterator.get_next()
             # extract raw data,  reference data will be extracted at the optimizer level
             raw_images=tf.slice( data_batch,
                                         begin=[0,0,0,0],
@@ -293,8 +309,13 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
                                             begin=[0,field_of_view//2, field_of_view//2, data_provider.single_image_raw_depth],
                                             size=[-1,patchSize-field_of_view, patchSize-field_of_view,data_provider.single_image_reference_depth])
                                     ,dtype=tf.int32)
+        #finally manage the dataset iterator
+        iterator_init = data_provider.getIteratorInitializer()
+        # Set runhook to initialize the iterator
+        iterator_initializer_hook.iterator_initializer_func = \
+            lambda sess: sess.run(iterator_init)
         return raw_images, reference_crops
-    return input_fn, None
+    return input_fn, iterator_initializer_hook
 '''
 ################################################################################
 ## Serving (production) section, define here :

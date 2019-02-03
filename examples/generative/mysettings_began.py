@@ -32,6 +32,7 @@ session_name='BEGAN'
 ===> Note that this dictionnary will complete the session name
 '''
 hparams={'generatorCodeSize':64,#set the size of the generator code
+         'nbEpoch':1000,
          }
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
@@ -44,11 +45,11 @@ to check which gpu is free (very few used memory and GPU )
 '''
 used_gpu_IDs=[0]
 #set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
-XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
+XLA_FLAG=tf.OptimizerOptions.ON_1#OFF
 
 #-> define here the used model under variable 'model'
 #model_file='model_densenet.py'
-model_file='model_began.py'
+model_file='examples/generative/model_began.py'
 display_model_layers_info=False #a flag to enable the display of additionnal console information on the model properties (for debug purpose)
 
 field_of_view=28
@@ -72,7 +73,7 @@ patchSize=28
 random_seed=41
 
 # learning rate decaying parameters
-nbEpoch=1000
+nbEpoch=hparams['nbEpoch']
 weights_weight_decay=0.0001
 initial_learning_rate=1e-5
 num_epochs_per_decay=100 #FIXME, initial value = 3000 #number of epoch keeping the same learning rate
@@ -80,13 +81,14 @@ learning_rate_decay_factor=0.95 #factor applied to current learning rate when NU
 predict_using_smoothed_parameters=False#set True to use trained parameters values smoothed along the training steps (better results expected)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> train and val sets of data
-from tensorflow.examples.tutorials.mnist import input_data
-mnist_loc='datasamples/mnist/'
-raw_data_dir_train=mnist_loc
-raw_data_dir_val=mnist_loc
-mnist = input_data.read_data_sets(mnist_loc, one_hot=False)
-nb_train_samples=mnist.train.num_examples #nb_train_images*number_of_crops_per_image# number of images * number of crops per image
-nb_test_samples=mnist.test.num_examples#to be adjusted for testing
+import keras
+fashion_mnist = keras.datasets.fashion_mnist
+(train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
+
+raw_data_dir_train=train_images
+raw_data_dir_val=test_images
+nb_train_samples=len(train_labels) #nb_train_images*number_of_crops_per_image# number of images * number of crops per image
+nb_test_samples=len(test_labels)#to be adjusted for testing
 embedding_samples_stored_number=nb_test_samples
 batch_size=32
 
@@ -129,8 +131,8 @@ def model_outputs_postprocessing_for_serving(model_outputs_dict):
     # and cast to uint8 to display images
     with tf.name_scope('convert_to_standard_image'):
         eps=0.001
-        fake_min= tf.reduce_min(model_outputs_dict['generator_fake_samples'], axis=None, keep_dims=True)
-        fake_max= tf.reduce_max(model_outputs_dict['generator_fake_samples'], axis=None, keep_dims=True)
+        fake_min= tf.reduce_min(model_outputs_dict['generator_fake_samples'], axis=None, keepdims=True)
+        fake_max= tf.reduce_max(model_outputs_dict['generator_fake_samples'], axis=None, keepdims=True)
         fake_0_1=(model_outputs_dict['generator_fake_samples']-fake_min)/(fake_max-fake_min+eps)
         fake_0_255=tf.saturate_cast(fake_0_1*255.0, dtype=tf.uint8)
 
@@ -272,7 +274,7 @@ def get_validation_summaries(inputs, model_outputs_dict, labels):
 '''
 def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batches):
     """
-    FROM : https://medium.com/onfido-tech/higher-level-apis-in-tensorflow-67bfb602e6c0
+
     Return the input function to get the training data.
     Args:
         batch_size (int): Batch size of training iterator that is returned
@@ -296,11 +298,11 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
     iterator_initializer_hook = IteratorInitializerHook()
     # Create a dataset tensor from the images and the labels
     if shuffle_batches is True:#train case
-        images=mnist.train.images.reshape([-1, 28, 28, 1])
-        labels=mnist.train.labels
+        images=train_images.reshape([-1, 28, 28, 1]).astype(np.float32)/255.
+        labels=np.array(train_labels).reshape([-1,1])
     else:#test case
-        images=mnist.test.images.reshape([-1, 28, 28, 1])
-        labels=mnist.test.labels
+        images=test_images.reshape([-1, 28, 28, 1]).astype(np.float32)/255.
+        labels=np.array(test_labels).reshape([-1,1])
     #ensure labels are of type int since the initial uint8 format is not supported for Tensorboard Projector
     labels=labels.astype(np.int32)
     def train_inputs():
@@ -311,14 +313,9 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
         """
         with tf.name_scope('Train_val_data'):
             # Get Mnist data
-            # Define placeholders
-            images_placeholder = tf.placeholder(
-                images.dtype, images.shape)
-            labels_placeholder = tf.placeholder(
-                labels.dtype, labels.shape)
             # Build dataset iterator
             dataset = tf.data.Dataset.from_tensor_slices(
-                (images_placeholder, labels_placeholder))
+                (images, labels))
             dataset = dataset.repeat(None)  # Infinite iterations
             dataset = dataset.shuffle(buffer_size=10000)
             dataset = dataset.batch(batch_size)
@@ -327,47 +324,15 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
             # Set runhook to initialize iterator
             iterator_initializer_hook.iterator_initializer_func = \
                 lambda sess: sess.run(
-                    iterator.initializer,
-                    feed_dict={images_placeholder: images,
-                               labels_placeholder: labels})
+                    iterator.initializer)
             if DEBUG_OPTIM is True:
                 next_example=tf.Print(next_example,[tf.reduce_max(next_example), tf.reduce_min(next_example)], message='Input Max, min : ')
-
             # Return batched (features, labels)
             return next_example, next_label
 
     # Return function and hook
     return train_inputs, iterator_initializer_hook
 
-def get_input_pipeline_train_val_(batch_size, raw_data_files_folder, shuffle_batches):
-    ''' define an input pipeline able to load temporal series from a set of
-    CSV files and a batch size specified as inputs
-    TODO, look at the doc here : https://www.tensorflow.org/programmers_guide/datasets
-    @param batch_size : the expected size of a batch
-    @param raw_data_files_folder : the folder where CSV files are stored
-    @param shuffle_batches : a boolean that activates batch shuffling
-    '''
-    # Create a dataset tensor from the images and the labels
-    if shuffle_batches is True:#train case
-        images=mnist.train.images
-        labels=mnist.train.labels
-    else:#test case
-        images=mnist.test.images
-        labels=mnist.test.labels
-
-    #create a dataset from the image and related labels arrays
-    dataset = tf.data.Dataset.from_tensor_slices((images, labels))
-    # Create batches of data
-    dataset = dataset.batch(batch_size)
-    # Create an iterator, to go over the dataset
-    iterator = dataset.make_initializable_iterator()
-    def input_fn():
-        raw_batch_img, batch_labels = iterator.get_next()
-        batch_img=tf.reshape(raw_batch_img,  shape=[-1, 28, 28, 1])
-        tf.Print(batch_img,[tf.max(batch_img), tf.minimum(batch_img)], message='Input Max, min : ')
-
-        return batch_img, tf.cast(batch_labels, tf.int32)
-    return input_fn, iterator
 '''
 ################################################################################
 ## Serving (production) section, define here :

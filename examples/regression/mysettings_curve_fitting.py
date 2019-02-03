@@ -34,7 +34,9 @@ session_name='my_test'
 ===> Note that this dictionnary will complete the session name
 '''
 hparams={'hiddenNeurons':10,#set the number of neurons per hidden layers
-         'predictSmoothParams':True #set True to activate parameters moving averages use for prediction
+         'predictSmoothParams':True, #set True to activate parameters moving averages use for prediction
+         'learningRate':0.1,
+         'nbEpoch':50,
          }
 
 ''''set the list of GPUs involved in the process. HOWTO:
@@ -52,7 +54,7 @@ XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
 #-> define here the used model under variable 'model'
 #model_file='model_densenet.py'
-model_file='model_curve_fitting.py'
+model_file='examples/regression/model_curve_fitting.py'
 field_of_view=20#unused
 display_model_layers_info=False
 #-> define here a string name used for the train, eval and served models
@@ -72,9 +74,9 @@ patchSize=224
 random_seed=42
 
 # learning rate decaying parameters
-nbEpoch=300
+nbEpoch=hparams['nbEpoch']
 weights_weight_decay=0.0001
-initial_learning_rate=0.1
+initial_learning_rate=hparams['learningRate']
 num_epochs_per_decay=150 #number of epoch keepng the same learning rate
 learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
 predict_using_smoothed_parameters=hparams['predictSmoothParams']#set True to use trained parameters values smoothed (EMA) along the training steps (better results expected)

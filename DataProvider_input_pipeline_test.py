@@ -25,12 +25,14 @@ here all data parameters are hard written since all data is supposed to be versi
 '''
 raw_data_dir_train = "../../datasamples/semantic_segmentation/raw_data/"
 reference_data_dir_train = "../../datasamples/semantic_segmentation/labels/"
+#raw_data_dir_train ="/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
+#reference_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/gtFine_trainvaltest/gtFine/train/"
 nb_classes=33
 patchSize=256
-patchesPerImage=50
+patchesPerImage=1000
 allow_display=True
 process_labels_histogram=False
-nan_management='avoid'
+nan_management='zeros'
 
 parser = argparse.ArgumentParser(description='DataProvider_input_pipeline_test')
 parser.add_argument('--avoid-display', dest='avoid_display', action='store_true',
@@ -105,23 +107,24 @@ if not(processCommands.mode_test):
                                                                 patch_ratio_vs_input=patchSize,
                                                                 max_patches_per_image=patchesPerImage,
                                                                 image_area_coverage_factor=2.0,
-                                                                num_preprocess_threads=2,
+                                                                num_preprocess_threads=1,
                                                                 apply_random_flip_left_right=True,
                                                                 apply_random_flip_up_down=False,
                                                                 apply_random_brightness=0.5,
                                                                 apply_random_saturation=0.5,
                                                                 apply_whitening=True,
-                                                                batch_size_train=50,
-                                                                use_alternative_imread=None,
+                                                                batch_size=1,
+                                                                use_alternative_imread='opencv',
                                                                 balance_classes_distribution=True,
                                                                 classes_entropy_threshold=0.6,
-                                                                field_of_view=0)
+                                                                field_of_view=0,
+                                                            manage_nan_values=nan_management)
 else:
     print("Testing the TEST pipeline mode")
     data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation(dataset_raw_train, dataset_references_train,
                                                                 shuffle_samples=False,
                                                                 patch_ratio_vs_input=patchSize,
-                                                                max_patches_per_image=patchesPerImage,
+                                                                max_patches_per_image=1,
                                                                 image_area_coverage_factor=1.0,
                                                                 num_preprocess_threads=1,
                                                                 apply_random_flip_left_right=False,
@@ -129,13 +132,13 @@ else:
                                                                 apply_random_brightness=None,
                                                                 apply_random_saturation=None,
                                                                 apply_whitening=True,
-                                                                batch_size_train=1,
-                                                                use_alternative_imread=None,
+                                                                batch_size=1,
+                                                                use_alternative_imread='opencv',
                                                                 balance_classes_distribution=False,
                                                                 classes_entropy_threshold=None,
                                                                 field_of_view=0)
 #retreive a single sample (testing)
-deepnet_feed=data_provider.deepnet_data_queue.dequeue()
+deepnet_feed=tf.squeeze(data_provider.dataset_iterator.get_next(),0)
 
 ### Visualisation Contours Sobel
 with tf.name_scope('semantic_contours'):
@@ -163,21 +166,22 @@ sess=tf.InteractiveSession(config=session_config)
 #summary writer
 writer = tf.summary.FileWriter(sessionFolder, sess.graph)
 
-init_op=[tf.global_variables_initializer(), tf.local_variables_initializer()]
+init_op=[tf.global_variables_initializer(), tf.local_variables_initializer(), data_provider.getIteratorInitializer()]
 sess.run(init_op)
 #initialize and feed the filenames string queue
 # create coordinated threads to feed the queue
 # -> fcreate the coordinator
 
 coord = tf.train.Coordinator()
-data_provider.start(session=sess, coordinator=coord)
 
 #run one deep net iteration
 try:
 
-  for step in six.moves.range(10):
+  for step in six.moves.range(10000):
+      print('====== New step='+str(step))
       #stop condition
       if coord.should_stop():
+          print("Coordinator wants to stop...")
           break
       #training step case
       result, contours_disp=sess.run([deepnet_feed, contours ])
@@ -189,9 +193,9 @@ try:
       print('Sample value range (min, max)=({minVal}, {maxVal})'.format(minVal=sample_minVal, maxVal=sample_maxVal))
       input_crop_norm=(input_crop-sample_minVal)*255.0/(sample_maxVal-sample_minVal)
       if allow_display is True:
-          cv2.imshow('input crop, step='+str(step), cv2.cvtColor(input_crop_norm.astype(np.uint8), cv2.COLOR_RGB2BGR))
-          cv2.imshow('reference crop, step='+str(step), result[:,:,3].astype(np.uint8)*int(255/nb_classes))
-          cv2.imshow('reference contours_disp, step='+str(step), contours_disp[0].astype(np.uint8)*255)
+          cv2.imshow('input crop, step', cv2.cvtColor(input_crop_norm.astype(np.uint8), cv2.COLOR_RGB2BGR))
+          cv2.imshow('reference crop, step', result[:,:,3].astype(np.uint8)*int(255/nb_classes))
+          cv2.imshow('reference contours_disp, step', contours_disp[0].astype(np.uint8)*255)
           cv2.waitKey(1000)
   #loop ended, final pause before closing
   if allow_display is True:
@@ -199,13 +203,14 @@ try:
     cv2.waitKey()
 except Exception, e:
     # Report exceptions to the coordinator.
+    print('Stopped the data pipeline consuming loop for reason: '+str(e))
     coord.request_stop(e)
 finally:
     # Terminate as usual.  It is innocuous to request stop twice.
     coord.request_stop()
-    coord.join(data_provider.enqueue_threads)
 sess.close()
 
+cv2.waitKey()
 print('######## Stopped process at step '+str(step))
 
 if process_labels_histogram is True:

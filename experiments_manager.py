@@ -118,11 +118,10 @@ import numpy as np
 import pandas as pd
 import imp
 import copy
-from tensorflow.examples.tutorials.mnist import input_data as mnist_data
-from tensorflow.contrib import slim
 from tensorflow.python import debug as tf_debug
 
 global usersettings
+usersettings=None#ensure to clear this object prior any new trial
 embeddingsFolder='embeddings'
 settingsFile_saveName='experiment_settings.py'
 
@@ -146,7 +145,7 @@ tf.app.flags.DEFINE_string ("debug_server_addresses", "127.0.0.1:2333", "Set her
 def loadModel(sessionFolder):
   ''' basic method to load the model targeted by usersettings.model_file
   '''
-  model_path=os.path.join(sessionFolder,usersettings.model_file)
+  model_path=os.path.join(sessionFolder,os.path.basename(usersettings.model_file))
   try:
     model_def=imp.load_source('model_def', model_path)
   except Exception,e:
@@ -179,7 +178,7 @@ def getIterationsPerEpoch(mode):
 
   return nbIterationPerEpoch
 
-def getTrainSpecs(params, global_hooks):
+def getTrainSpecs(estimator, params, global_hooks):
   ''' setup the training specs wrt the experiment usersettings file
   Args:
     param: a dictionnary of general parameters
@@ -203,12 +202,21 @@ def getTrainSpecs(params, global_hooks):
 
   #add a step counter
   train_hooks.append(tf.train.StepCounterHook(
-                                            every_n_steps=10,
+                                            every_n_steps=100,
                                             every_n_secs=None,
                                             output_dir=params.sessionFolder,
                                             summary_writer=None
                                             )
                     )
+
+  #introduce the experimental early stopping module (available starting from tf 1.10)
+  es_metric='loss'
+  if hasattr(usersettings, 'earlystopping_metric'):
+    es_metric=usersettings.earlystopping_metric
+  earlystopping_hook = tf.contrib.estimator.stop_if_no_decrease_hook(estimator,
+                                                       metric_name=es_metric,
+                                                       max_steps_without_decrease=params.nbIterationPerEpoch_train)
+  train_hooks.append(earlystopping_hook)
 
   return tf.estimator.TrainSpec(input_fn=train_input_fn,
                                 max_steps=params.nbIterationPerEpoch_train*usersettings.nbEpoch,
@@ -257,7 +265,7 @@ def getEvalSpecs(params, global_hooks):
           exports_to_keep=5
           )
   except:
-     print('tf.estimator.BestExporter is not available on this tensorflow version, tf>1.1 required')
+     print('tf.estimator.BestExporter is not available for now, TODO, work on the compare_fn parameter')
      pass
   wait_sec=60
   if hasattr(usersettings, 'eval_not_rerun_until_sec'):
@@ -325,8 +333,8 @@ def run_experiment(argv=None):
     )
   #add additionnal hyperparams coming from argv
   if argv is not None:
-    if  isinstance(argv[0], dict):
-      for key, val in argv[0].iteritems():
+    if  isinstance(argv, dict):
+      for key, val in argv.iteritems():
         print('Adding hyperparameter (key,val):'+str((key,val)))
         params.add_hparam(name=key,value=val)
 
@@ -338,11 +346,6 @@ def run_experiment(argv=None):
                                           log_usage=False)
                       )
 
-  #specify the training input function and related parameters
-  train_spec = getTrainSpecs(params, globalHooks)
-
-  #specify the testing input function and related parameters
-  eval_spec = getEvalSpecs(params, globalHooks)
 
   #specify session hardware configuration :
   run_config =getSessionConfig(params)
@@ -351,6 +354,8 @@ def run_experiment(argv=None):
   estimator = None
   if hasattr(usersettings, 'premade_estimator'):
     print('Using a premade estimator')
+    print(usersettings.premade_estimator)
+
     #raise ValueError('TODO')
     estimator=usersettings.premade_estimator
     #estimator.model_dir=params.sessionFolder
@@ -362,24 +367,23 @@ def run_experiment(argv=None):
         config=run_config
     )
 
-  try:
-    #introduce the experimental early stopping module (available starting from tf 1.10)
-    es_metric='loss'
-    if hasattr(usersettings, 'earlystopping_metric'):
-      es_metric=usersettings.earlystopping_metric
-    hook = tf.contrib.estimator.stop_if_no_decrease_hook(estimator,
-                                                         metric_name=es_metric,
-                                                         max_steps_without_decrease=eval_spec.start_delay_secs*6,
-                                                         run_every_secs=eval_spec.start_delay_secs)
-  except:
-    print('FAILED TO ADD EARLY STOPPING HOOK (too old Tensorflow version), training without this')
-    pass
+
+  #specify the training input function and related parameters
+  train_spec = getTrainSpecs(estimator, params, globalHooks)
+
+  #specify the testing input function and related parameters
+  eval_spec = getEvalSpecs(params, globalHooks)
+
   #start the train/val/export session
-  tf.estimator.train_and_evaluate(
+  final_result, lastmodel=tf.estimator.train_and_evaluate(
             estimator,
             train_spec,
             eval_spec
         )
+  print('Training session end, (final result, lastmodel): '+str((final_result, lastmodel)))
+  if final_result is None:
+    final_result={}
+  return final_result, lastmodel
 
 # Define model ############################################
 def model_fn(features, labels, mode, params):
@@ -394,7 +398,7 @@ def model_fn(features, labels, mode, params):
     Returns:
         (EstimatorSpec): Model to be run by Estimator.
     """
-
+    print('##### DEBUG, usersettings='+str(usersettings.hparams))
     print('###################################################')
     print('Defining the custom model_fn with mode : '+str(mode))
     print('=> input features='+str(features))
@@ -574,11 +578,20 @@ def model_fn(features, labels, mode, params):
                     features_fov=get_feature_central_area(features, 'input')
                     model_outputs_fov={}
                     for output_key,output_feature in model_outputs_dict.items():
-                      #check if spatial size matches between input and feature map, if yes, keep central area
-                      if output_feature.get_shape().as_list()[1:3] == features.get_shape().as_list()[1:3]:
-                        model_outputs_fov[output_key]= get_feature_central_area(output_feature, output_key)
-                      else:#otherwise keep the data as is
-                        model_outputs_fov[output_key]=output_feature
+                      def get_centralarea_feature(output_feature, output_key):
+                        print('considering feature:'+str(output_feature))
+                        #check if spatial size matches between input and feature map, if yes, keep central area
+                        if output_feature.get_shape().as_list()[1:3] == features.get_shape().as_list()[1:3]:
+                          return get_feature_central_area(output_feature, output_key)
+                        #else:#otherwise keep the data as is
+                        return output_feature
+
+                      if isinstance(output_feature, (list,)):
+                        for sublist_id, feature_ in enumerate(output_feature):
+                          newKey=output_key+'_'+str(sublist_id)
+                          model_outputs_fov[newKey]=get_centralarea_feature(feature_, newKey)
+                      else:
+                        model_outputs_fov[output_key]=get_centralarea_feature(output_feature, output_key)
                     #pick the central pixel Value
                     def get_feature_central_pixel(feature_map, feature_name):
                         ''' returns the central pixel of the input feature map
@@ -603,12 +616,20 @@ def model_fn(features, labels, mode, params):
 
                     model_outputs_center_val_dict={}
                     for output_key,output_feature in model_outputs_dict.items():
-                      #FIXME test may not be robust enough...
-                      if len(output_feature.get_shape().as_list())-2 == xdimensions:
-                        model_outputs_center_val_dict[output_key]= get_feature_central_pixel(output_feature, output_key)
-                      else:#keep the data as is
+                      def get_central_feature(output_feature, output_key):
+                        #FIXME test may not be robust enough...
+                        if len(output_feature.get_shape().as_list())-2 == xdimensions:
+                          return get_feature_central_pixel(output_feature, output_key)
+                        #else:#keep the data as is
                         print('Could not extract central pixel of feature {feat}'.format(feat=output_feature))
-                        model_outputs_center_val_dict[output_key]=output_feature
+                        return output_feature
+
+                      if isinstance(output_feature, (list,)):
+                        for sublist_id, feature in enumerate(output_feature):
+                          newKey=output_key+'_'+str(sublist_id)
+                          model_outputs_center_val_dict[newKey]=get_central_feature(feature, newKey)
+                      else:
+                        model_outputs_center_val_dict[output_key]=get_central_feature(output_feature, output_key)
                     print('...Central pixel extraction OK')
                     labels_center_val=get_feature_central_pixel(labels, 'labels')
                     features_center_val=get_feature_central_pixel(features_fov, 'input')
@@ -1064,7 +1085,7 @@ def do_inference(host, port, model_name, concurrency, num_tests):
         if FLAGS.debug:
           print('Time to prepare request:',round(time.time() - start_time, 2))
       except StopIteration:
-        print('End of the process detection, finalizing the finalize method')
+        print('End of the process detection, running the ClientIO::finalize method')
         notDone=True
         break
       #asynchronous message reception, may hide some AbortionError details and only provide CancellationError(code=StatusCode.CANCELLED, details="Cancelled")
@@ -1125,6 +1146,9 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None, isServing
         raise ValueError('Failed to load {settings} file. Error message is {error}. This generally comes from a) file does not exist, b)basic python syntax errors'.format(settings=filename, error=e))
     print('loaded settings file {file}'.format(file=filename))
 
+    if isServingModel:
+      sessionFolder=os.path.dirname(filename)
+
     settings_checker=ExperimentsSettingsChecker(usersettings)
     settings_checker.validate_settings(isServingModel)
 
@@ -1140,6 +1164,7 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None, isServing
     workingFolder=usersettings.workingFolder
     if restart_from_sessionFolder is None:
       sessionFolder=os.path.join(workingFolder, usersettings.session_name+'_'+datetime.datetime.now().strftime("%Y-%m-%d--%H:%M:%S"))
+    print('Considered usersettings.hparams=',str(usersettings.hparams))
     return usersettings, sessionFolder, model_name
 
 def get_served_model_info(one_model_path, expected_model_name):
@@ -1163,115 +1188,152 @@ def get_served_model_info(one_model_path, expected_model_name):
     raise ValueError('Target model {target} name NOT found in the command answer'.format(target=expected_model_name))
 
 # Run script ##############################################
-if __name__ == "__main__":
-    ''' main function that starts the experiment in the chosen mode '''
-    scripts_WD=os.getcwd() #to locate the mysettings*.py file
+def run(train_config_script=None, external_hparams=None):
+  ''' the main script function that can receive hyperparameters as a dictionnary to run an experiment
+  can start training, model serving or model client requesting depending on the FLAGS values:
+  -> if FLAGS.start_server is True : starts a server that hosts the target model
+  -> if FLAGS.predict is TRUE : starts a client that will send requests to a model threw gRPC
+  -> else, strat a training session relying on a sesstings file provided by train_config_script or FLAGS.usersettings
+    --> in this mode, function returns a dictionnary of that summarizes the last model states at the end of the training
+    --> if calling with non empty train_config_script and with non empty external_hparams,
+        then external_hparams will update hyperparameters already specified in the train_config_script script
+  '''
+  global usersettings
+  tf.reset_default_graph()
+  usersettings=None#ensure to clear this object prior any new trial
+  ''' main function that starts the experiment in the chosen mode '''
+  scripts_WD=os.getcwd() #to locate the mysettings*.py file
 
-    if FLAGS.debug is True:
-        raw_input('Running in debug mode. Press Enter to continue...')
-    if FLAGS.start_server is True:
-        print('### START TENSORFLOW SERVER MODE ###')
+  if FLAGS.debug is True:
+      raw_input('Running in debug mode. Press Enter to continue...')
+  if FLAGS.start_server is True:
+      print('### START TENSORFLOW SERVER MODE ###')
 
-        usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName), isServingModel=True)
+      usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName), isServingModel=True)
 
-        #target the served models folder
-        model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/best_model')
-        if not(os.path.exists(model_folder)):
-          model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/latest_models')
-        print('Considering served model parent directory:'+model_folder)
-        #check if at least one served model exists in the target models directory
-        stillWait=True
-        while stillWait is True:
-          print('Looking for a servable model in '+os.path.join(scripts_WD,FLAGS.model_dir,'export/'))
-          try:
-            #check served model existance
-            if not(os.path.exists(model_folder)):
-              raise ValueError('served models directory not found : '+model_folder)
-            #look for a model in the directory
-            one_model=next(os.walk(model_folder))[1][0]
-            one_model_path=os.path.join(model_folder, one_model)
-            if not(os.path.exists(one_model_path)):
-              raise ValueError('served models directory not found : '+one_model_path)
-            print('Found at least one servable model directory '+str(one_model_path))
-            stillWait=False
-            # print servable informations
-            #propose some commands to get information on the served model
-            print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME')
-          except Exception, e:
-            raise ValueError('Could not find servable model, error='+str(e.message))
+      #target the served models folder
+      model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/best_model')
+      if not(os.path.exists(model_folder)):
+        model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'export/latest_models')
+      print('Considering served model parent directory:'+model_folder)
+      #check if at least one served model exists in the target models directory
+      stillWait=True
+      while stillWait is True:
+        print('Looking for a servable model in '+os.path.join(scripts_WD,FLAGS.model_dir,'export/'))
+        try:
+          #check served model existance
+          if not(os.path.exists(model_folder)):
+            raise ValueError('served models directory not found : '+model_folder)
+          #look for a model in the directory
+          one_model=next(os.walk(model_folder))[1][0]
+          one_model_path=os.path.join(model_folder, one_model)
+          if not(os.path.exists(one_model_path)):
+            raise ValueError('served models directory not found : '+one_model_path)
+          print('Found at least one servable model directory '+str(one_model_path))
+          stillWait=False
+          # print servable informations
+          #propose some commands to get information on the served model
+          print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME')
+        except Exception, e:
+          raise ValueError('Could not find servable model, error='+str(e.message))
 
-        get_served_model_info(one_model_path, usersettings.served_head)
-        tensorflow_start_cmd="tensorflow_model_server --port={port} --model_name={model} --model_base_path={model_dir}".format(port=usersettings.tensorflow_server_port,
-                                                                                                                model=model_name,
-                                                                                                                model_dir=model_folder)
+      get_served_model_info(one_model_path, usersettings.served_head)
+      tensorflow_start_cmd="tensorflow_model_server --port={port} --model_name={model} --model_base_path={model_dir}".format(port=usersettings.tensorflow_server_port,
+                                                                                                              model=model_name,
+                                                                                                              model_dir=model_folder)
 
-        print('Starting tensorflow server with command :'+tensorflow_start_cmd)
-        os.system(tensorflow_start_cmd)
+      print('Starting tensorflow server with command :'+tensorflow_start_cmd)
+      os.system(tensorflow_start_cmd)
 
-    elif FLAGS.predict is True or FLAGS.predict_stream !=0:
-        print('### PREDICT MODE, interacting with a tensorflow server ###')
-        print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME')
+  elif FLAGS.predict is True or FLAGS.predict_stream !=0:
+      print('### PREDICT MODE, interacting with a tensorflow server ###')
+      print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME')
 
-        usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName), isServingModel=True)
+      usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName), isServingModel=True)
 
-        #FIXME errors reported on gRPC: https://github.com/grpc/grpc/issues/13752 ... stay tuned, had to install a specific gpio version (pip install grpcio==1.7.3)
-        '''server_ready=WaitForServerReady(usersettings.tensorflow_server_address, usersettings.tensorflow_server_port)
-        if server_ready is False:
-            raise ValueError('Could not reach tensorflow server')
-        '''
-        print('Prediction mode using model : '+FLAGS.model_dir)
-        predictions_dir=os.path.join(FLAGS.model_dir,
-                                'predictions_'+datetime.datetime.now().strftime("%Y-%m-%d--%H:%M:%S"))
-        os.mkdir(predictions_dir)
-        os.chdir(predictions_dir)
-        print('Current working directory = '+os.getcwd())
-        do_inference(usersettings.tensorflow_server_address, usersettings.tensorflow_server_port, model_name, 0, FLAGS.predict_stream)
+      #FIXME errors reported on gRPC: https://github.com/grpc/grpc/issues/13752 ... stay tuned, had to install a specific gpio version (pip install grpcio==1.7.3)
+      '''server_ready=WaitForServerReady(usersettings.tensorflow_server_address, usersettings.tensorflow_server_port)
+      if server_ready is False:
+          raise ValueError('Could not reach tensorflow server')
+      '''
+      print('Prediction mode using model : '+FLAGS.model_dir)
+      predictions_dir=os.path.join(FLAGS.model_dir,
+                              'predictions_'+datetime.datetime.now().strftime("%Y-%m-%d--%H:%M:%S"))
+      os.mkdir(predictions_dir)
+      os.chdir(predictions_dir)
+      print('Current working directory = '+os.getcwd())
+      do_inference(usersettings.tensorflow_server_address, usersettings.tensorflow_server_port, model_name, 0, FLAGS.predict_stream)
 
-    elif FLAGS.commands is True or FLAGS.commands is True:
-        print('Here are some command examples')
-        print('1. train a model (once the mysettings_1D_experiments.py is set):')
-        print('-> python experiments_manager.py --usersettings=mysettings_1D_experiments.py')
-        print('2. start a tensorflow server on the trained/training model :')
-        print('-> python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53')
-        print('3. interract with the tensorflow server, sending input buffers and receiving answers')
-        print('-> python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/')
-        print('4. restart an interrupted training session')
-        print('-> python experiments_manager.py --restart_interrupted --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/')
+  elif FLAGS.commands is True or FLAGS.commands is True:
+      print('Here are some command examples')
+      print('1. train a model (once the mysettings_1D_experiments.py is set):')
+      print('-> python experiments_manager.py --usersettings=mysettings_1D_experiments.py')
+      print('2. start a tensorflow server on the trained/training model :')
+      print('-> python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53')
+      print('3. interract with the tensorflow server, sending input buffers and receiving answers')
+      print('-> python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/')
+      print('4. restart an interrupted training session')
+      print('-> python experiments_manager.py --restart_interrupted --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/')
 
-    else:
-        print('### TRAINING MODE ###')
-        usersettings, sessionFolder, model_name = loadExperimentsSettings(FLAGS.usersettings, FLAGS.model_dir)
+  else:
+      print('### TRAINING MODE ###')
+      """ setting up default values from command line """
+      settings_file=FLAGS.usersettings
+      debug_sess=FLAGS.debug
+      debug_server_addresses=FLAGS.debug_server_addresses
+      """ updating default values if running function from an upper level """
 
-        argv_app={'debug_server_addresses':FLAGS.debug_server_addresses, 'sessionFolder':sessionFolder, 'model_name':model_name, 'debug_sess':FLAGS.debug}
-        #add additionnal hyperparams coming from an optionnal
-        if hasattr(usersettings, 'hparams'):
-          print('adding hypermarameters declared from the experiments settings script')
-          argv_app.update(usersettings.hparams)
-          #update sessionFolder name string
-          if not FLAGS.restart_interrupted:
-            sessionFolder_splits=sessionFolder.split('_')
-            sessionFolder_addon=''
-            for key, value in usersettings.hparams.items():
-              sessionFolder_addon+='_'+key+str(value)
-            #insert sessionname addons in the original one
-            sessionFolder=''
-            for str_ in  sessionFolder_splits[:-1]:
-              sessionFolder+=str_+'_'
-            sessionFolder=sessionFolder[:-1]#remove the last '_'
-            sessionFolder+=sessionFolder_addon+'_'+sessionFolder_splits[-1]
-            argv_app.update({'sessionFolder':sessionFolder})
-        #copy settings and model file to the working folder
+      if train_config_script!=None:
+        print('Non command line mode : training from setup file {file} with the following external hyperparameters {params}'.format(file=train_config_script, params=external_hparams))
+        import experiments_settings_surgery
+        settings_file=experiments_settings_surgery.insert_additionnal_hparams(train_config_script, external_hparams)
+        print('-> created a temporary experiments settings file : '+settings_file)
+      #loading the experiment setup script
+      usersettings, sessionFolder, model_name = loadExperimentsSettings(settings_file,
+                                                                        restart_from_sessionFolder=FLAGS.model_dir,
+                                                                        isServingModel=False)
+
+      #update hparams structure with external parameters
+      argv_app={'debug_server_addresses':debug_server_addresses, 'sessionFolder':sessionFolder, 'model_name':model_name, 'debug_sess':debug_sess}
+
+      #add additionnal hyperparams coming from an optionnal
+      if hasattr(usersettings, 'hparams'):
+        print('adding hypermarameters declared from the experiments settings script:'+str(usersettings.hparams))
+        argv_app.update(usersettings.hparams)
+        #update sessionFolder name string
         if not FLAGS.restart_interrupted:
-          os.makedirs(sessionFolder)
-          os.makedirs(os.path.join(sessionFolder,embeddingsFolder))
-          if hasattr(usersettings, 'model_file'):
-            shutil.copyfile(os.path.join(scripts_WD, usersettings.model_file), os.path.join(sessionFolder, usersettings.model_file))
-          settings_copy_fullpath=os.path.join(sessionFolder, settingsFile_saveName)
-          shutil.copyfile(os.path.join(scripts_WD, FLAGS.usersettings), settings_copy_fullpath)
+          sessionFolder_splits=sessionFolder.split('_')
+          sessionFolder_addon=''
+          for key, value in usersettings.hparams.items():
+            sessionFolder_addon+='_'+key+str(value)
+          #insert sessionname addons in the original one
+          sessionFolder=''
+          for str_ in  sessionFolder_splits[:-1]:
+            sessionFolder+=str_+'_'
+          sessionFolder=sessionFolder[:-1]#remove the last '_'
+          sessionFolder+=sessionFolder_addon+'_'+sessionFolder_splits[-1]
+          argv_app.update({'sessionFolder':sessionFolder})
+          print('Found hparams: '+str(usersettings.hparams))
+      else:
+        print('No hparams dictionnary found in the experiment settings file')
+      print('Experiment session folder : '+sessionFolder)
 
+      #deduce the experiments settings copy filename that is versionned in the experiment folder
+      settings_copy_fullpath=os.path.join(sessionFolder, settingsFile_saveName)
+      #copy settings and model file to the working folder
+      if not FLAGS.restart_interrupted:
+        os.makedirs(sessionFolder)
+        os.makedirs(os.path.join(sessionFolder,embeddingsFolder))
+        if hasattr(usersettings, 'model_file'):
+          shutil.copyfile(usersettings.model_file, os.path.join(sessionFolder, os.path.basename(usersettings.model_file)))
+        settings_src_file=settings_file
+        print('Willing to copy {src} to {dst}'.format(src=settings_src_file, dst=settings_copy_fullpath))
+        shutil.copyfile(settings_src_file, settings_copy_fullpath)
+      res, last_exported_model=run_experiment(argv_app)
+      #refactor result in a single updated dictionnary
+      experiments_output=res
+      experiments_output.update({'last_exported_model':last_exported_model, 'sessionFolder':sessionFolder})
+  return experiments_output
 
-
-        tf.app.run(
-            main=run_experiment,
-            argv=[argv_app]
-    )
+if __name__ == "__main__":
+    run()

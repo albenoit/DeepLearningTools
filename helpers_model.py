@@ -7,7 +7,7 @@ import six
 import tensorflow as tf
 import numpy as np
 
-from tensorflow.contrib.keras import layers
+from tensorflow.keras import layers
 from tensorflow.python.layers.core import Dense
 
 
@@ -76,11 +76,11 @@ class ConcreteDropout(layers.Wrapper):
 
         # initialise p
         self.p_logit = self.add_variable(name='p_logit',
-                                         shape=None,
-                                         initializer=tf.random_uniform(
-                                             (1,),
-                                             self.init_min,
-                                             self.init_max),
+                                         shape=(1,),
+                                         initializer=tf.initializers.random_uniform(
+                                             minval=self.init_min,
+                                             maxval=self.init_max,
+                                             dtype=tf.float32),
                                          dtype=tf.float32,
                                          trainable=True)
         self.p = tf.nn.sigmoid(self.p_logit[0], name='dropout_rate')

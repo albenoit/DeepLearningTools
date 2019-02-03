@@ -4,6 +4,8 @@ A set of scripts that demonstrate the use of Tensorflow estimators on your data 
 The proposed tool-chain enables different experiments (model training/validating) to be launched in a unified way. All models are automatically exported periodically to enable model deployment (serving in production).
 All the resulting experiments logs can be compared. Model versioning is enabled.
 
+This framework can be driven by higher level tools such as [hyperopt](https://hyperopt.github.io/) to explore the hyperparameters space, etc. (see examples/hyperopt for demo(s))
+
 @brief : the main script 'experiments_manager.py' enables training, validating and serving Tensorflow models.
 
 @author : Alexandre Benoit, LISTIC lab, FRANCE
@@ -19,7 +21,7 @@ Several ideas put together:
 * some tensorflow-serving client codes to reuse the trained model on single or streaming data.
 * each experiment is stored in a specific folder for model versioning and comparison.
 
-# Machine Setup (validated with tensorflow 1.7+)
+# Machine Setup (validated with tensorflow 1.12+)
 ## Main requirements:
 1. install python 2.7 and python pip
 2. install Tensorflow and Tensorflow serving using pip : pip install tensorflow-gpu tensorflow-serving-api

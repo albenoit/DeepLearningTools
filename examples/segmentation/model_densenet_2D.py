@@ -12,50 +12,55 @@ import six
 import tensorflow as tf
 import numpy as np
 
-def weight_variable(shape):
-    '''MSRA initialization of a given weigths tensor
-    @param shape, the 4d tensor shape
-    variable is allocated on the CPU memory even if processing will use it on GPU
-    '''
-    with tf.device('/cpu:0'):
-        n= np.prod(shape[:3])#n_input_channels*kernelShape
-        trunc_stddev = np.sqrt(1.3 * 2.0 / n)
-        initial = tf.truncated_normal(shape, 0.0, trunc_stddev)
-        weights=tf.get_variable(name='weights', initializer=initial)
-        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, tf.nn.l2_loss(weights))
-        return weights
-
-def bias_variable(shape):
-    ''' basic constant bias variable init (a little above 0)
-    @param shape, the 4d tensor shape
-    variable is allocated on the CPU memory even if processing will use it on GPU
-    '''
-    with tf.device('/cpu:0'):
-        initial = tf.constant(0.01, shape=shape)
-        return tf.get_variable(name='biases', initializer=initial)
-
 def conv2d(input_features, outing_nb_features, kernel_size, with_bias=True):
     with tf.variable_scope('conv2d'):
-        W = weight_variable([ kernel_size, kernel_size, input_features.get_shape().as_list()[-1], outing_nb_features ])
-        conv = tf.nn.conv2d(input_features, W, [ 1, 1, 1, 1 ], padding='SAME')
-        if with_bias:
-            conv= conv + bias_variable([ outing_nb_features ])
+        conv=tf.layers.conv2d(
+                              input_features,
+                              filters=outing_nb_features,
+                              kernel_size=[kernel_size, kernel_size],
+                              strides=(1, 1),
+                              padding='same',
+                              data_format='channels_last',
+                              dilation_rate=(1, 1),
+                              activation=None,
+                              use_bias=with_bias,
+                              kernel_initializer=tf.variance_scaling_initializer(scale=2.0, mode='fan_in', distribution="truncated_normal"),
+                              bias_initializer=tf.zeros_initializer(),
+                              kernel_regularizer=tf.nn.l2_loss,
+                              bias_regularizer=None,
+                              activity_regularizer=None,
+                              kernel_constraint=None,
+                              bias_constraint=None,
+                              trainable=True,
+                              name=None,
+                              reuse=None
+                             )
         return conv
 
 def conv2d_upscale(input_features, kernel_size, with_bias=True):
     with tf.variable_scope('conv2d_upscale'):
         print('conv2d_upscale: input feature shape='+str(input_features.get_shape().as_list()))
         nb_channels=input_features.get_shape().as_list()[-1]
-        W = weight_variable([ kernel_size, kernel_size, nb_channels, nb_channels ])
-        output_shape=[input_features.get_shape().as_list()[0]]+(np.array(input_features.get_shape().as_list()[1:3])*2).tolist()+[nb_channels]
-        print('upscaling weights shape='+str(W.get_shape().as_list()))
-        print('expected output shape='+str())
-        conv = tf.nn.conv2d_transpose(input_features, W,
-                                        output_shape=output_shape,
-                                        strides=[ 1, 2, 2, 1 ],
-                                        padding='SAME')
-        if with_bias:
-          conv=conv + bias_variable([ nb_channels ])
+	conv=tf.layers.conv2d_transpose(
+                                        input_features,
+                                        filters=nb_channels,
+                                        kernel_size=[ kernel_size, kernel_size],
+                                        strides=(2, 2),
+                                        padding='same',
+                                        data_format='channels_last',
+                                        activation=None,
+                                        use_bias=with_bias,
+                                        kernel_initializer=tf.variance_scaling_initializer(scale=2.0, mode='fan_in', distribution="truncated_normal"),
+                                        bias_initializer=tf.zeros_initializer(),
+                                        kernel_regularizer=tf.nn.l2_loss,
+                                        bias_regularizer=None,
+                                        activity_regularizer=None,
+                                        kernel_constraint=None,
+                                        bias_constraint=None,
+                                        trainable=True,
+                                        name=None,
+                                        reuse=None
+                                        )
 
         #upscale to initial resolution
         print('conv2d_upscale: output feature shape='+str(conv.get_shape().as_list()))
@@ -137,7 +142,7 @@ def model(  data,
     keep_prob=1.0-float(is_training)*dropout_rate
 
     #basic architexture for testing purpose
-    nb_layers_sequence_encoding=[2, 3]
+    '''nb_layers_sequence_encoding=[2, 3]
     bottleneck_nb_layers=5
     growth_rate=10
     output_only_inputs_last_decoding_block=True
@@ -146,7 +151,7 @@ def model(  data,
     nb_layers_sequence_encoding=[4, 5, 7, 10, 12]
     bottleneck_nb_layers=15
     growth_rate=16
-    '''
+    
     #set True in order to avoid the n-1 decoding block to be connected to the final conv outputs (False by default)
     output_only_inputs_last_decoding_block=False
 
@@ -191,11 +196,23 @@ def model(  data,
     with tf.variable_scope('Classifier'):
         features_average = avg_pool(last_encoding_feature_maps, last_encoding_feature_maps.get_shape().as_list()[1])
         final_dim = last_encoding_feature_maps.get_shape().as_list()[-1]
-        features_average_flat = tf.reshape(features_average, [ -1, final_dim ])
-        Wfc = weight_variable([ final_dim, n_outputs ])
-        bfc = bias_variable([ n_outputs ])
-        logits_classif= tf.matmul(features_average_flat, Wfc) + bfc
-
+        features_average_flat = tf.layers.flatten(features_average)
+        logits_classif=tf.layers.dense(
+                                       features_average_flat,
+                                       units=n_outputs,
+                                       activation=None,
+                                       use_bias=True,
+                                       kernel_initializer=tf.variance_scaling_initializer(scale=2.0, mode='fan_in', distribution="truncated_normal"),
+                                       bias_initializer=tf.zeros_initializer(),
+                                       kernel_regularizer=None,
+                                       bias_regularizer=None,
+                                       activity_regularizer=None,
+                                       kernel_constraint=None,
+                                       bias_constraint=None,
+                                       trainable=True,
+                                       name=None,
+                                       reuse=None
+                                      )
     with tf.variable_scope('Segmentation'):
         # We store now the output of the next dense block in a list. We will only upsample these new feature maps
         block_to_upsample = []

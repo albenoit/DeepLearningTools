@@ -13,7 +13,6 @@ import six
 import tensorflow as tf
 import numpy as np
 slim = tf.contrib.slim
-from tensorflow.contrib.learn import ModeKeys
 
 class Began(object):
     def __init__(self, data,
@@ -29,11 +28,11 @@ class Began(object):
     def get_model_graph(self, mode):
         ''' switch between train or served graph depending on the processing mode
         Args:
-        mode: processing mode keyword from tensorflow.contrib.learn import ModeKeys
+        mode: processing mode keyword from tensorflow.contrib.learn import tf.estimator.tf.estimator.ModeKeys
         Returns: the target graph
         '''
-        is_training = mode == ModeKeys.TRAIN
-        if mode!=ModeKeys.INFER:
+        is_training = mode == tf.estimator.ModeKeys.TRAIN
+        if mode!=tf.estimator.ModeKeys.PREDICT:
             return self.get_train_val_graph(is_training)
         else:
             return self.get_served_graph()

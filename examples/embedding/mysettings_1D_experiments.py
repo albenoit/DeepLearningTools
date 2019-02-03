@@ -23,12 +23,13 @@ serving_client_timeout_int_secs=1#timeout limit when a client requests a served 
 
 
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
-session_name='my_test'
+session_name='1D_signals_embedding'
 
 ''' define here some hyperparameters to adjust the experiment
 ===> Note that this dictionnary will complete the session name
 '''
 hparams={'hiddenNeurons':23,#set the number of neurons per hidden layers
+         'nbEpoch':50,
          }
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
@@ -45,7 +46,7 @@ XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 
 #-> define here the used model under variable 'model'
 #model_file='model_densenet.py'
-model_file='model_densenet_1D.py'
+model_file='examples/embedding/model_densenet_1D.py'
 field_of_view=20
 
 display_model_layers_info=False #a flag to enable the display of additionnal console information on the model properties (for debug purpose)
@@ -65,7 +66,7 @@ patchSize=224
 #random seed used to init weights, etc. Use an integer value to make experiments reproducible
 random_seed=10
 # learning rate decaying parameters
-nbEpoch=300
+nbEpoch=hparams['nbEpoch']
 weights_weight_decay=0.0001
 initial_learning_rate=0.005
 num_epochs_per_decay=150 #number of epoch keepng the same learning rate
