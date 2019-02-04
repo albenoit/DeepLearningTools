@@ -1031,11 +1031,13 @@ def _create_rpc_callback(client, debug):
           raise ValueError('Exception encountered on client callback : '.format(error=e))
   return _callback
 
-def do_inference(host, port, model_name, concurrency, num_tests):
+def do_inference(host, port, model_name, clientIO_InitSpecs, concurrency, num_tests):
   """Tests PredictionService with concurrent requests.
   Args:
     host:tensorfow server address
     port: port address of the PredictionService.
+    model_name: the model name ID
+    clientIO_InitSpecs: a dictionnary to pass to the ClientIO constructor
     concurrency: Maximum number of concurrent requests.
     num_tests: Number of test images to use, infinite prediction loop if <0.
   Raises:
@@ -1055,7 +1057,7 @@ def do_inference(host, port, model_name, concurrency, num_tests):
   channel = grpc.insecure_channel(server)
   stub = prediction_service_pb2_grpc.PredictionServiceStub(channel)
   #allocate a clientIO instance defined for the experiment
-  client_io=usersettings.Client_IO(FLAGS.debug)
+  client_io=usersettings.Client_IO(clientIO_InitSpecs, FLAGS.debug)
   notDone=True
   predictionIdx=0
   while notDone:

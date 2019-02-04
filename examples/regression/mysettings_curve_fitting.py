@@ -244,15 +244,18 @@ class Client_IO:
     ''' A specific class dedicated to clients that need to interract with
     a Tensorflow server that runs the above model
     --> must have the following methods:
-    def __init__(self, debugMode): constructor that receives a debug flag
+    def __init__(self, clientInitSpecs, debugMode): constructor that receives a debug flag
     def getInputData(self, idx): that generates data to send to the server
     def decodeResponse(self, result): that receives the response
+    def finalize(self): the method call at the end of the process
     '''
-    def __init__(self, debugMode):
+    def __init__(self, clientInitSpecs={}, debugMode=False):
         ''' constructor
             Args:
+               clientInitSpecs: a dictionnary to setup the client is necessary
                debugMode: set True if some debug messages should be displayed
         '''
+
         self.debugMode=debugMode
         if self.debugMode is True:
             print('RPC Client ready to interract with the server')

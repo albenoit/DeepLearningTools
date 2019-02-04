@@ -72,11 +72,11 @@ learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM
 predict_using_smoothed_parameters=hparams['smoothedParams']#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> a first set of data
-raw_data_dir_train_ = "/PATH/TO/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
-reference_data_dir_train_ = "/PATH/TO/CityScapes/gtFine_trainvaltest/gtFine/train/"
+raw_data_dir_train_ = "/uds_data/listic/datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
+reference_data_dir_train_ = "/uds_data/listic/datasets/CityScapes/gtFine_trainvaltest/gtFine/train/"
 raw_data_dir_train=(raw_data_dir_train_, reference_data_dir_train_)
-raw_data_dir_val_ = "/PATH/TO/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/val/"
-reference_data_dir_val_ = "/PATH/TO/CityScapes/gtFine_trainvaltest/gtFine/val/"
+raw_data_dir_val_ = "/uds_data/listic/datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/val/"
+reference_data_dir_val_ = "/uds_data/listic/datasets/CityScapes/gtFine_trainvaltest/gtFine/val/"
 raw_data_filename_extension='*.png'
 ref_data_filename_extension='*labelIds.png'
 #load all image files to use for training or testing
@@ -346,15 +346,18 @@ class Client_IO:
     ''' A specific class dedicated to clients that need to interract with
     a Tensorflow server that runs the above model
     --> must have the following methods:
-    def __init__(self, debugMode): constructor that receives a debug flag
+    def __init__(self, clientInitSpecs, debugMode): constructor that receives a debug flag
     def getInputData(self, idx): that generates data to send to the server
     def decodeResponse(self, result): that receives the response
+    def finalize(self): the method call at the end of the process
     '''
-    def __init__(self, debugMode):
+    def __init__(self, clientInitSpecs={}, debugMode=False):
         ''' constructor
             Args:
+               clientInitSpecs: a dictionnary to setup the client is necessary
                debugMode: set True if some debug messages should be displayed
         '''
+
         self.debugMode=debugMode
 
         #self.frame=cv2.imread('../../../../datasamples/semantic_segmentation/raw_data/aachen_000000_000019_leftImg8bit.png')

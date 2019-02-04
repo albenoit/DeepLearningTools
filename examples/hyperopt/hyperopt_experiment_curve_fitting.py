@@ -16,16 +16,25 @@ The tuned hyperparameter values are stored in each trial folder as a python scri
 -> some ideas to study the hyperparameter and loss behaviors : https://python-for-multivariate-analysis.readthedocs.io/a_little_book_of_python_for_multivariate_analysis.html
 '''
 
-import matplotlib as mpl
-mpl.use('Agg') #force not to display plot but rather write them to file
-
 #basic parameters of the Hyperopt experiment
 MAX_TRIALS = 100 # the maximum number of optimisation attempts
 experiment_settings_file='examples/regression/mysettings_curve_fitting.py'
 outputlog_folder = 'examples/regression/hyperopt_experiments_curve_fitting'
 toobig_loss=1e6 #the default trial loss value in case of job failure
 
+# define a search space
+from hyperopt import hp
+space = {
+        'hiddenNeurons': hp.randint('hiddenNeurons', upper=20)+1,#test between 1 and 21 neurons
+        'learningRate': hp.uniform('learningRate', 1e-2, 1e-5),
+        }
+
+
+##### Hyperopt code starts here
 #librairies imports
+
+import matplotlib as mpl
+mpl.use('Agg') #force not to display plot but rather write them to file
 from hyperopt import fmin, tpe, space_eval, Trials, STATUS_FAIL, STATUS_OK, plotting
 import numpy as np
 import pandas as pd
@@ -55,18 +64,11 @@ def single_experiment(hparams):
   '''
   return  {'loss': loss, 'status': jobState, 'jobSessionFolder':jobSessionFolder}
 
-# define a search space
-from hyperopt import hp
-space = {
-        'hiddenNeurons': hp.randint('hiddenNeurons', upper=20)+1,#test between 1 and 21 neurons
-        'learningRate': hp.uniform('learningRate', 1e-2, 1e-5),
-        }
-
 # minimize the objective over the space
 trials = Trials()
 try:
   best = fmin(single_experiment, space, algo=tpe.suggest, trials=trials, max_evals=MAX_TRIALS)
-  print('best='+str(best))
+  #print('best='+str(best)) #WARNING, displayed hyperparameters do not take into account custom changes (+1, etc. in the space description)
   print('space_eval='+str(space_eval(space, best)))
 
 except Exception, e:

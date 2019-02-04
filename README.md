@@ -71,7 +71,7 @@ python experiments_manager.py --predict --model_dir=experiments/1Dsignals_cluste
 The main script is experiments_manager.py can be used in 3 modes, here are some command examples:
 1. train a model in a context specified in a parameter script such as mysettings_curve_fitting.py (details provided in the following TODO section):
 ```
-python experiments_manager.py --usersettings=mysettings_curve_fitting.py
+python experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py
 ```
 2. start a Tensorflow server on the trained/training model :
 ```
@@ -97,15 +97,14 @@ values and observe the obtained embedding.
 
 1. The main code for training, validation and prediction is specified in the main script (experiments_manager.py).
 2. Most of the use case specific parameters and Input/Output functions have been
-moved to a separated settings script such as 'mysettings_1D_experiments.py' and
-'mysettings_curve_fitting.py' that is targeted when starting the script (this
+moved to a separated settings script such as 'examples/embedding/mysettings_1D_experiments.py' and
+'examples/regression/mysettings_curve_fitting.py' that is targeted when starting the script (this
   filename is set in var FLAGS.usersettings in the main script).
 3. The model to be trained and served is specified in a different script targeted by the settings file.
 
 # KNOWN ISSUES :
 
 This script has some known problems, any suggestion is welcome:
-* moving average parameters saving is not optimized for the served model but filtered parameters are loaded anyway if required (if usersettings.predict_using_smoothed_parameters=True).
 * for now prebuilt tensorflow_server packages only work on CPUs. Then, the main script enables to train and validate on a given GPU following the setting parameter used_gpu_IDs. However, the model exportation for serving step forces to built model for CPU only. Track : https://github.com/tensorflow/serving/issues/668
 
 # TODO :
@@ -131,10 +130,10 @@ In addition and as a reminder, here are the functions prototypes:
 -def get_eval_metric_ops(inputs, predictions, labels, embedding_code)
 -def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batches)
 -def get_input_pipeline_serving()
--define the Client_IO class that presents at least three methods:
+-define the Client_IO class that presents at least four methods:
 
     class Client_IO:
-            def __init__(self, debugMode):
+            def __init__(self, clientInitSpecs={}, debugMode):
             ''' constructor
                 Args:
                    debugMode: set True if some debug messages should be displayed
@@ -320,7 +319,7 @@ class Client_IO:
     def getInputData(self, idx): that generates data to send to the server
     def decodeResponse(self, result): that receives the response
     '''
-    def __init__(self, debugMode):
+    def __init__(self, clientInitSpecs={}, debugMode):
         ''' constructor
             Args:
                debugMode: set True if some debug messages should be displayed
