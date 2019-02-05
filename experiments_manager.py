@@ -1264,7 +1264,12 @@ def run(train_config_script=None, external_hparams=None):
       os.mkdir(predictions_dir)
       os.chdir(predictions_dir)
       print('Current working directory = '+os.getcwd())
-      do_inference(usersettings.tensorflow_server_address, usersettings.tensorflow_server_port, model_name, 0, FLAGS.predict_stream)
+      do_inference(host=usersettings.tensorflow_server_address,
+                  port=usersettings.tensorflow_server_port,
+                  model_name=model_name,
+                  clientIO_InitSpecs={},
+                  concurrency=0,
+                  num_tests=FLAGS.predict_stream)
 
   elif FLAGS.commands is True or FLAGS.commands is True:
       print('Here are some command examples')
