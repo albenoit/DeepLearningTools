@@ -131,8 +131,8 @@ def getOptimizer(loss, learning_rate, global_step):
     '''define here the specific optimizer to be used
     '''
     #get gradient summary information and the gradient norm
-    import model_utils
-    tvars, raw_grads, gradient_norm=model_utils.track_gradients(loss)
+    import helpers_model
+    tvars, raw_grads, gradient_norm=helpers_model.track_gradients(loss)
 
     return tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
 
