@@ -14,12 +14,14 @@ The tuned hyperparameter values are stored in each trial folder as a python scri
 @notes: doc here https://github.com/hyperopt/hyperopt/wiki/FMin
 -> a tutorial here : https://medium.com/district-data-labs/parameter-tuning-with-hyperopt-faa86acdfdce
 -> some ideas to study the hyperparameter and loss behaviors : https://python-for-multivariate-analysis.readthedocs.io/a_little_book_of_python_for_multivariate_analysis.html
+
+-> advanced method here : https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf
 '''
 
 #basic parameters of the Hyperopt experiment
 MAX_TRIALS = 100 # the maximum number of optimisation attempts
 experiment_settings_file='examples/regression/mysettings_curve_fitting.py'
-outputlog_folder = 'examples/regression/hyperopt_experiments_curve_fitting'
+outputlog_folder = 'examples/hyperopt/hyperopt_experiments_curve_fitting'
 toobig_loss=1e6 #the default trial loss value in case of job failure
 
 # define a search space
@@ -51,18 +53,20 @@ def single_experiment(hparams):
   loss=toobig_loss
   jobState=STATUS_FAIL
   jobSessionFolder=None
+  training_iterations=0
   #start the training session
-  #try:
-  import experiments_manager
-  job_result = experiments_manager.run(experiment_settings_file, hparams)
-  print('trial ended successfully, output='+str(job_result))
-  loss=job_result['loss']
-  jobSessionFolder=job_result['sessionFolder']
-  jobState=STATUS_OK
-  '''except:
-    print('Job failed for some reason')
-  '''
-  return  {'loss': loss, 'status': jobState, 'jobSessionFolder':jobSessionFolder}
+  try:
+    import experiments_manager
+    job_result = experiments_manager.run(experiment_settings_file, hparams)
+    print('trial ended successfully, output='+str(job_result))
+    loss=job_result['loss']
+    jobSessionFolder=job_result['sessionFolder']
+    jobState=STATUS_OK
+    training_iterations=job_result['global_step']
+  except Exception,e:
+    print('Job failed for some reason:'+str(e))
+
+  return  {'loss': loss, 'status': jobState, 'jobSessionFolder':jobSessionFolder, 'training_iterations':training_iterations}
 
 # minimize the objective over the space
 trials = Trials()
@@ -87,7 +91,9 @@ finished_jobs=0
 for trial in trials.trials:
   if trial['result']['status']==STATUS_OK:
     finished_jobs+=1
-  current_trial_desc={'tid':trial['tid'], 'loss':trial['result']['loss']}
+  current_trial_desc={'tid':trial['tid'],
+                      'loss':trial['result']['loss'],
+                      'training_iterations':trial['result']['training_iterations']}
   current_trial_desc.update(trial['misc']['vals'])
   trial_summary=pd.DataFrame(current_trial_desc)
   chosen_hparams_history.append(trial_summary)
