@@ -14,7 +14,7 @@ Several ideas are put together:
 -some tensorflow-serving client codes to reuse the trained model on single or streaming data
 
 
-#Machine Setup (tested with tensorflow from 1.4.1 to 1.8)
+#Machine Setup (tested with tensorflow from 1.4.1 to 1.13)
 1. install python 2.7 and python pip
 2. install tensorflow and tensorflow serving using pip : pip install tensorflow-gpu tensorflow-serving-api
 Note that the first versions of the dependency lib grpcio may bring some troubles when starting the tensorflow server.
@@ -22,7 +22,7 @@ grpcio python library version 1.7.3 and latest version above 1.8.4 should work.
 ==> Additionnal recommendations:
 Get much better performances with optimized tensorflow packages coming from here:
 https://github.com/mind/wheels/releases/
-Install like this adajust the last link to your target version:
+Install like this adjust the last link to your target version:
 pip install --ignore-installed --upgrade \ https://github.com/mind/wheels/releases/download/tf1.4.1-gpu-cuda9/tensorflow-1.4.1-cp27-cp27mu-linux_x86_64.whl
 Get the Intel MKL library installed :
 https://github.com/mind/wheels#mkl
@@ -148,7 +148,7 @@ def loadModel(sessionFolder):
   model_path=os.path.join(sessionFolder,os.path.basename(usersettings.model_file))
   try:
     model_def=imp.load_source('model_def', model_path)
-  except Exception,e:
+  except Exception as e:
     raise ValueError('loadModel: Failed to load model file {model} from sessionFolder {sess}, error message={err}'.format(model=usersettings.model_file, sess=sessionFolder, err=e))
   model=model_def.model
 
@@ -213,9 +213,14 @@ def getTrainSpecs(estimator, params, global_hooks):
   es_metric='loss'
   if hasattr(usersettings, 'earlystopping_metric'):
     es_metric=usersettings.earlystopping_metric
+  max_steps_without_decrease=params.nbIterationPerEpoch_train*5
+  if hasattr(usersettings, 'early_stop_max_epoch_without_decrease'):
+    max_steps_without_decrease=getIterationsPerEpoch('train')*usersettings.early_stop_max_epoch_without_decrease
+  print('Early stopping will occur if no {metric} decrease is observed after {it} iterations'.format(metric=es_metric,
+                                                                                                     it=max_steps_without_decrease))
   earlystopping_hook = tf.contrib.estimator.stop_if_no_decrease_hook(estimator,
                                                        metric_name=es_metric,
-                                                       max_steps_without_decrease=params.nbIterationPerEpoch_train)
+                                                       max_steps_without_decrease=max_steps_without_decrease)
   train_hooks.append(earlystopping_hook)
 
   return tf.estimator.TrainSpec(input_fn=train_input_fn,
@@ -334,7 +339,7 @@ def run_experiment(argv=None):
   #add additionnal hyperparams coming from argv
   if argv is not None:
     if  isinstance(argv, dict):
-      for key, val in argv.iteritems():
+      for key, val in six.iteritems(argv):
         print('Adding hyperparameter (key,val):'+str((key,val)))
         params.add_hparam(name=key,value=val)
 
@@ -1027,7 +1032,7 @@ def _create_rpc_callback(client, debug):
           if FLAGS.debug:
               print(result_future.result())
           response=client.decodeResponse(result_future.result())
-      except Exception,e:
+      except Exception as e:
           raise ValueError('Exception encountered on client callback : '.format(error=e))
   return _callback
 
@@ -1144,7 +1149,7 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None, isServing
     print('Trying to load experiments settings file : '+str(filename))
     try:
         usersettings=imp.load_source('settings', filename)
-    except Exception,e:
+    except Exception as e:
         raise ValueError('Failed to load {settings} file. Error message is {error}. This generally comes from a) file does not exist, b)basic python syntax errors'.format(settings=filename, error=e))
     print('loaded settings file {file}'.format(file=filename))
 
@@ -1236,7 +1241,7 @@ def run(train_config_script=None, external_hparams=None):
           # print servable informations
           #propose some commands to get information on the served model
           print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME')
-        except Exception, e:
+        except Exception as e:
           raise ValueError('Could not find servable model, error='+str(e.message))
 
       get_served_model_info(one_model_path, usersettings.served_head)

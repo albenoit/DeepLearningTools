@@ -22,6 +22,7 @@ import numpy as np
 import time
 import copy
 import tensorflow as tf
+import unicodedata
 
 dataprovider_namescope="data_input_pipeline"
 filenames_separator='###'
@@ -130,6 +131,21 @@ def extractFilenames(root_dir, file_extension="*.jpg", raiseOnEmpty=True):
         print('Found files : '+str(len(files)))
     return sorted(files)
 
+def the_ugly_string_manager(filename):
+  ''' horribly ugly code to ensure that a filename string complies with gdal and opencv
+      when dealing with python 2 or 3 and pure python or tensorflow py_function
+      ... convert to input to unicode to recover properly to string
+      FIXME : ... maybe just wait for the death of python2 and hope for a more
+      elegant python3
+  '''
+  if not(isinstance(filename, bytes)):
+    filename=bytes(filename, 'utf-8')
+  filename_stra=(six.text_type(copy.deepcopy(filename)))
+  filename_str=unicodedata.normalize('NFC', filename_stra)
+  if filename_str[0]=='b':
+    filename_str=filename_str[2:-1]
+  return filename_str
+
 def imread_from_gdal(filename, debug_mode=False):
   ''' read an image using OpenCV
       image is loaded as is. In case of a 3 channels image, BGR to RGB conversion
@@ -137,12 +153,18 @@ def imread_from_gdal(filename, debug_mode=False):
       @param filename as a numpy array (coming from Tensorflow)
       @param debug_mode to print more logs on this image read step
   '''
-  ds = gdal.Open(str(filename))
+  #get a valid filename string
+  filename_str=the_ugly_string_manager(filename)
+
+  ds = gdal.Open(filename_str)
   if ds is None:
-      raise ValueError('Could no read file '+filename)
+      raise ValueError('Could no read file {file}, exists={exists}'.format(file=filename_str,
+                                                                           exists=os.path.exists(filename_str)
+                                                                           )
+                      )
   raster_array=ds.ReadAsArray().transpose([1,2,0])
   if debug_mode == True:
-      print('Reading image with GDAL : {file}'.format(file=filename))
+      print('Reading image with GDAL : {file}'.format(file=filename_str))
       print('Image shape='+str(raster_array.shape))
   return raster_array.astype(np.float32)
 
@@ -154,11 +176,17 @@ def imread_from_opencv(filename, cv_imreadMode=-1, debug_mode=False):
       @param cv_imreadMode as described in the official opencv doc. Note: cv2.IMREAD_UNCHANGED=-1
       @param debug_mode to print more logs on this image read step
   '''
-  image= cv2.imread(str(filename), cv_imreadMode)
+
+  #get a valid filename string
+  filename_str=the_ugly_string_manager(filename)
+  image= cv2.imread(filename_str, cv_imreadMode)
   if image is None:
-      raise ValueError('Failed to read image '+filename)
+      raise ValueError('Could no read file {file}, exists={exists}'.format(file=filename_str,
+                                                                           exists=os.path.exists(filename)
+                                                                           )
+                      )
   if debug_mode == True:
-      print('Reading image with OpenCV: {file} using mode {flag}'.format(file=filename, flag=cv_imreadMode))
+      print('Reading image with OpenCV: {file} using mode {flag}'.format(file=filename_str, flag=cv_imreadMode))
       print('Image shape='+str(image.shape))
       if len(image.shape)>2:
           print('Image first layer min={minVal}, max={maxVal} (omitting nan values)'.format(minVal=np.nanmin(image[:,:,0]), maxVal=np.nanmax(image[:,:,0])))
@@ -177,9 +205,9 @@ def get_sample_entropy(sample):
         unique_values, values_idx, counts=tf.unique_with_counts(sample)
 
         def normalised_entropy(counts):
-            classes_prob=tf.divide(tf.cast(counts, dtype=tf.float32), tf.cast(tf.reduce_sum(counts), dtype=tf.float32))
+            classes_prob=tf.math.divide(tf.cast(counts, dtype=tf.float32), tf.cast(tf.reduce_sum(counts), dtype=tf.float32))
             entropy= -tf.reduce_sum(classes_prob*tf.log(classes_prob))
-            return tf.divide(entropy,tf.log(tf.cast(tf.shape(counts)[0], dtype=tf.float32)))
+            return tf.math.divide(entropy,tf.log(tf.cast(tf.shape(counts)[0], dtype=tf.float32)))
 
         #check if more than one class
         normalized_entropy=tf.cond(tf.greater(tf.shape(counts)[0], 1), lambda :normalised_entropy(counts), lambda :0.0)
@@ -285,6 +313,7 @@ class FileListProcessor_Semantic_Segmentation:
         with tf.name_scope('read_raw_ref_image_pair'):
             #first split filenames into two strings
             splitted_filenames = tf.strings.split(tf.expand_dims(raw_ref_img_filenames,0), sep=filenames_separator)
+            print('splitted_filenames.values[0]=',splitted_filenames.values[0])
             raw_img_filename=splitted_filenames.values[0]
             ref_img_filename=splitted_filenames.values[1]
             if self.use_alternative_imread is not None:
@@ -380,8 +409,8 @@ class FileListProcessor_Semantic_Segmentation:
                 height_norm=tf.cast(height, tf.float32) - 1.
                 width_norm=tf.cast(width, tf.float32) - 1.
                 print((top_coord, height_norm,width_norm))
-                top_coord_normalized=tf.divide(top_coord,height_norm)
-                left_coord_normalized=tf.divide(left_coord,width_norm)
+                top_coord_normalized=tf.math.divide(top_coord,height_norm)
+                left_coord_normalized=tf.math.divide(left_coord,width_norm)
                 bottom_coord_normalized=(top_coord+self.patchSize)/height_norm
                 right_coord_normalized=(left_coord+self.patchSize)/width_norm
                 boxes=tf.stack([top_coord_normalized, left_coord_normalized, bottom_coord_normalized, right_coord_normalized], axis=1)

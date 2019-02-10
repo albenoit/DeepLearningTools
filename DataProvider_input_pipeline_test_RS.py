@@ -193,7 +193,7 @@ try:
     print('finished crop sample display, press a key to stop from an active opencv image show window')
     cv2.waitKey()
 
-except Exception, e:
+except Exception as e:
     print('Exception received:'+str(e))
     # Report exceptions to the coordinator.
     coord.request_stop(e)

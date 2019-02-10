@@ -69,6 +69,10 @@ class ExperimentsSettingsChecker(object):
               if isinstance(self.experiments_settings.hparams, dict):
                 print('Found custom hyperparameters:'+str(self.experiments_settings.hparams))
 
+            if hasattr(self.experiments_settings, 'max_epoch_without_decrease'):
+              print('Found early_stop_max_epoch_without_decrease:'+str(self.experiments_settings.max_epoch_without_decrease))
+            else:
+              print('early_stop_max_epoch_without_decrease not found, add this variable to specify early_stopping stop condition. By default, 5 training epoch without decrease will lead to early stop but you can customize using this variable.')
             #look for premade estimators to be used in place of a custom one defined by self.experiments_settings.model_file
             if hasattr(self.experiments_settings, 'premade_estimator'):
               print('Using premade estimators, then not required to specify custom estimator parameters and functions')
@@ -104,12 +108,12 @@ class ExperimentsSettingsChecker(object):
             #optionnal parameters:
             try:
                 self.has('save_model_variables_to_pandas', 'set \'save_model_variables_to_pandas\' to True to save model variables to a pandas Dataframe to facilitate model analysis after each validation step')
-            except Exception, e:
+            except Exception as e:
                 print('OPTIONNAL argument could be added: '+str(e))
 
             try:
                 self.has('save_model_variables_to_pandas', 'add the following function that returns the tuple (list of additionnal summaries, INTEGER) to log each INTEGER steps the specified validation summary results per training epoch: eval_addon_summaries=usersettings.get_validation_summaries(inputs, model_outputs_dict, labels) ')
-            except Exception, e:
+            except Exception as e:
                 print('OPTIONNAL argument could be added: '+str(e))
 
 

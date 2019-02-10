@@ -81,7 +81,7 @@ def insert_additionnal_hparams(settings_file, hparams):
   print('updated_settings_filename',updated_settings_filename)
   try:
     new_settings_file=open(updated_settings_filename,'w')
-  except Exception,e:
+  except Exception as e:
     print('Something went wrong when writing temporary settings file...',e)
   new_settings_file.writelines(updated_settings_data)
   new_settings_file.close()

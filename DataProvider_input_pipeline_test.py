@@ -117,6 +117,7 @@ if not(processCommands.mode_test):
                                                                 use_alternative_imread='opencv',
                                                                 balance_classes_distribution=True,
                                                                 classes_entropy_threshold=0.6,
+                                                                opencv_read_flags=-1,
                                                                 field_of_view=0,
                                                             manage_nan_values=nan_management)
 else:
@@ -136,6 +137,7 @@ else:
                                                                 use_alternative_imread='opencv',
                                                                 balance_classes_distribution=False,
                                                                 classes_entropy_threshold=None,
+                                                                opencv_read_flags=-1,
                                                                 field_of_view=0)
 #retreive a single sample (testing)
 deepnet_feed=tf.squeeze(data_provider.dataset_iterator.get_next(),0)
@@ -201,7 +203,7 @@ try:
   if allow_display is True:
     print('finished crop sample display, press a key to stop from an active opencv image show window')
     cv2.waitKey()
-except Exception, e:
+except Exception as e:
     # Report exceptions to the coordinator.
     print('Stopped the data pipeline consuming loop for reason: '+str(e))
     coord.request_stop(e)

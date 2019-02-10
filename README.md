@@ -1,12 +1,12 @@
 # What's that ?
 
-A set of scripts that demonstrate the use of Tensorflow estimators on your data (1D, 2D, 3D...).
+A set of python 2 and 3 compatible scripts that demonstrate the use of Tensorflow estimators on your data (1D, 2D, 3D...).
 The proposed tool-chain enables different experiments (model training/validating) to be launched in a unified way. All models are automatically exported periodically to enable model deployment (serving in production).
 All the resulting experiments logs can be compared. Model versioning is enabled.
 
 This framework can be driven by higher level tools such as [hyperopt](https://hyperopt.github.io/) to explore the hyperparameters space, etc. (see examples/hyperopt for demo(s))
 
-@brief : the main script 'experiments_manager.py' enables training, validating and serving Tensorflow models.
+@brief : the main script 'experiments_manager.py' enables training, validating and serving Tensorflow models with python 2 and 3.
 
 @author : Alexandre Benoit, LISTIC lab, FRANCE
 
@@ -17,13 +17,14 @@ Several ideas put together:
 * training a model with tf.estimator to manage training, validation and export in a easier way.
 * using moving averages to store parameters with values smoothed along the last training steps.
 * automatic storage of all the model outputs on the validation dataset in order to observe some data projections on the TensorBoard for embedding understanding.
+* early stopping to interrupt training if the considered metric (global loss) does not decrease over a long period
 * tensorflow-serving-api used to serve the model and dynamically load updated models sometimes also while training is still running.
 * some tensorflow-serving client codes to reuse the trained model on single or streaming data.
 * each experiment is stored in a specific folder for model versioning and comparison.
 
 # Machine Setup (validated with tensorflow 1.12+)
 ## Main requirements:
-1. install python 2.7 and python pip
+1. install python 2.7 or 3.x and the associated python pip
 2. install Tensorflow and Tensorflow serving using pip : pip install tensorflow-gpu tensorflow-serving-api
 Note that the first versions of the dependency lib grpcio may bring some troubles when starting the Tensorflow server.
 grpcio python library version 1.7.3 and latest version above 1.8.4 should work.

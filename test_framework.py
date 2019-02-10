@@ -61,7 +61,7 @@ def script_tester(test_dict, failOnError=False):#False):
     thread.join()
     '''
     jobState, jobSessionFolder, loss=start_script(experiment_settings_file, experiment_settings_hparams)
-  except Exception,e:
+  except Exception as e:
     print('Job failed for some reason:'+str(e))
     if failOnError:
       raise ValueError('Failed to excetute test {test}, error={error}'.format(test=test_dict, error=e))
