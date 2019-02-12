@@ -373,7 +373,6 @@ class FileListProcessor_Semantic_Segmentation:
                 radius_of_view = (self.field_of_view-1)//2
             else:
                 radius_of_view=0
-
             with tf.name_scope('prepare_crops_bbox'):
                 height=tf.cast(tf.shape(input_image)[0], dtype=tf.int32, name='image_height')
                 width=tf.cast(tf.shape(input_image)[1], dtype=tf.int32, name='image_width')
@@ -511,7 +510,7 @@ class FileListProcessor_Semantic_Segmentation:
         #print(datasetFiles)
 
         #apply general setup for dataset reader : read all the input list one time, shuffle if required to, read one by one
-        self.dataset=tf.data.Dataset.from_tensor_slices(datasetFiles).repeat(self.nbEpoch).shuffle(self.shuffle_samples)
+        self.dataset=tf.data.Dataset.from_tensor_slices(datasetFiles).shuffle(self.shuffle_samples)
 
         def __load_raw_images_from_filenames(filenames):
           ''' function to be applied for each of the dataset sample
@@ -529,7 +528,7 @@ class FileListProcessor_Semantic_Segmentation:
           return tf.data.Dataset.from_tensors(raw_sample)
         if self.debug:
           print('input filename(s) dataset='+str(self.dataset))
-        self.dataset=self.dataset.flat_map(__load_raw_images_from_filenames).shuffle(self.shuffle_samples)
+        self.dataset=self.dataset.shuffle(self.shuffle_samples).flat_map(__load_raw_images_from_filenames)
 
 
     def getIteratorInitializer(self):
@@ -558,9 +557,8 @@ class FileListProcessor_Semantic_Segmentation:
             #dataset prefetch size:
             prefect_size = self.batch_size*self.num_preprocess_threads#, (self.deep_data_queue_capacity*3)/4)
 
-
             #finalise the dataset pipeline : filterout
-            self.dataset=self.dataset.filter(self.crop_filter).flat_map(self.__image_transform).shuffle(self.shuffle_samples).prefetch(prefect_size).batch(self.batch_size)
+            self.dataset=self.dataset.filter(self.crop_filter).flat_map(self.__image_transform).shuffle(self.shuffle_samples).prefetch(prefect_size).repeat(self.nbEpoch).batch(self.batch_size)
             self.dataset_iterator = self.dataset.make_initializable_iterator()
 
         print('Input data pipeline graph is now defined')

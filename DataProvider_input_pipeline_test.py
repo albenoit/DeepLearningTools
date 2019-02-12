@@ -104,6 +104,7 @@ if not(processCommands.mode_test):
     print("Testing the TRAIN pipeline mode")
     data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation(dataset_raw_train, dataset_references_train,
                                                                 shuffle_samples=True,
+                                                                nbEpoch=1,
                                                                 patch_ratio_vs_input=patchSize,
                                                                 max_patches_per_image=patchesPerImage,
                                                                 image_area_coverage_factor=2.0,
@@ -124,6 +125,7 @@ else:
     print("Testing the TEST pipeline mode")
     data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation(dataset_raw_train, dataset_references_train,
                                                                 shuffle_samples=False,
+                                                                nbEpoch=1,
                                                                 patch_ratio_vs_input=patchSize,
                                                                 max_patches_per_image=1,
                                                                 image_area_coverage_factor=1.0,
@@ -179,7 +181,7 @@ coord = tf.train.Coordinator()
 #run one deep net iteration
 try:
 
-  for step in six.moves.range(10000):
+  for step in six.moves.range(100000):
       print('====== New step='+str(step))
       #stop condition
       if coord.should_stop():
@@ -198,7 +200,7 @@ try:
           cv2.imshow('input crop, step', cv2.cvtColor(input_crop_norm.astype(np.uint8), cv2.COLOR_RGB2BGR))
           cv2.imshow('reference crop, step', result[:,:,3].astype(np.uint8)*int(255/nb_classes))
           cv2.imshow('reference contours_disp, step', contours_disp[0].astype(np.uint8)*255)
-          cv2.waitKey(1000)
+          cv2.waitKey(4)
   #loop ended, final pause before closing
   if allow_display is True:
     print('finished crop sample display, press a key to stop from an active opencv image show window')
@@ -212,8 +214,8 @@ finally:
     coord.request_stop()
 sess.close()
 
-cv2.waitKey()
 print('######## Stopped process at step '+str(step))
+cv2.waitKey()
 
 if process_labels_histogram is True:
     nb_pix=np.sum(class_count)
