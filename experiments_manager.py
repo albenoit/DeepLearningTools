@@ -1142,7 +1142,7 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None, isServing
         else:
           raise ValueError('Could not find experiment_settings.py file in the experiment folder:'+str(sessionFolder))
       else:
-        raise ValueError('Could not restart interrupted training session, working folder not found:'+str(model_dir))
+        raise ValueError('Could not restart interrupted training session, working folder not found:'+str(restart_from_sessionFolder))
     else:
       print('Process starts...')
 
