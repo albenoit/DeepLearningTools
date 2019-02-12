@@ -96,6 +96,7 @@ if not(processCommands.mode_test):
     print("Testing the TRAIN pipeline mode")
     data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation(dataset_raw_train, None,
 		                                                    shuffle_samples=True,
+                                                        nbEpoch=1,
 		                                                    patch_ratio_vs_input=patchSize,
 		                                                    max_patches_per_image=patchesPerImage,
 		                                                    image_area_coverage_factor=1.0,
@@ -116,6 +117,7 @@ else:
     print("Testing the TEST pipeline mode")
     data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation(dataset_raw_train, None,
 		                                                    shuffle_samples=False,
+                                                        nbEpoch=1,
 		                                                    patch_ratio_vs_input=patchSize,
 		                                                    max_patches_per_image=100,
 		                                                    image_area_coverage_factor=1.0,
@@ -194,8 +196,8 @@ finally:
     coord.request_stop()
 sess.close()
 
-cv2.waitKey()
 print('######## Stopped process at step '+str(step))
+cv2.waitKey()
 
 if process_labels_histogram is True:
     nb_pix=np.sum(class_count)
