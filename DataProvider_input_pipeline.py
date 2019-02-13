@@ -510,7 +510,10 @@ class FileListProcessor_Semantic_Segmentation:
         #print(datasetFiles)
 
         #apply general setup for dataset reader : read all the input list one time, shuffle if required to, read one by one
-        self.dataset=tf.data.Dataset.from_tensor_slices(datasetFiles).shuffle(self.shuffle_samples)
+        self.dataset=tf.data.Dataset.from_tensor_slices(datasetFiles)
+        if self.shuffle_samples:
+              self.dataset=self.dataset.shuffle(len(datasetFiles))
+
 
         def __load_raw_images_from_filenames(filenames):
           ''' function to be applied for each of the dataset sample
@@ -528,7 +531,7 @@ class FileListProcessor_Semantic_Segmentation:
           return tf.data.Dataset.from_tensors(raw_sample)
         if self.debug:
           print('input filename(s) dataset='+str(self.dataset))
-        self.dataset=self.dataset.shuffle(self.shuffle_samples).flat_map(__load_raw_images_from_filenames)
+        self.dataset=self.dataset.flat_map(__load_raw_images_from_filenames)
 
 
     def getIteratorInitializer(self):
@@ -558,7 +561,11 @@ class FileListProcessor_Semantic_Segmentation:
             prefect_size = self.batch_size*self.num_preprocess_threads#, (self.deep_data_queue_capacity*3)/4)
 
             #finalise the dataset pipeline : filterout
-            self.dataset=self.dataset.filter(self.crop_filter).flat_map(self.__image_transform).shuffle(self.shuffle_samples).prefetch(prefect_size).repeat(self.nbEpoch).batch(self.batch_size)
+            self.dataset=self.dataset.filter(self.crop_filter).flat_map(self.__image_transform)
+            if self.shuffle_samples:
+              self.dataset=self.dataset.shuffle(int(self.batch_size*self.max_patches_per_image)) #shuffle prefetch size set empirically high
+            #finalize dataset (set nb epoch and batch size)
+            self.dataset=self.dataset.repeat(self.nbEpoch).batch(self.batch_size)
             self.dataset_iterator = self.dataset.make_initializable_iterator()
 
         print('Input data pipeline graph is now defined')

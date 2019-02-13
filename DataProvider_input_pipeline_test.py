@@ -200,7 +200,7 @@ try:
           cv2.imshow('input crop, step', cv2.cvtColor(input_crop_norm.astype(np.uint8), cv2.COLOR_RGB2BGR))
           cv2.imshow('reference crop, step', result[:,:,3].astype(np.uint8)*int(255/nb_classes))
           cv2.imshow('reference contours_disp, step', contours_disp[0].astype(np.uint8)*255)
-          cv2.waitKey(4)
+          cv2.waitKey(1000)
   #loop ended, final pause before closing
   if allow_display is True:
     print('finished crop sample display, press a key to stop from an active opencv image show window')
