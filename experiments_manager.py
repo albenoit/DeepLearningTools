@@ -520,7 +520,7 @@ def model_fn(features, labels, mode, params):
 
 
         if mode==tf.estimator.ModeKeys.EVAL:
-            #DATA EMBEDDING SECTION for the validation stap only
+            #DATA EMBEDDING SECTION for the validation step only
             with tf.device(':/cpu:0'),tf.variable_scope('evaluate'):
                 #->
                 '''flatten raw and code samples
@@ -899,8 +899,8 @@ def model_fn(features, labels, mode, params):
                   def begin(self):
                     ema = tf.train.ExponentialMovingAverage(MOVING_AVERAGE_DECAY)
                     variables_to_restore = ema.variables_to_restore()
-                    print('Variables to restore:')
-                    print(variables_to_restore)
+                    #print('Variables to restore:')
+                    #print(variables_to_restore)
                     self._load_ema = tf.contrib.framework.assign_from_checkpoint_fn(
                         tf.train.latest_checkpoint(self._model_dir),
                         variables_to_restore,

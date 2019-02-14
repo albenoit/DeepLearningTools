@@ -180,14 +180,15 @@ coord = tf.train.Coordinator()
 
 #run one deep net iteration
 try:
-
-  for step in six.moves.range(100000):
-      print('====== New step='+str(step))
+  step=0
+  while True:
       #stop condition
       if coord.should_stop():
           print("Coordinator wants to stop...")
           break
       #training step case
+      step+=1
+      print('====== New step='+str(step))
       result, contours_disp=sess.run([deepnet_feed, contours ])
       print('One iteration, output=')
       print(result[:,:,:3].shape)
@@ -197,14 +198,16 @@ try:
       print('Sample value range (min, max)=({minVal}, {maxVal})'.format(minVal=sample_minVal, maxVal=sample_maxVal))
       input_crop_norm=(input_crop-sample_minVal)*255.0/(sample_maxVal-sample_minVal)
       if allow_display is True:
-          cv2.imshow('input crop, step', cv2.cvtColor(input_crop_norm.astype(np.uint8), cv2.COLOR_RGB2BGR))
-          cv2.imshow('reference crop, step', result[:,:,3].astype(np.uint8)*int(255/nb_classes))
-          cv2.imshow('reference contours_disp, step', contours_disp[0].astype(np.uint8)*255)
+          cv2.imshow('input crop', cv2.cvtColor(input_crop_norm.astype(np.uint8), cv2.COLOR_RGB2BGR))
+          cv2.imshow('reference crop', result[:,:,3].astype(np.uint8)*int(255/nb_classes))
+          cv2.imshow('reference contours_disp', contours_disp[0].astype(np.uint8)*255)
           cv2.waitKey(1000)
   #loop ended, final pause before closing
   if allow_display is True:
     print('finished crop sample display, press a key to stop from an active opencv image show window')
     cv2.waitKey()
+except tf.errors.OutOfRangeError as e:
+    print('Demo program parsed one epoch, every thing ran fine')
 except Exception as e:
     # Report exceptions to the coordinator.
     print('Stopped the data pipeline consuming loop for reason: '+str(e))

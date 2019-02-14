@@ -446,6 +446,11 @@ class FileListProcessor_Semantic_Segmentation:
         if self.manage_nan_values is 'avoid':
             print('FileListProcessor_Semantic_Segmentation: crops with Nan values will be avoided')
             selected_crop = tf.logical_and(selected_crop, tf.logical_not(tf.reduce_any(tf.is_nan(crop))))#tf.math.logical_and(selected_crops, tf.reduce_any(tf.is_nan(crop_candidate, axis=0)))
+
+        #manage optionnal filter:
+        for filter_func in self.additionnal_filters:
+          selected_crop = tf.logical_and(selected_crop, filter_func(crop))
+
         print('selected_crop AFTER='+str(selected_crop))
         #TODO add more selection strategies
         return selected_crop
@@ -557,9 +562,6 @@ class FileListProcessor_Semantic_Segmentation:
             else:
                 self.dataset=self.dataset.flat_map(self.__generate_crops)
 
-            #dataset prefetch size:
-            prefect_size = self.batch_size*self.num_preprocess_threads#, (self.deep_data_queue_capacity*3)/4)
-
             #finalise the dataset pipeline : filterout
             self.dataset=self.dataset.filter(self.crop_filter).flat_map(self.__image_transform)
             if self.shuffle_samples:
@@ -612,6 +614,7 @@ class FileListProcessor_Semantic_Segmentation:
         opencv_read_flags: if usig OpenCV to read images, set here the specific cv2.ilread flags for specific image formats
         field_of_view: size of the field of view of a pixel. Used to define the size of the overlap of adjacent crops of an image when not using random crops
         manage_nan_values: set 'zeros' to replace nan values by zeros, 'avoid' to avoid sample crops with nan values, None else and Exception will be raised to highlight potential dataset problems
+        additionnal_filters: must be a list of functions (empty by default) that take 1 parameter, a tensor that represents an image crop with eventual ground truth as additionnal layers and that return True if crop is of interest, else False
     """
     def __init__(self, filelist_raw_data,
                     filelist_reference_data,
@@ -633,6 +636,7 @@ class FileListProcessor_Semantic_Segmentation:
                     opencv_read_flags=-1,#cv2.IMREAD_UNCHANGED=-1, #cv2.IMREAD_LOAD_GDAL | cv2.IMREAD_ANYDEPTH ):
                     field_of_view=0,
                     manage_nan_values=None,
+                    additionnal_filters=[],
                     debug=False):
         self.filelist_raw_data=filelist_raw_data
         self.filelist_reference_data=filelist_reference_data
@@ -654,10 +658,14 @@ class FileListProcessor_Semantic_Segmentation:
         self.opencv_read_flags=opencv_read_flags
         self.field_of_view = field_of_view
         self.manage_nan_values=manage_nan_values
+        self.additionnal_filters=additionnal_filters
         self.debug = debug
 
         if self.image_area_coverage_factor<=0:
-            raise ValueError('Error when constructing DataProvider: image_area_coverage_factor must be above 0')
+          raise ValueError('Error when constructing DataProvider: image_area_coverage_factor must be above 0')
+
+        if not(isinstance(additionnal_filters, list)):
+          raise ValueError('Error when constructing DataProvider: additionnal_filters must be a list of functions that take 1 parameter, a tensor that represents a crop with eventual ground truth as additionnal layers and return True if crop is of interest, else False')
 
         #first read the first raw and reference images to get aspect ratio and depth
         #FIXME : fast change to introduce gdal image loading, TO BE CLARIFIED ASAP !!!

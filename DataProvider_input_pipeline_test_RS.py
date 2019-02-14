@@ -164,12 +164,13 @@ coord = tf.train.Coordinator()
 class_count=np.zeros(nb_classes)
 #run one deep net iteration
 try:
-
-  for step in six.moves.range(10):
+  step=0
+  while True:
       #stop condition
       if coord.should_stop():
           break
       #training step case
+      step+=1
       result=sess.run(deepnet_feed)
       print('#### step='+str(step))
       print('-> output shape='+str(result.shape))
@@ -183,9 +184,9 @@ try:
           class_count+=img_class_count
       if process_labels_histogram is False:
           if allow_display is True:
-              cv2.imshow('input crop, step='+str(step), DataProvider_input_pipeline.scaleImg_0_255(input_crop).astype(np.uint8))
-              cv2.imshow('reference crop, step='+str(step), result[:,:,-1].astype(np.uint8)*int(255/nb_classes))
-              cv2.imshow('cloud map, step='+str(step), cloud_map.astype(np.uint8)*255)
+              cv2.imshow('input crop', DataProvider_input_pipeline.scaleImg_0_255(input_crop).astype(np.uint8))
+              cv2.imshow('reference crop', result[:,:,-1].astype(np.uint8)*int(255/nb_classes))
+              cv2.imshow('cloud map', cloud_map.astype(np.uint8)*255)
               cv2.waitKey(1000)
           else:
              cv2.imwrite('input_crop_'+str(step)+'.bmp', DataProvider_input_pipeline.scaleImg_0_255(input_crop).astype(np.uint8))
@@ -194,7 +195,8 @@ try:
   if allow_display is True:
     print('finished crop sample display, press a key to stop from an active opencv image show window')
     cv2.waitKey()
-
+except tf.errors.OutOfRangeError as e:
+    print('Demo program parsed one epoch, every thing ran fine')
 except Exception as e:
     print('Exception received:'+str(e))
     # Report exceptions to the coordinator.
