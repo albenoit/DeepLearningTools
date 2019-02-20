@@ -1189,7 +1189,7 @@ def get_served_model_info(one_model_path, expected_model_name):
   cmd_result=subprocess.check_output(served_model_info_cmd.split())
   print('You may add option \' --signature_def SIGNATURE_DEF_NAME\' to get details on inputs and outputs of the model')
   print('Answer='+str(cmd_result))
-  if expected_model_name in cmd_result:
+  if expected_model_name in six.text_type(cmd_result):
     print('Target model {target} name found in the command answer'.format(target=expected_model_name))
   else:
     raise ValueError('Target model {target} name NOT found in the command answer'.format(target=expected_model_name))
