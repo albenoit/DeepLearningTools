@@ -63,7 +63,7 @@ def single_experiment(hparams):
     jobSessionFolder=job_result['sessionFolder']
     jobState=STATUS_OK
     training_iterations=job_result['global_step']
-  except Exception,e:
+  except Exception as e:
     print('Job failed for some reason:'+str(e))
 
   return  {'loss': loss, 'status': jobState, 'jobSessionFolder':jobSessionFolder, 'training_iterations':training_iterations}
@@ -75,8 +75,8 @@ try:
   #print('best='+str(best)) #WARNING, displayed hyperparameters do not take into account custom changes (+1, etc. in the space description)
   print('space_eval='+str(space_eval(space, best)))
 
-except Exception, e:
-  print('Hyperopt experiment interrupted not finish its job with error message:'+str(e.message))
+except Exception as e:
+  print('Hyperopt experiment interrupted not finish its job with error message:'+str(e))
 
 best_trials = sorted(trials.results, key=lambda x: x['loss'], reverse=False)
 print('best_trials:')
@@ -111,7 +111,7 @@ if finished_jobs>0:
   plt.legend(loc='best')
   plt.savefig(os.path.join(outputlog_folder, 'hparams_vs_trials'))
   #draw the scatter matrix
-  scatter_matrix(trials_summary[trial['misc']['vals'].keys()+['loss']], alpha=0.2, figsize=(6, 6), diagonal='kde')
+  scatter_matrix(trials_summary[list(trial['misc']['vals'])+['loss']], alpha=0.2, figsize=(6, 6), diagonal='kde')
   plt.savefig(os.path.join(outputlog_folder, 'scatter_matrix'))
   plt.figure()
   plotting.main_plot_history(trials)
@@ -131,10 +131,10 @@ else:
 try:
   #python3 commands...
   from hyperopt import graphviz
-  graphviz.dot_hyperparameters(space)
-  import subprocess
-  graphviz_to_png_command='dot -Tpng foo.dot > foo.png && eog foo.png'
-  subprocess.call(graphviz_to_png_command.split())
-except:
-  print('Could not run some python 3 compatible commands')
+  graphviz_space_description=graphviz.dot_hyperparameters(space)
+  open(os.path.join(outputlog_folder, 'hyperopt_graph.dot'), 'w').write(graphviz_space_description)
+  #later in command line, type
+  #graphviz_to_png_command='dot -Tpng hyperopt_graph.dot > hyperopt_graph.png && eog hyperopt_graph.png'
+except Exception as e:
+  print('Could not run some python 3 compatible commands, error='+str(e))
   pass
