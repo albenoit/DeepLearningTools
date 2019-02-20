@@ -11,6 +11,80 @@ import tensorflow as tf
 import numpy as np
 
 ################################
+import keras as K
+def tensor_gram_matrix(tensor):
+  ''' returns the gram matrix of a given tensor matrix
+  Note that the input tensor is reshaped to a 2D matrix, preserving the last dimension
+  '''
+
+  inp_shape = tensor.get_shape().as_list()
+  row_dims = np.prod(inp_shape[:-1])
+  col_dims = inp_shape[-1]
+  w = tf.reshape(tensor, (row_dims,col_dims))
+  gm = tf.linalg.matmul(a=w, b=w, transpose_a=True)
+  return gm
+
+def weights_regularizer_soft_orthogonality(weights):
+  ''' soft orthogonal regularization for weights:
+     => require the Gram matrix of the weight matrix to be close to identity
+    Args: weights, the weights tensor of a given layer
+    Returns the weight penalty
+  '''
+  weights_gram_matrix=tensor_gram_matrix(weights)
+  I = tf.linalg.eye(weights_gram_matrix.get_shape().as_list()[0])
+  gram_minus_ident = weights_gram_matrix-I
+  return tf.reduce_sum(tf.math.square(gram_minus_ident))
+
+def weights_regularizer_Spectral_Restricted_Isometry(weights):
+  ''' orthogonal regularization for weights presented here :  https://arxiv.org/abs/1810.09102
+      => generally more efficient than weights_regularizer_soft_orthogonality
+      => WARNING, works best at the beginning if the training but too
+      restrictive when fine tuning and should be replaced by classical l2 weights penalty
+    Args: weights, the weights tensor of a given layer
+    Returns the weight penalty
+  '''
+  weights_gram_matrix=tensor_gram_matrix(weights)
+
+  Ident = tf.linalg.eye(weights_gram_matrix.get_shape().as_list()[0])
+  Norm  = weights_gram_matrix - Ident
+
+  b_k = np.random.rand(Norm.shape[1])
+  b_k = np.reshape(b_k, (Norm.shape[1],1))
+  v = tf.Variable(b_k, dtype=tf.float32, trainable=True)
+
+  v1 = tf.math.multiply(Norm, v)
+  norm1 = tf.reduce_sum(tf.math.square(v1))**0.5
+
+  v2 = tf.math.divide(v1,norm1)
+
+  v3 = tf.math.multiply(Norm,v2)
+  return tf.reduce_sum(tf.math.square(v3))**0.5
+
+def focal_loss_softmax(labels,logits, gamma=2, reduceSum_not_reduceAverage=False):
+    """
+    Focal loss, a cross entropy like loss that favors hard examples
+    ... such that imbalanced data can be handled more easily
+    original work : https://arxiv.org/abs/1708.02002
+    --> also have a look at the proposed strategy on the last bias init
+
+    Args:
+      labels: A tensor of shape [batch_size,...].
+      logits: A float32 tensor of shape [batch_size,...,num_classes].
+      gamma: A scalar for focal loss gamma hyper-parameter.
+      reduceSum_not_reduceAverage: increase loss value by summing all individual losses instead of averaging them by default
+    Returns:
+      A scalar loss value
+    """
+    nb_classes=logits.get_shape().as_list()[-1]
+    y_pred=tf.nn.softmax(logits,axis=-1) # [batch_size,num_classes]
+    eps = 1e-12
+    y_pred=tf.clip_by_value(y_pred,eps,1.-eps)#improve the stability of the focal loss and see issues 1 for more information
+    labels=tf.cast(tf.one_hot(labels,depth=nb_classes), tf.float32)#y_pred.shape[1])
+    L=-labels*((1-y_pred)**gamma)*tf.log(y_pred)
+    L=tf.reduce_mean(L)
+    return L
+
+
 
 def multi_loss(lossesList):
   ''' refactored from the original work of Y. Gal https://github.com/yaringal/multi-task-learning-example/blob/master/multi-task-learning-example.ipynb
