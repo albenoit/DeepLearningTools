@@ -7,7 +7,7 @@ import six
 import tensorflow as tf
 import numpy as np
 
-from helpers_model import ConcreteDropout
+from helpers.model import ConcreteDropout
 from tensorflow.contrib.learn import ModeKeys
 
 # =============================== GLOBAL MODEL ====================================

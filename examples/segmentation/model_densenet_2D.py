@@ -12,8 +12,15 @@ import six
 import tensorflow as tf
 import numpy as np
 
-def conv2d(input_features, outing_nb_features, kernel_size, with_bias=True):
+def conv2d(input_features, outing_nb_features, kernel_size, bias=0, kernel_regul=tf.nn.l2_loss):
     with tf.variable_scope('conv2d'):
+        #manage bias value
+        with_bias=False
+        bias_init=None
+        if bias is not None:
+            with_bias=True
+            bias_init=tf.initializers.constant(bias)
+        #setup conv2d layer
         conv=tf.layers.conv2d(
                               input_features,
                               filters=outing_nb_features,
@@ -37,11 +44,17 @@ def conv2d(input_features, outing_nb_features, kernel_size, with_bias=True):
                              )
         return conv
 
-def conv2d_upscale(input_features, kernel_size, with_bias=True):
+def conv2d_upscale(input_features, kernel_size, bias=0, kernel_regul=tf.nn.l2_loss):
     with tf.variable_scope('conv2d_upscale'):
         print('conv2d_upscale: input feature shape='+str(input_features.get_shape().as_list()))
+        #manage bias value
+        with_bias=False
+        bias_init=None
+        if bias is not None:
+            with_bias=True
+            bias_init=tf.initializers.constant(bias)
         nb_channels=input_features.get_shape().as_list()[-1]
-	conv=tf.layers.conv2d_transpose(
+        conv=tf.layers.conv2d_transpose(
                                         input_features,
                                         filters=nb_channels,
                                         kernel_size=[ kernel_size, kernel_size],
@@ -52,7 +65,7 @@ def conv2d_upscale(input_features, kernel_size, with_bias=True):
                                         use_bias=with_bias,
                                         kernel_initializer=tf.variance_scaling_initializer(scale=2.0, mode='fan_in', distribution="truncated_normal"),
                                         bias_initializer=tf.zeros_initializer(),
-                                        kernel_regularizer=tf.nn.l2_loss,
+                                        kernel_regularizer=kernel_regul,
                                         bias_regularizer=None,
                                         activity_regularizer=None,
                                         kernel_constraint=None,
@@ -151,7 +164,7 @@ def model(  data,
     nb_layers_sequence_encoding=[4, 5, 7, 10, 12]
     bottleneck_nb_layers=15
     growth_rate=16
-    
+
     #set True in order to avoid the n-1 decoding block to be connected to the final conv outputs (False by default)
     output_only_inputs_last_decoding_block=False
 

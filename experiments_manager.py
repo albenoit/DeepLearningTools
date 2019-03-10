@@ -110,7 +110,8 @@ from __future__ import print_function
 import six
 
 #script imports
-from experiments_settings_checker import ExperimentsSettingsChecker
+from tools.experiments_settings_checker import ExperimentsSettingsChecker
+import tools.experiments_settings_surgery
 import os, shutil
 import datetime, time
 import tensorflow as tf
@@ -1036,9 +1037,10 @@ def _create_rpc_callback(client, debug):
           raise ValueError('Exception encountered on client callback : '.format(error=e))
   return _callback
 
-def do_inference(host, port, model_name, clientIO_InitSpecs, concurrency, num_tests):
+def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs, concurrency, num_tests):
   """Tests PredictionService with concurrent requests.
   Args:
+    experiment_settings: the experiment settings loaded from function loadExperimentsSettings
     host:tensorfow server address
     port: port address of the PredictionService.
     model_name: the model name ID
@@ -1062,7 +1064,7 @@ def do_inference(host, port, model_name, clientIO_InitSpecs, concurrency, num_te
   channel = grpc.insecure_channel(server)
   stub = prediction_service_pb2_grpc.PredictionServiceStub(channel)
   #allocate a clientIO instance defined for the experiment
-  client_io=usersettings.Client_IO(clientIO_InitSpecs, FLAGS.debug)
+  client_io=experiment_settings.Client_IO(clientIO_InitSpecs, FLAGS.debug)
   notDone=True
   predictionIdx=0
   while notDone:
@@ -1074,7 +1076,7 @@ def do_inference(host, port, model_name, clientIO_InitSpecs, concurrency, num_te
             print('Input data is ready (data, shape)'+str((sample, sample.shape)))
             print('Time to prepare collect data request:',round(time.time() - start_time, 2))
             start_time=time.time()
-        if hasattr(usersettings, 'multihead'):
+        if hasattr(experiment_settings, 'multihead'):
           request = inference_pb2.MultiInferenceRequest()
           raise ValueError('NOT YET IMPLEMENTED')
           request.tasks.add().model_spec.name = 'default'
@@ -1086,8 +1088,8 @@ def do_inference(host, port, model_name, clientIO_InitSpecs, concurrency, num_te
         else:
           request = predict_pb2.PredictRequest()
           request.model_spec.name = model_name
-          request.model_spec.signature_name = usersettings.served_head
-          request.inputs[usersettings.input_data_name].CopyFrom(
+          request.model_spec.signature_name = experiment_settings.served_head
+          request.inputs[experiment_settings.input_data_name].CopyFrom(
               tf.make_tensor_proto(sample, shape=sample.shape))
         if FLAGS.debug:
           print('Time to prepare request:',round(time.time() - start_time, 2))
@@ -1096,8 +1098,8 @@ def do_inference(host, port, model_name, clientIO_InitSpecs, concurrency, num_te
         notDone=True
         break
       #asynchronous message reception, may hide some AbortionError details and only provide CancellationError(code=StatusCode.CANCELLED, details="Cancelled")
-      if hasattr(usersettings, 'client_async'):
-        result_future = stub.Predict.future(request, usersettings.serving_client_timeout_int_secs)  # 5 seconds
+      if hasattr(experiment_settings, 'client_async'):
+        result_future = stub.Predict.future(request, experiment_settings.serving_client_timeout_int_secs)  # 5 seconds
         result_future.add_done_callback(
             _create_rpc_callback(client_io, FLAGS.debug))
 
@@ -1105,7 +1107,7 @@ def do_inference(host, port, model_name, clientIO_InitSpecs, concurrency, num_te
         #synchronous approach... that may provide more details on AbortionError
         if FLAGS.debug:
           start_time=time.time()
-        answer=stub.Predict(request, usersettings.serving_client_timeout_int_secs)
+        answer=stub.Predict(request, experiment_settings.serving_client_timeout_int_secs)
         if FLAGS.debug:
           print('Time to send request/decode response:',round(time.time() - start_time, 2))
           start_time=time.time()
@@ -1206,13 +1208,14 @@ def run(train_config_script=None, external_hparams=None):
         then external_hparams will update hyperparameters already specified in the train_config_script script
   '''
   global usersettings
+  experiments_output=None
   tf.reset_default_graph()
   usersettings=None#ensure to clear this object prior any new trial
   ''' main function that starts the experiment in the chosen mode '''
   scripts_WD=os.getcwd() #to locate the mysettings*.py file
 
   if FLAGS.debug is True:
-      raw_input('Running in debug mode. Press Enter to continue...')
+      print('Running in debug mode. Press Enter to continue...')
   if FLAGS.start_server is True:
       print('### START TENSORFLOW SERVER MODE ###')
 
@@ -1269,7 +1272,7 @@ def run(train_config_script=None, external_hparams=None):
       os.mkdir(predictions_dir)
       os.chdir(predictions_dir)
       print('Current working directory = '+os.getcwd())
-      do_inference(host=usersettings.tensorflow_server_address,
+      do_inference(experiment_settings=usersettings, host=usersettings.tensorflow_server_address,
                   port=usersettings.tensorflow_server_port,
                   model_name=model_name,
                   clientIO_InitSpecs={},
@@ -1297,8 +1300,7 @@ def run(train_config_script=None, external_hparams=None):
 
       if train_config_script!=None:
         print('Non command line mode : training from setup file {file} with the following external hyperparameters {params}'.format(file=train_config_script, params=external_hparams))
-        import experiments_settings_surgery
-        settings_file=experiments_settings_surgery.insert_additionnal_hparams(train_config_script, external_hparams)
+        settings_file=tools.experiments_settings_surgery.insert_additionnal_hparams(train_config_script, external_hparams)
         print('-> created a temporary experiments settings file : '+settings_file)
       #loading the experiment setup script
       usersettings, sessionFolder, model_name = loadExperimentsSettings(settings_file,

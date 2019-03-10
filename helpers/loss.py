@@ -42,6 +42,8 @@ def weights_regularizer_Spectral_Restricted_Isometry(weights):
       restrictive when fine tuning and should be replaced by classical l2 weights penalty
     Args: weights, the weights tensor of a given layer
     Returns the weight penalty
+
+    REMINDER : Other ideas with spectral norm : https://github.com/taki0112/Spectral_Normalization-Tensorflow
   '''
   weights_gram_matrix=tensor_gram_matrix(weights)
 

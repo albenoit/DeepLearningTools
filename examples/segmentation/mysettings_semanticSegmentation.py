@@ -6,9 +6,15 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+import six
+
 import DataProvider_input_pipeline
 import tensorflow as tf
 import numpy as np
+import os
+
+from helpers import loss as helpers_loss
+from helpers import model as helpers_model
 
 #-> set here your own working folder
 workingFolder='experiments/semantic_segmentation'
@@ -17,7 +23,7 @@ workingFolder='experiments/semantic_segmentation'
 tensorflow_server_address='127.0.0.1'
 tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
-serving_client_timeout_int_secs=5#timeout limit when a client requests a served model
+serving_client_timeout_int_secs=10#timeout limit when a client requests a served model
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='Cityscapes'
 
@@ -59,6 +65,8 @@ nb_summary_per_train_epoch=4
 
 #define image patches extraction parameters
 patchSize=224
+server_patch_size=256
+server_crops_per_batch=4
 
 #random seed used to init weights, etc. Use an integer value to make experiments reproducible
 random_seed=42
@@ -72,11 +80,11 @@ learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM
 predict_using_smoothed_parameters=hparams['smoothedParams']#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
 #set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 #-> a first set of data
-raw_data_dir_train_ = "/uds_data/listic/datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
-reference_data_dir_train_ = "/uds_data/listic/datasets/CityScapes/gtFine_trainvaltest/gtFine/train/"
+raw_data_dir_train_ = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
+reference_data_dir_train_ = "/home/alben/workspace/Datasets/CityScapes/gtFine_trainvaltest/gtFine/train/"
 raw_data_dir_train=(raw_data_dir_train_, reference_data_dir_train_)
-raw_data_dir_val_ = "/uds_data/listic/datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/val/"
-reference_data_dir_val_ = "/uds_data/listic/datasets/CityScapes/gtFine_trainvaltest/gtFine/val/"
+raw_data_dir_val_ = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/val/"
+reference_data_dir_val_ = "/home/alben/workspace/Datasets/CityScapes/gtFine_trainvaltest/gtFine/val/"
 raw_data_filename_extension='*.png'
 ref_data_filename_extension='*labelIds.png'
 #load all image files to use for training or testing
@@ -131,7 +139,6 @@ def getOptimizer(loss, learning_rate, global_step):
     '''define here the specific optimizer to be used
     '''
     #get gradient summary information and the gradient norm
-    import helpers_model
     tvars, raw_grads, gradient_norm=helpers_model.track_gradients(loss)
 
     return tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
@@ -323,7 +330,7 @@ def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batc
 -class Client_IO, a class to specifiy input data requests and response on the client side when serving a model
 For performance/enhancement of the model, have a look here for graph optimization: https://github.com/tensorflow/tensorflow/blob/r1.4/tensorflow/tools/graph_transforms/README.md
 '''
-serving_img_shape=[256,256,3]
+serving_img_shape=[server_crops_per_batch, server_patch_size,server_patch_size,3]
 def get_input_pipeline_serving():
     '''Build the serving inputs, expecting messages made of :
     -> a batch of size 1 of a single image in the uint8 format (no preliminary normalisation is expected).
@@ -333,9 +340,7 @@ def get_input_pipeline_serving():
         dtype=tf.uint8,
         shape=serving_img_shape,
         name='serialized_input_data')
-    standardized_img=tf.image.per_image_standardization(tf.cast(serialized_tf_example, dtype=tf.float32))
-    #standardized_img=   (tf.saturate_cast(serialized_tf_example, dtype=tf.float32)/255.0)
-    serialized_tf_example_4d=tf.expand_dims(standardized_img,0)
+    serialized_tf_example_4d=tf.map_fn(tf.image.per_image_standardization, tf.cast(serialized_tf_example, dtype=tf.float32))
     print('Served input='+str(serialized_tf_example_4d))
     return tf.estimator.export.ServingInputReceiver(
         serialized_tf_example_4d, {input_data_name: serialized_tf_example})
@@ -357,15 +362,57 @@ class Client_IO:
                clientInitSpecs: a dictionnary to setup the client is necessary
                debugMode: set True if some debug messages should be displayed
         '''
-
+        self.onlineDisplay=False #set True to activate online imshow (maybe to show progress)
+        self.outputFilename_prefix='segmentation.out'
         self.debugMode=debugMode
+        self.input_stream=None
+        self.input_sample=None
+        self.crops_positions_in=[]
+        self.output_path=''
+        if 'output_path' in clientInitSpecs.keys():
+            print('Output predictions will be written here: '+str(clientInitSpecs['output_path']))
+            self.output_path=clientInitSpecs['output_path']
+        if 'sample_file' in clientInitSpecs.keys():
+          print('sample_file provided: '+str(clientInitSpecs['sample_file']))
+          self.inframe=cv2.imread(clientInitSpecs['sample_file'])
+          self.resize_input_to_model_expectation=False
+          self.outputFilename_prefix=os.path.basename(clientInitSpecs['sample_file'])+'.'+self.outputFilename_prefix
+        else:
+          self.input_stream=cv2.VideoCapture(0)
+          valid, self.inframe=self.input_stream.read()
 
-        #self.frame=cv2.imread('../../../../datasamples/semantic_segmentation/raw_data/aachen_000000_000019_leftImg8bit.png')
-        self.input_stream=cv2.VideoCapture(0)
-        valid, frame=self.input_stream.read()
+        #prepare crops to process the entire input image iteratively
+
+        if self.onlineDisplay:
+          cv2.imshow('input', self.inframe)
+        #prepare an output image buffer with the same size as the original input (before padding)
+        self.outframe=hparams['nbClasses']*np.ones((self.inframe.shape[0], self.inframe.shape[1]), dtype=np.uint8)
+        #add padding to handle borders
+        #self.inframe=np.pad(array=self.inframe, pad_width=((field_of_view//2,field_of_view//2), (field_of_view//2,field_of_view//2), (0,0)), mode='constant')
+        print('(Field of view size, Padded input image shape)='+str((field_of_view, self.inframe.shape)))
+        #define crops parsing indicators
+        self.crop_index=0
+        self.patch_effective_width=server_patch_size-field_of_view
+
+        #get the number of patch rows and cols on the original input image size (same as output frame)
+        self.nb_crops_lines=np.maximum(1,(self.outframe.shape[0]-field_of_view)//self.patch_effective_width)
+        self.nb_crops_colums=np.maximum(1,(self.outframe.shape[1]-field_of_view)//self.patch_effective_width)
+        self.crops_positions_in=[]
+        self.crops_positions_code=[]
+        for l in six.moves.range(self.nb_crops_lines):
+          for c in six.moves.range(self.nb_crops_colums):
+            self.crops_positions_in.append((l*self.patch_effective_width,c*self.patch_effective_width))
+        #adding bottom and right borders
+        for l in six.moves.range(self.nb_crops_lines):
+          self.crops_positions_in.append((l*self.patch_effective_width,self.outframe.shape[1]-server_patch_size))
+        for c in six.moves.range(self.nb_crops_colums):
+          self.crops_positions_in.append((self.outframe.shape[0]-server_patch_size,c*self.patch_effective_width))
+        self.crops_positions_in.append((self.outframe.shape[0]-server_patch_size,self.outframe.shape[1]-server_patch_size))
+        print('Number of crops required to process the input image = '+str(len(self.crops_positions_in)))
+
         if self.debugMode is True:
             print('RPC Client ready to interract with the server')
-            print('Image reader ready, original frame size='+str(frame.shape))
+            print('Image reader ready, original frame size='+str(self.inframe.shape))
 
         # reporting here the Cityscapes labels lookup table to use on the
         # client side for semantic map color visualisation.
@@ -452,7 +499,8 @@ class Client_IO:
         # Please refer to the main method below for example usages!
 
         # name to label object
-        name2label      = { label.name    : label for label in self.labels           }
+        self.label_names      = { label.name    : label for label in self.labels           }
+        print('label_names=',self.label_names.keys())
         # id to color label object
         self.cityscapes_labels_colors=np.zeros((256,1,3), dtype=np.uint8)
         self.cityscapes_labels_colors[0:35] = np.reshape(np.array([ label[7] for label in self.labels ], dtype=np.uint8), (35,1,3))
@@ -471,11 +519,35 @@ class Client_IO:
         Returns:
            the data sample with shape and type complying with the server input
         '''
-        valid, frame=self.input_stream.read()
-        #valid=True
-        if valid is False:
-            raise ValueError('Could not load input frame')
-        self.frame_patch=cv2.resize(frame, (serving_img_shape[1],serving_img_shape[0]))
+
+        ''' process image crop by crop '''
+        if self.crop_index>=len(self.crops_positions_in):
+          #TODO, exit the process
+          print('Input image has been fully parsed, program end...')
+          raise StopIteration
+
+        crops=[]
+        #self.crop_index is not updated here, decodeResponse will do this FIXME, any async issue ?
+        crop_index=self.crop_index
+        for i in six.moves.range(server_crops_per_batch):
+          #end of the list border effect management (add a zeroes patch
+          if crop_index+i>=len(self.crops_positions_in):
+            current_crop=np.zeros(serving_img_shape[1:], dtype=np.uint8)
+          else:
+            crop_coord=self.crops_positions_in[crop_index+i]
+            #print('Preparing request batch with crop (index, coord)='+str((crop_index+i, crop_coord)))
+            current_crop=self.inframe[crop_coord[0]:crop_coord[0]+server_patch_size,crop_coord[1]:crop_coord[1]+server_patch_size,:]
+          # put crop into the batch
+          crops.append(current_crop)
+            #print('Added crop of shape : '+str(current_crop.shape))
+        #self.crops_positions
+        self.frame_patch=np.array(crops)
+        if self.debugMode is True:
+          print('Batch request shape={shp}, crop index={cropIdx}'.format(shp=self.frame_patch.shape, cropIdx=crop_index))
+          for idx in six.moves.range(server_crops_per_batch):
+            cv2.imshow('input crop'+str(idx), self.frame_patch[idx,:,:,:])
+          cv2.waitKey(5)
+
         if self.debugMode is True:
             print('Input frame'+str(self.frame_patch.shape))
         return self.frame_patch
@@ -491,17 +563,54 @@ class Client_IO:
 
         if self.debugMode is True:
             print('Answer shape='+str(response.shape))
-        cv2.imshow('Semantic_map', response)
+            print('self.frame_patch.shape'+str(self.frame_patch.shape))
 
-        semantic_map_3c=cv2.cvtColor(response, cv2.COLOR_GRAY2BGR);
+        #self.add_segmentation_colors(response, self.frame_patch)
+        if self.onlineDisplay:
+          cv2.imshow('Semantic segmentation overlay', self.frame_patch)
+
+        #self.crop_index is not updated here, decodeResponse will do this FIXME, any async issue ?
+        fov_half=(field_of_view-1)//2
+        crop_index=self.crop_index
+        for i in range(server_crops_per_batch):
+          #end of the list management : avoid last batch samples that do not fit into the image
+          if crop_index+i>=len(self.crops_positions_in):
+            break
+          crop_coord=self.crops_positions_in[crop_index+i]
+          row_start_idx=crop_coord[0]+fov_half
+          row_stop_idx=row_start_idx+self.patch_effective_width
+          col_start_idx=crop_coord[1]+fov_half
+          col_stop_idx=col_start_idx+self.patch_effective_width
+          if self.debugMode is True:
+            print('*** received patch:'+str((i, crop_coord)))
+            print('central patch bbox (y,y+h, x, x+w)='+str((row_start_idx,row_stop_idx,col_start_idx,col_stop_idx)))
+            print('in_row='+str(response.shape))
+            print('outframe='+str(self.outframe.shape))
+            print('out='+str(self.outframe[row_start_idx:row_stop_idx,col_start_idx:col_stop_idx].shape))
+          self.outframe[row_start_idx:row_stop_idx,col_start_idx:col_stop_idx]=response[i,fov_half:fov_half+self.patch_effective_width,fov_half:fov_half+self.patch_effective_width]
+        #finaly update the batch crop index
+        self.crop_index+=server_crops_per_batch
+
+        if self.onlineDisplay:
+          cv2.imshow("reconstruction", (self.outframe.astype(np.int16)*255//hparams['nbClasses']).astype(np.uint8))
+          cv2.waitKey(4)
+        else:
+          print('prediction step {step}/{total}'.format(step=crop_index, total=len(self.crops_positions_in)))
+
+
+    def add_segmentation_colors(self, segmentation_map, outputImage):
+        semantic_map_3c=cv2.cvtColor(segmentation_map, cv2.COLOR_GRAY2BGR);
         semantic_map_color=cv2.LUT(semantic_map_3c, self.cityscapes_labels_colors)
-        cv2.imshow('Semantic_map_color', semantic_map_color)
         #applying the semantic segmentation map as an overlay on the input
         alpha=0.5
-        cv2.addWeighted(semantic_map_color, alpha, self.frame_patch, 1 - alpha, 0, self.frame_patch)
-        cv2.imshow('Semantic segmentation overlay', self.frame_patch)
-        cv2.waitKey(4)
+        cv2.addWeighted(semantic_map_color, alpha, outputImage, 1 - alpha, 0, outputImage)
+
 
     def finalize(self):
         ''' a function called when the prediction loop ends '''
-        print('Prediction process ended successfuly')
+        print('Prediction process ended successfuly, press a key to close')
+        file_path_prefix=os.path.join(self.output_path, self.outputFilename_prefix)
+        print('output images prefix='+str(file_path_prefix))
+        self.add_segmentation_colors(self.outframe, self.inframe)
+        cv2.imwrite(file_path_prefix+'_pred.bmp', self.outframe)
+        cv2.imwrite(file_path_prefix+'_overlay.bmp', self.inframe)
