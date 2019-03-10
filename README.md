@@ -1,6 +1,6 @@
-# What's that ?
+# Train, monitor, evaluate and deploy/serve your Tensorflow Machine Learning models rapidly in a unified way !
 
-A set of python 2 and 3 compatible scripts that demonstrate the use of Tensorflow estimators on your data (1D, 2D, 3D...).
+Here is a set of python 2 and 3 compatible scripts that demonstrate the use of Tensorflow estimators on your data (1D, 2D, 3D...).
 The proposed tool-chain enables different experiments (model training/validating) to be launched in a unified way. All models are automatically exported periodically to enable model deployment (serving in production).
 All the resulting experiments logs can be compared. Model versioning is enabled.
 
@@ -12,15 +12,26 @@ This framework can be driven by higher level tools such as [hyperopt](https://hy
 
 A quick presentation of the system is available [here](https://docs.google.com/presentation/d/1tFetD27PK9kt29rdwwZ6QKLYNDyJkHoCLT8GHweve_8/edit?usp=sharing), details are given below.
 
-Several ideas put together:
+** Main ideas put together: **
 
 * training a model with tf.estimator to manage training, validation and export in a easier way.
-* using moving averages to store parameters with values smoothed along the last training steps.
+* using moving averages to store parameters with values smoothed along the last training steps to get more stable and more accurate served models.
 * automatic storage of all the model outputs on the validation dataset in order to observe some data projections on the TensorBoard for embedding understanding.
-* early stopping to interrupt training if the considered metric (global loss) does not decrease over a long period
-* tensorflow-serving-api used to serve the model and dynamically load updated models sometimes also while training is still running.
-* some tensorflow-serving client codes to reuse the trained model on single or streaming data.
+* early stopping to interrupt training if the considered metric (global loss) does not decrease over a long period.
+* make use of the tensorflow-serving-api used to serve the model and dynamically load updated models sometimes also while training is still running.
+* a generic tensorflow-serving client codes to reuse the trained model on single sample or streamed data.
 * each experiment is stored in a specific folder for model versioning and comparison.
+* restart training after failure made easy.
+* reproducible experiments with random_seeds
+* *have a look at the examples folder to start from typical ML problem examples.*
+
+** Approach: **
+
+* a single script that manages all the train/val/export/serve process is provided to let you no more care about it.
+* you write the experiment settings file that focuses on the experiment but avoid the machinery. You then define the expected variables and functions (datasets, learning rates, loss, etc.). This is enough work but only focused on the experiment.
+* you write your model in a separate file following a basic function prototype. This will allow you to switch between models but still relying on the same experiment settings.
+* you run the experiment and regularly look at the Tensorboard to monitor indicators, weights distributions, model output embeddings, etc.
+* you finally run the model relying on the Tensorflow serving API.
 
 # Machine Setup (validated with tensorflow 1.12+)
 ## Main requirements:
