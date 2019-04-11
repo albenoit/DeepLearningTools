@@ -33,7 +33,10 @@ def weights_regularizer_soft_orthogonality(weights):
   weights_gram_matrix=tensor_gram_matrix(weights)
   I = tf.linalg.eye(weights_gram_matrix.get_shape().as_list()[0])
   gram_minus_ident = weights_gram_matrix-I
-  return tf.reduce_sum(tf.math.square(gram_minus_ident))
+  loss= tf.reduce_sum(tf.math.square(gram_minus_ident))
+  #add to the GraphKeys.REGULARIZATION_LOSSES collection as for starndard losses such as tf.nn.l2_loss
+  tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES,loss)
+  return loss
 
 def weights_regularizer_Spectral_Restricted_Isometry(weights):
   ''' orthogonal regularization for weights presented here :  https://arxiv.org/abs/1810.09102
@@ -60,7 +63,10 @@ def weights_regularizer_Spectral_Restricted_Isometry(weights):
   v2 = tf.math.divide(v1,norm1)
 
   v3 = tf.math.multiply(Norm,v2)
-  return tf.reduce_sum(tf.math.square(v3))**0.5
+  loss= tf.reduce_sum(tf.math.square(v3))**0.5
+  #add to the GraphKeys.REGULARIZATION_LOSSES collection as for starndard losses such as tf.nn.l2_loss
+  tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES,loss)
+  return loss
 
 def focal_loss_softmax(labels,logits, gamma=2, reduceSum_not_reduceAverage=False):
     """
@@ -255,3 +261,20 @@ def swae_loss(code_list, target_z, batch_size, L=50):
     loss+=W2Loss
   #loss=tf.Print(loss, [loss], message='SWAE')
   return loss
+
+def get_regularization_loss(scope=None, debug=False):
+    ''' get all regularization losses that can be found in the current variable scope and returns the sum
+        Args:
+            scope: the variable scope to focus on (default is None i.e. current scope)
+            debug: set True to display the list of found loss
+        Returns the loss sum
+    '''
+
+    regularization_losses=tf.losses.get_regularization_losses(scope)
+    # list all weights
+    if debug is True:
+        print('Found the following regularisation losses')
+        for layer_loss in regularization_losses:
+            print(layer_loss)
+    print('Found {nb_losses} layers regularisation_losses within collection tf.GraphKeys.REGULARIZATION_LOSSES in scope {sc}'.format(nb_losses=len(regularization_losses), sc=scope))
+    weights_loss=tf.reduce_sum(regularization_losses)#tf.losses.get_regularization_loss()
