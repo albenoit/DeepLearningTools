@@ -566,12 +566,11 @@ class FileListProcessor_Semantic_Segmentation:
             self.dataset=self.dataset.filter(self.crop_filter).flat_map(self.__image_transform)
             if self.shuffle_samples:
               self.dataset=self.dataset.shuffle(int(self.batch_size*self.max_patches_per_image)) #shuffle prefetch size set empirically high
-            #finalize dataset (set nb epoch and batch size)
-            self.dataset=self.dataset.prefetch(int(self.batch_size*20))
+            #finalize dataset (set nb epoch and batch size and prefetch)
             self.dataset=self.dataset.repeat(self.nbEpoch).batch(self.batch_size)
+            self.dataset=self.dataset.prefetch(int(self.batch_size*20))
             self.dataset_iterator = self.dataset.make_initializable_iterator()
-
-        print('Input data pipeline graph is now defined')
+            print('Input data pipeline graph is now defined')
 
     """
         @brief a class enabling couples of raw Data+ full frame reference samples enqueing
