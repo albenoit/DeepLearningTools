@@ -128,20 +128,35 @@ settingsFile_saveName='experiment_settings.py'
 
 MOVING_AVERAGE_DECAY=0.998
 # Show debugging output
-tf.logging.set_verbosity(tf.logging.DEBUG)
-
+try:
+  tf.logging.set_verbosity(tf.logging.DEBUG)
+except:
+  pass
 # Set default flags for the output directories
-FLAGS = tf.app.flags.FLAGS
-#tf.app.flags.DEFINE_string("settings_file",FLAGS.usersettings,"settings file to load")
-tf.app.flags.DEFINE_string ('model_dir', None,'Output directory for model and training stats.')
-tf.app.flags.DEFINE_boolean("debug",False,"activate debug information display (ops device placement, some buffer sizes, etc.)")
-tf.app.flags.DEFINE_boolean("predict", False, "Switch to prediction mode")
-tf.app.flags.DEFINE_boolean("start_server",False,"start the tensorflow server on the machine to run predictions")
-tf.app.flags.DEFINE_boolean("commands",False, "Display some command examples")
-tf.app.flags.DEFINE_string ("usersettings",'mysettings_1D_experiments.py', "filename of the settings file dedicated to some experiment(s)")
-tf.app.flags.DEFINE_integer("predict_stream",0,"this value number of predictions, infinite loop if <0")
-tf.app.flags.DEFINE_boolean("restart_interrupted", False, "Set True to restart an interrupted session, model_dir option should be set")
-tf.app.flags.DEFINE_string ("debug_server_addresses", "127.0.0.1:2333", "Set here the IP:port to specify where to reach the tensorflow debugger")
+#manage input commands
+import argparse
+parser = argparse.ArgumentParser(description='demo_semantic_segmentation')
+parser.add_argument("-m","--model_dir", default=None,
+                    help="Output directory for model and training stats.")
+parser.add_argument("-d","--debug", action='store_true',
+                    help="set to activate debug mode")
+parser.add_argument("-p","--predict", action='store_true',
+                    help="Switch to prediction mode")
+parser.add_argument("-l","--predict_stream", default=0, type=int,
+                    help="set the number of successive predictions, infinite loop if <0")
+parser.add_argument("-s","--start_server", action='store_true',
+                    help="start the tensorflow server on the machine to run predictions")
+parser.add_argument("-u","--usersettings",
+                    help="filename of the settings file that defies an experiment")
+parser.add_argument("-r","--restart_interrupted", action='store_true',
+                    help="Set to restart an interrupted session, model_dir option should be set")
+parser.add_argument("-g","--debug_server_addresses", action='store_true',
+                    default="127.0.0.1:2333",
+                    help="Set here the IP:port to specify where to reach the tensorflow debugger")
+parser.add_argument("-c","--commands", action='store_true',
+                    help="show command examples")
+
+FLAGS = parser.parse_args()
 
 def loadModel(sessionFolder):
   ''' basic method to load the model targeted by usersettings.model_file
@@ -295,10 +310,13 @@ def getSessionConfig(params):
   gpu_options=tf.GPUOptions(allow_growth=True)
   #activate XLA JIT level 1 by default
   graph_options=tf.GraphOptions()
-  if hasattr(usersettings,'XLA_FLAG'):
-    graph_options.optimizer_options.global_jit_level = usersettings.XLA_FLAG
-  else:
-    graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.OFF#ON_1#OFF
+  try:
+    if hasattr(usersettings,'XLA_FLAG'):
+      graph_options.optimizer_options.global_jit_level = usersettings.XLA_FLAG
+    else:
+      graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.OFF#ON_1#OFF
+  except:
+    pass
   sessionConfig=tf.ConfigProto(
                               allow_soft_placement=True,
                               log_device_placement=params.debug_sess,
@@ -1209,7 +1227,7 @@ def run(train_config_script=None, external_hparams=None):
   '''
   global usersettings
   experiments_output=None
-  tf.reset_default_graph()
+  #tf.reset_default_graph()
   usersettings=None#ensure to clear this object prior any new trial
   ''' main function that starts the experiment in the chosen mode '''
   scripts_WD=os.getcwd() #to locate the mysettings*.py file
@@ -1279,7 +1297,7 @@ def run(train_config_script=None, external_hparams=None):
                   concurrency=0,
                   num_tests=FLAGS.predict_stream)
 
-  elif FLAGS.commands is True or FLAGS.commands is True:
+  elif FLAGS.commands is True :
       print('Here are some command examples')
       print('1. train a model (once the mysettings_1D_experiments.py is set):')
       print('-> python experiments_manager.py --usersettings=mysettings_1D_experiments.py')
