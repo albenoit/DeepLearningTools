@@ -567,6 +567,7 @@ class FileListProcessor_Semantic_Segmentation:
             if self.shuffle_samples:
               self.dataset=self.dataset.shuffle(int(self.batch_size*self.max_patches_per_image)) #shuffle prefetch size set empirically high
             #finalize dataset (set nb epoch and batch size)
+            self.dataset=self.dataset.prefetch(int(self.batch_size*20))
             self.dataset=self.dataset.repeat(self.nbEpoch).batch(self.batch_size)
             self.dataset_iterator = self.dataset.make_initializable_iterator()
 
