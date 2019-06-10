@@ -34,24 +34,39 @@ A quick presentation of the system is available [here](https://docs.google.com/p
 * you finally run the model relying on the Tensorflow serving API.
 
 # Machine Setup (validated with tensorflow 1.12+)
-## Main requirements:
-1. install python 2.7 or 3.x and the associated python pip
-2. install Tensorflow and Tensorflow serving using pip : pip install tensorflow-gpu tensorflow-serving-api
+
+### anaconda installation (local installation):
+1. download and install the appropriate anaconda version from here: https://www.anaconda.com/distribution/
+2. create a specific environment to limit interractions with the system installation:
+conda create --name tf_gpu
+sometimes required: source ~/install/anaconda3/etc/profile.d/conda.sh
+3. activate your environment before installing the packages and run your python scripts:
+conda activate tf_gpu
+3. install the set of required packages (opencv, gdal and scikit-learn are not required for all scripts):
+conda install tensorflow-gpu pandas opencv matplotlib gdal gdal scikit-learn
+tensorflow_serving api is available elsewhere from this command:
+conda install -c qiqiao tensorflow_serving_api
+
+### pip installation (super user):
+1. install python 2.7 or 3.x and the associated python pip, maybe create a specific environment with the virtualenv tool.
+2. install Tensorflow, Tensorflow serving and related tools using the requirements.txt file. It includes those packages and associated tools (opencv, pandas, etc.) : pip install -r requirements.txt
 Note that the first versions of the dependency lib grpcio may bring some troubles when starting the Tensorflow server.
 grpcio python library version 1.7.3 and latest version above 1.8.4 should work.
 
-## Additionnal recommendations:
-* Get much better performances with optimized Tensorflow packages coming from here:
-https://github.com/mind/wheels/releases/
-* Install as the following adjust but the last link to your target version:
+## Main requirements for tensorflow model serving if you need to deploy/put in production:
+install tensorflow model server on your server for model deployment (can be installed on your laptop and on the production server) following the official guide : https://www.tensorflow.org/tfx/serving/setup
+Have a try with docker to build and run an optimized version, some links that may help:
+https://www.tensorflow.org/tfx/serving/docker#serving_example
+https://github.com/tensorflow/serving/blob/master/tensorflow_serving/g3doc/docker.md
+https://medium.com/tensorflow/serving-ml-quickly-with-tensorflow-serving-and-docker-7df7094aa008
 
-```
-pip install --ignore-installed --upgrade \ https://github.com/mind/wheels/releases/download/tf1.8-gpu-nomkl/tensorflow-1.8.0-cp27-cp27mu-linux_x86_64.whl
-```
-
-* Get the Intel MKL library installed (optionnal and depends on the chosen Tensorflow package version):
-https://github.com/mind/wheels#mkl
-
+* install notes with docker (as root):
+** build the image with CPU:
+docker pull tensorflow/serving
+docker build -t $USER/tensorflow-serving-devel     -f Dockerfile.devel     https://github.com/tensorflow/serving.git#:tensorflow_serving/tools/docker/
+** build the image with GPU:
+model serving with CPU: docker pull tensorflow/serving:latest-gpu
+docker build -t $USER/tensorflow-serving-devel-gpu -f Dockerfile.devel-gpu https://github.com/tensorflow/serving.git#:tensorflow_serving/tools/docker/
 
 # Demo with a pretrained network
 
