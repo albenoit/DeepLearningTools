@@ -12,7 +12,7 @@ This framework can be driven by higher level tools such as [hyperopt](https://hy
 
 A quick presentation of the system is available [here](https://docs.google.com/presentation/d/1tFetD27PK9kt29rdwwZ6QKLYNDyJkHoCLT8GHweve_8/edit?usp=sharing), details are given below.
 
-** Main ideas put together: **
+## Main ideas put together:
 
 * training a model with tf.estimator to manage training, validation and export in a easier way.
 * using moving averages to store parameters with values smoothed along the last training steps to get more stable and more accurate served models.
@@ -25,7 +25,7 @@ A quick presentation of the system is available [here](https://docs.google.com/p
 * reproducible experiments with random_seeds
 * *have a look at the examples folder to start from typical ML problem examples.*
 
-** Approach: **
+## Approach:
 
 * a single script that manages all the train/val/export/serve process is provided to let you no more care about it.
 * you write the experiment settings file that focuses on the experiment but avoid the machinery. You then define the expected variables and functions (datasets, learning rates, loss, etc.). This is enough work but only focused on the experiment.
@@ -35,7 +35,7 @@ A quick presentation of the system is available [here](https://docs.google.com/p
 
 # Machine Setup (validated with tensorflow 1.12+)
 
-### anaconda installation (local installation):
+## anaconda installation (local installation):
 1. download and install the appropriate anaconda version from here: https://www.anaconda.com/distribution/
 2. create a specific environment to limit interractions with the system installation:
 conda create --name tf_gpu
@@ -47,26 +47,26 @@ conda install tensorflow-gpu pandas opencv matplotlib gdal gdal scikit-learn
 tensorflow_serving api is available elsewhere from this command:
 conda install -c qiqiao tensorflow_serving_api
 
-### pip installation (super user):
+## pip installation (super user):
 1. install python 2.7 or 3.x and the associated python pip, maybe create a specific environment with the virtualenv tool.
 2. install Tensorflow, Tensorflow serving and related tools using the requirements.txt file. It includes those packages and associated tools (opencv, pandas, etc.) : pip install -r requirements.txt
 Note that the first versions of the dependency lib grpcio may bring some troubles when starting the Tensorflow server.
 grpcio python library version 1.7.3 and latest version above 1.8.4 should work.
 
-## Main requirements for tensorflow model serving if you need to deploy/put in production:
+# Main requirements for tensorflow model serving if you need to deploy/put in production:
 install tensorflow model server on your server for model deployment (can be installed on your laptop and on the production server) following the official guide : https://www.tensorflow.org/tfx/serving/setup
 Have a try with docker to build and run an optimized version, some links that may help:
 https://www.tensorflow.org/tfx/serving/docker#serving_example
 https://github.com/tensorflow/serving/blob/master/tensorflow_serving/g3doc/docker.md
 https://medium.com/tensorflow/serving-ml-quickly-with-tensorflow-serving-and-docker-7df7094aa008
-
-* install notes with docker (as root):
-** build the image with CPU:
-docker pull tensorflow/serving
-docker build -t $USER/tensorflow-serving-devel     -f Dockerfile.devel     https://github.com/tensorflow/serving.git#:tensorflow_serving/tools/docker/
-** build the image with GPU:
-model serving with CPU: docker pull tensorflow/serving:latest-gpu
-docker build -t $USER/tensorflow-serving-devel-gpu -f Dockerfile.devel-gpu https://github.com/tensorflow/serving.git#:tensorflow_serving/tools/docker/
+https://towardsdatascience.com/deploy-your-machine-learning-models-with-tensorflow-serving-and-kubernetes-9d9e78e569db
+## Install notes with docker (as root):
+### build the image with CPU:
+  * docker pull tensorflow/serving
+  * docker build -t $USER/tensorflow-serving-devel     -f Dockerfile.devel     https://github.com/tensorflow/serving.git#:tensorflow_serving/tools/docker/
+### build the image with GPU:
+  * model serving with CPU: docker pull tensorflow/serving:latest-gpu
+  * docker build -t $USER/tensorflow-serving-devel-gpu -f Dockerfile.devel-gpu https://github.com/tensorflow/serving.git#:tensorflow_serving/tools/docker/
 
 # Demo with a pretrained network
 
