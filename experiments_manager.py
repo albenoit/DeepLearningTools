@@ -328,6 +328,14 @@ def getSessionConfig(params):
   summary_steps_period=1 #by default, log each step
   if usersettings.nb_summary_per_train_epoch>0:
     summary_steps_period=int(params.nbIterationPerEpoch_train/usersettings.nb_summary_per_train_epoch)
+  print("GPU ID TO USE: ",usersettings.used_gpu_IDs)
+  if len(usersettings.used_gpu_IDs)>1:
+      distribute = tf.contrib.distribute.CollectiveAllReduceStrategy(len(usersettings.used_gpu_IDs))
+      #devices = ["/device:GPU:{}".format(i) for i in usersettings.used_gpu_IDs]
+      #print("Devices to use"+str(devices))
+      #distribute = tf.contrib.distribute.MirroredStrategy(num_gpus=len(devices))
+  else:
+      distribute=None
   run_config =tf.estimator.RunConfig(
                               model_dir=params.sessionFolder,
                               tf_random_seed=usersettings.random_seed,
@@ -338,7 +346,7 @@ def getSessionConfig(params):
                               keep_checkpoint_max=5,
                               keep_checkpoint_every_n_hours=12,
                               log_step_count_steps=100,
-                              train_distribute=None,
+                              train_distribute=distribute
                               #TODO, activate when tf 1.10 available : device_fn=None
                               )
 
@@ -439,7 +447,7 @@ def model_fn(features, labels, mode, params):
 
     #FIXME for now tensorflow_server only works on CPU so using GPU only for training and validation
     model_placement="/cpu:0"
-    if mode != tf.estimator.ModeKeys.PREDICT and len(usersettings.used_gpu_IDs)>0:
+    if mode != tf.estimator.ModeKeys.PREDICT and len(usersettings.used_gpu_IDs)==1:
         model_placement="/gpu:0"
         print('**** model placed on GPU')
     else:
@@ -449,7 +457,7 @@ def model_fn(features, labels, mode, params):
         features=usersettings.data_preprocess(features, model_placement)
     #FIXME currently not able to put model on a GPU... variables saving issue
     model_scope='model'
-    with tf.device(model_placement), tf.variable_scope(model_scope):
+    with tf.variable_scope(model_scope):
         model=loadModel(params.sessionFolder)
         model_outputs_dict=model(   data=features,
                                     hparams=params, #hyperparameters that may control model settings
@@ -1184,7 +1192,7 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None, isServing
         os.environ["CUDA_VISIBLE_DEVICES"] = str(usersettings.used_gpu_IDs)[1:-1]
 
     if hasattr(usersettings, 'model_file'):
-      model_name=usersettings.model_file.split('.')[0]
+      model_name=usersettings.model_file.split('.')[0].split('/')[-1]
     else:
       model_name='premade_estimator'
     #manage the working folder in the case of a new experiment
@@ -1284,12 +1292,14 @@ def run(train_config_script=None, external_hparams=None):
       if server_ready is False:
           raise ValueError('Could not reach tensorflow server')
       '''
-      print('Prediction mode using model : '+FLAGS.model_dir)
+      print('Prediction mode using model : '+FLAGS.model_dir+' with model '+model_name)
+
       predictions_dir=os.path.join(FLAGS.model_dir,
                               'predictions_'+datetime.datetime.now().strftime("%Y-%m-%d--%H:%M:%S"))
       os.mkdir(predictions_dir)
       os.chdir(predictions_dir)
       print('Current working directory = '+os.getcwd())
+      print('In case of GRPC errors, check codes at https://developers.google.com/maps-booking/reference/grpc-api/status_codes')
       do_inference(experiment_settings=usersettings, host=usersettings.tensorflow_server_address,
                   port=usersettings.tensorflow_server_port,
                   model_name=model_name,
