@@ -56,10 +56,11 @@ grpcio python library version 1.7.3 and latest version above 1.8.4 should work.
 # Main requirements for tensorflow model serving if you need to deploy/put in production:
 install tensorflow model server on your server for model deployment (can be installed on your laptop and on the production server) following the official guide : https://www.tensorflow.org/tfx/serving/setup
 Have a try with docker to build and run an optimized version, some links that may help:
-https://www.tensorflow.org/tfx/serving/docker#serving_example
-https://github.com/tensorflow/serving/blob/master/tensorflow_serving/g3doc/docker.md
-https://medium.com/tensorflow/serving-ml-quickly-with-tensorflow-serving-and-docker-7df7094aa008
-https://towardsdatascience.com/deploy-your-machine-learning-models-with-tensorflow-serving-and-kubernetes-9d9e78e569db
+  * https://www.tensorflow.org/tfx/serving/docker#serving_example
+  * https://github.com/tensorflow/serving/blob/master/tensorflow_serving/g3doc/docker.md
+  * https://medium.com/tensorflow/serving-ml-quickly-with-tensorflow-serving-and-docker-7df7094aa008
+  * https://towardsdatascience.com/deploy-your-machine-learning-models-with-tensorflow-serving-and-kubernetes-9d9e78e569db
+
 ## Install notes with docker (as root):
 ### build the image with CPU:
   * docker pull tensorflow/serving
