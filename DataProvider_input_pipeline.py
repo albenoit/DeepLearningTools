@@ -563,7 +563,7 @@ class FileListProcessor_Semantic_Segmentation:
                 self.dataset=self.dataset.flat_map(self.__generate_crops)
 
             #finalise the dataset pipeline : filterout
-            self.dataset=self.dataset.filter(self.crop_filter).flat_map(self.__image_transform)
+            self.dataset=self.dataset.filter(self.crop_filter).flat_map(self.__image_transform)#FIXME tf.dataset.flat_map to be replaced by a tf.dataset.map with >1 parallel threads
             if self.shuffle_samples:
               self.dataset=self.dataset.shuffle(int(self.batch_size*self.max_patches_per_image)) #shuffle prefetch size set empirically high
             #finalize dataset (set nb epoch and batch size and prefetch)
@@ -799,6 +799,36 @@ def breakup(x, lookback_len):
   N = tf.shape(x)[0]
   windows = [tf.slice(x, [b], [lookback_len]) for b in six.moves.range(0, N-lookback_len)]
   return tf.stack(windows)
+
+def FileListProcessor_csv_time_seriesv2(files, csv_field_delim, record_defaults_values, temporal_series_length, shuffle_batches, buffer_size, batch_size, step_window, na_value_string='N/A', labels_cols_nb=1, device="/cpu:0", postprocess_fn=None):
+    ''' For time series data, this is a CSV file reader that reads KEEPING THE INPUT LIST ORDER and that generates samples with overlapping.
+    '''
+    with tf.device(device),tf.name_scope('csv_file_line_blocks_read_dataset'):
+        def decode_csv(line):
+            features = tf.decode_csv(line, record_defaults=record_defaults_values, field_delim=csv_field_delim, na_value=na_value_string)
+            labels = features[:labels_cols_nb]
+            return features[labels_cols_nb:], labels
+
+        ds_file = tf.data.Dataset.from_tensors(files).apply(tf.data.experimental.unbatch())
+
+        dataset = ds_file.flat_map(lambda file: (tf.data.TextLineDataset(file).skip(1)))
+
+        dataset = dataset.map(decode_csv)
+
+        features = dataset.window(temporal_series_length, step_window, 1, True).flat_map(lambda x, _: x.batch(temporal_series_length))
+        labels = dataset.window(temporal_series_length, step_window, 1, True).flat_map(lambda _, x: x.batch(temporal_series_length))
+
+        zipped = tf.data.Dataset.zip((features, labels))
+
+        if postprocess_fn is not None:
+            zipped = zipped.map(postprocess_fn)
+
+        zipped = zipped.shuffle(buffer_size)
+
+        zipped = zipped.batch(batch_size, drop_remainder=True)
+        zipped = zipped.repeat(2)
+        zipped = zipped.prefetch(1)
+    return zipped
 
 def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_values, nblines_per_block, queue_capacity, shuffle_batches, na_value_string='N/A', labels_cols_nb=1, device="/cpu:0", breakup_fact=1):
     ''' define a queue that prefetches 1D vectors coming from a set of csv files
