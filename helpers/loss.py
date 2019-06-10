@@ -11,7 +11,7 @@ import tensorflow as tf
 import numpy as np
 
 ################################
-import keras as K
+import tensorflow.keras.backend as K
 def tensor_gram_matrix(tensor):
   ''' returns the gram matrix of a given tensor matrix
   Note that the input tensor is reshaped to a 2D matrix, preserving the last dimension
@@ -154,8 +154,7 @@ def reconstruction_loss_BCE(inputs, reconstruction, pos_weight=1.):
 
     xcross_loss=tf.reduce_mean(xcross_loss)
     '''
-    from keras import backend as K
-    xcross_loss=K.mean(K.binary_crossentropy(inputs_flat,reconstruction_flat))
+    xcross_loss=tf.reduce_mean(K.binary_crossentropy(inputs_flat,reconstruction_flat))
 
     tf.summary.scalar('reconstruction_loss_BCE', xcross_loss)
     #xcross_loss=tf.Print(xcross_loss, [xcross_loss], message='xcross_loss')
@@ -212,7 +211,6 @@ def generateZ_circle(batchsize):
   return z_
 
 def slicedWasserteinLoss_single(code, target_z, sample_points, batch_size):
-  import keras.backend as K
   # Let projae be the projection of the encoded samples
   projae=tf.matmul(code,tf.transpose(sample_points))
   # Let projz be the projection of the $q_Z$ samples
@@ -237,10 +235,8 @@ def swae_loss(code_list, target_z, batch_size, L=50):
       L, the number of sample points to project on
   '''
 
-  import keras.utils
-  from keras.layers import Flatten
-  from keras.layers import Reshape
-  from keras import backend as K
+  from tensorflow.keras.layers import Flatten
+  from tensorflow.keras.layers import Reshape
   print('Setting up a Sliced Wasserstein loss following https://arxiv.org/abs/1804.01947')
   if len(code_list)==0:
     raise ValueError('swae_loss error : input code list is empty')
