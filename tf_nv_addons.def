@@ -1,0 +1,26 @@
+BootStrap: docker
+From: docker://nvcr.io/nvidia/tensorflow:19.06-py2
+
+%post
+    apt-get update
+    apt-get install -y python-gdal
+    apt-get install -y python-tk
+    apt-get install -y python-opencv
+    pip install --upgrade setuptools
+    pip install dask 
+    pip install h5py >=2.9.0
+    pip install six>=1.12.0
+    pip install urllib3>=1.13.1
+    pip install matplotlib 
+    pip install numpy >=1.16.2
+    pip install scipy >=1.2.1
+    pip install pandas >=0.24.1
+    pip install seaborn >=0.9.0
+    pip install hyperopt>=0.1.1
+    pip install scikit-image>=0.12.3
+    pip install scikit-learn>=0.20.3
+    pip install GDAL
+    pip list
+
+%labels
+    Author alben

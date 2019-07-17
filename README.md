@@ -53,22 +53,19 @@ conda install -c qiqiao tensorflow_serving_api
 Note that the first versions of the dependency lib grpcio may bring some troubles when starting the Tensorflow server.
 grpcio python library version 1.7.3 and latest version above 1.8.4 should work.
 
-# Main requirements for tensorflow model serving if you need to deploy/put in production:
-install tensorflow model server on your server for model deployment (can be installed on your laptop and on the production server) following the official guide : https://www.tensorflow.org/tfx/serving/setup
-Have a try with docker to build and run an optimized version, some links that may help:
-  * https://www.tensorflow.org/tfx/serving/docker#serving_example
-  * https://github.com/tensorflow/serving/blob/master/tensorflow_serving/g3doc/docker.md
-  * https://medium.com/tensorflow/serving-ml-quickly-with-tensorflow-serving-and-docker-7df7094aa008
-  * https://towardsdatascience.com/deploy-your-machine-learning-models-with-tensorflow-serving-and-kubernetes-9d9e78e569db
-
-## Install notes with docker (as root):
-### build the image with CPU:
-  * docker pull tensorflow/serving
-  * docker build -t $USER/tensorflow-serving-devel     -f Dockerfile.devel     https://github.com/tensorflow/serving.git#:tensorflow_serving/tools/docker/
-### build the image with GPU:
-  * model serving with CPU: docker pull tensorflow/serving:latest-gpu
-  * docker build -t $USER/tensorflow-serving-devel-gpu -f Dockerfile.devel-gpu https://github.com/tensorflow/serving.git#:tensorflow_serving/tools/docker/
-
+# Optimized GPU based packages:
+Have a try with containers to get an off-the-shelf system ready to run on NVIDIA GPUs.
+Install the Tensorflow docker container avaiable at https://www.nvidia.com/en-us/gpu-cloud/containers/ .
+Recommendation : use singularity to use it more easily on laptops, desktops and  HPC, checkout there : https://sylabs.io/
+## Notes on singularity:
+### install singularity (as root) :
+  * debian installation : https://wiki.debian.org/singularity
+### build the image with GPU (as root):
+  * build a custom image with the provided *tf_nv_addons.def* file that includes all python packages to complete the nvidia container : `singularity build tf_nv_addons.sif tf_nv_addons.def`
+### run the image (as standard user):
+  * open a shell on this container, bind to your system folders of interest : `singularity shell --nv --bind /path/to/your/famework/copy/DeepLearningTools/:DeepLearningTools/ tf_nv_addons.sif`
+  * run the framework, for example on the curve fitting example: `cd /DeepLearningTools/` followed by `python experiments_manager.py --usersettings examples/regression/mysettings_curve_fitting.py`
+  * if the gpu is not found (error such as `libcuda reported version is: Invalid argument: expected %d.%d, %d.%d.%d, or %d.%d.%d.%d form for driver version; got "1"`, then tun command `nvidia-modprobe -u -c=0`
 # Demo with a pretrained network
 
 A pretrained autoencoder network working on time series is provided with the codes to see what you can get :
@@ -132,8 +129,7 @@ moved to a separated settings script such as 'examples/embedding/mysettings_1D_e
 
 # KNOWN ISSUES :
 
-This script has some known problems, any suggestion is welcome:
-* for now prebuilt tensorflow_server packages only work on CPUs. Then, the main script enables to train and validate on a given GPU following the setting parameter used_gpu_IDs. However, the model exportation for serving step forces to built model for CPU only. Track : https://github.com/tensorflow/serving/issues/668
+Scripts need to mode to Tensorflow 2.
 
 # TODO :
 
