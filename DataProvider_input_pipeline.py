@@ -376,13 +376,13 @@ class FileListProcessor_Semantic_Segmentation:
             with tf.name_scope('prepare_crops_bbox'):
                 height=tf.cast(tf.shape(input_image)[0], dtype=tf.int32, name='image_height')
                 width=tf.cast(tf.shape(input_image)[1], dtype=tf.int32, name='image_width')
-
+                #width=tf.Print(width,[height, width], message='height, width')
                 if self.shuffle_samples == True:
                     self.nbPatches=tf.cast(self.image_area_coverage_factor*tf.cast(height*width, dtype=tf.float32)/tf.constant(self.patchSize*self.patchSize, dtype=tf.float32), dtype=tf.int32, name='number_of_patches')
                     self.nbPatches=tf.minimum(self.nbPatches, tf.constant(self.max_patches_per_image, name='max_patches_per_image'), name='saturate_number_of_patches')
                     random_vector_shape = [self.nbPatches]
-                    top_coord = tf.random_uniform(random_vector_shape,0,width-self.patchSize+2*radius_of_view,dtype=tf.int32,name='patch_top_coord_top')
-                    left_coord = tf.random_uniform(random_vector_shape,0, height-self.patchSize+2*radius_of_view, dtype=tf.int32,name='patch_left_coord')
+                    top_coord = tf.random_uniform(random_vector_shape,0, height-self.patchSize+2*radius_of_view,dtype=tf.int32,name='patch_top_coord_top')
+                    left_coord = tf.random_uniform(random_vector_shape,0,width-self.patchSize+2*radius_of_view, dtype=tf.int32,name='patch_left_coord')
 
                     #manage global image borders padding
                     paddings = [[radius_of_view,self.patchSize],[radius_of_view,self.patchSize],[0,0]]
@@ -393,8 +393,8 @@ class FileListProcessor_Semantic_Segmentation:
                     #with tf.control_dependencies([debug_1, debug_2]):
                     input_image = tf.pad(input_image, paddings)
                 else: #expecting TEST dataset use case : no padding, only processing original pixels, avoiding border effects
-                    top_coord = tf.range(0, width-self.patchSize,self.patchSize-2*radius_of_view,dtype=tf.int32)
-                    left_coord = tf.range(0, height-self.patchSize, self.patchSize-2*radius_of_view,dtype=tf.int32)
+                    top_coord = tf.range(0, height-self.patchSize,self.patchSize-2*radius_of_view,dtype=tf.int32)
+                    left_coord = tf.range(0,width-self.patchSize, self.patchSize-2*radius_of_view,dtype=tf.int32)
 
                     flat_meshgrid_y, flat_meshgrid_x = tf.meshgrid(top_coord, left_coord)
                     left_coord = tf.reshape(flat_meshgrid_x, [-1])
@@ -567,7 +567,7 @@ class FileListProcessor_Semantic_Segmentation:
             if self.shuffle_samples:
               self.dataset=self.dataset.shuffle(int(self.batch_size*self.max_patches_per_image)) #shuffle prefetch size set empirically high
             #finalize dataset (set nb epoch and batch size and prefetch)
-            self.dataset=self.dataset.repeat(self.nbEpoch).batch(self.batch_size)
+            self.dataset=self.dataset.repeat(self.nbEpoch).batch(self.batch_size, drop_remainder=True)
             self.dataset=self.dataset.prefetch(int(self.batch_size*20))
             self.dataset_iterator = self.dataset.make_initializable_iterator()
             print('Input data pipeline graph is now defined')
