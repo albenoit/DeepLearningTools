@@ -55,7 +55,7 @@ grpcio python library version 1.7.3 and latest version above 1.8.4 should work.
 
 # Optimized GPU based packages:
 Have a try with containers to get an off-the-shelf system ready to run on NVIDIA GPUs.
-Install the Tensorflow docker container avaiable at https://www.nvidia.com/en-us/gpu-cloud/containers/ .
+Install the Tensorflow docker container available at https://www.nvidia.com/en-us/gpu-cloud/containers/ .
 Recommendation : use singularity to use it more easily on laptops, desktops and  HPC, checkout there : https://sylabs.io/
 ## Notes on singularity:
 ### install singularity (as root) :
@@ -129,7 +129,7 @@ moved to a separated settings script such as 'examples/embedding/mysettings_1D_e
 
 # KNOWN ISSUES :
 
-Scripts need to mode to Tensorflow 2.
+Scripts have to be updated to support Tensorflow 2.
 
 # TODO :
 

@@ -421,7 +421,8 @@ class FileListProcessor_Semantic_Segmentation:
                                                method='nearest')#FIXME, MUST BE nearest neighbors here !!!'
                 print('crops : '+str(crops))
 
-                return tf.data.Dataset.from_tensor_slices(crops)
+                # return the per image dataset BUT filter out unnecessary crops BEFORE
+                return tf.data.Dataset.from_tensor_slices(crops).filter(self.crop_filter)
 
     def crop_filter(self, crop):
       ''' a tf.data.Dataset filter function
@@ -560,10 +561,9 @@ class FileListProcessor_Semantic_Segmentation:
                 if self.apply_whitening:     # Subtract off the mean and divide by the variance of the pixels.
                     self.dataset=self.dataset.flat_map(self.__whiten_sample)
             else:
-                self.dataset=self.dataset.flat_map(self.__generate_crops)
+                self.dataset=self.dataset.interleave(cycle_length=10, map_func=self.__generate_crops, num_parallel_calls=self.num_preprocess_threads)
 
             #finalise the dataset pipeline : filterout
-            self.dataset=self.dataset.filter(self.crop_filter).flat_map(self.__image_transform)#FIXME tf.dataset.flat_map to be replaced by a tf.dataset.map with >1 parallel threads
             if self.shuffle_samples:
               self.dataset=self.dataset.shuffle(int(self.batch_size*self.max_patches_per_image)) #shuffle prefetch size set empirically high
             #finalize dataset (set nb epoch and batch size and prefetch)
