@@ -422,7 +422,7 @@ class FileListProcessor_Semantic_Segmentation:
                 print('crops : '+str(crops))
 
                 # return the per image dataset BUT filter out unnecessary crops BEFORE
-                return tf.data.Dataset.from_tensor_slices(crops).filter(self.crop_filter)
+                return tf.data.Dataset.from_tensor_slices(crops).filter(self.crop_filter).flat_map(self.__image_transform)
 
     def crop_filter(self, crop):
       ''' a tf.data.Dataset filter function
