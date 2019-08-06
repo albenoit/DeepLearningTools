@@ -33,7 +33,7 @@ A quick presentation of the system is available [here](https://docs.google.com/p
 * you run the experiment and regularly look at the Tensorboard to monitor indicators, weights distributions, model output embeddings, etc.
 * you finally run the model relying on the Tensorflow serving API.
 
-# Machine Setup (validated with tensorflow 1.12+)
+# Machine Setup (validated with tensorflow 1.14)
 
 ## anaconda installation (local installation):
 1. download and install the appropriate anaconda version from here: https://www.anaconda.com/distribution/
