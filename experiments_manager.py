@@ -234,9 +234,11 @@ def getTrainSpecs(estimator, params, global_hooks):
     max_steps_without_decrease=getIterationsPerEpoch('train')*usersettings.early_stop_max_epoch_without_decrease
   print('Early stopping will occur if no {metric} decrease is observed after {it} iterations'.format(metric=es_metric,
                                                                                                      it=max_steps_without_decrease))
-  earlystopping_hook = tf.contrib.estimator.stop_if_no_decrease_hook(estimator,
+  earlystopping_hook = tf.estimator.experimental.stop_if_no_decrease_hook(estimator,
                                                        metric_name=es_metric,
-                                                       max_steps_without_decrease=max_steps_without_decrease)
+                                                       max_steps_without_decrease=max_steps_without_decrease,
+                                                       eval_dir=os.path.join(params.sessionFolder,'eval')
+                                                       )
   train_hooks.append(earlystopping_hook)
 
   return tf.estimator.TrainSpec(input_fn=train_input_fn,
@@ -347,7 +349,6 @@ def getSessionConfig(params):
                               keep_checkpoint_every_n_hours=12,
                               log_step_count_steps=100,
                               train_distribute=distribute
-                              #TODO, activate when tf 1.10 available : device_fn=None
                               )
 
   return run_config
@@ -738,12 +739,15 @@ def model_fn(features, labels, mode, params):
                             return {'queue':samples_saving_queue,
                                     'enqueue_op':samples_enqueue}
                         #create the buffer to save for the embeddings projector on the TensorBoard
-                        whole_samples_to_store=tf.Variable(tf.zeros([stored_embedding_samples,features_to_save.get_shape().as_list()[-1]],dtype=features_to_save.dtype.name),
-                                                                        trainable=False,
-                                                                        collections=[tf.GraphKeys.LOCAL_VARIABLES],
-                                                                        name=name)
-                        #-> define the final assign op that dequeues all the sample and store into the buffer
-                        assign_samples=whole_samples_to_store.assign(samples_saving_queue.dequeue_up_to(stored_embedding_samples))#flatten_raw_images)
+                        whole_samples_to_store=tf.Variable(initial_value=tf.zeros([stored_embedding_samples,features_to_save.get_shape().as_list()[-1]],dtype=features_to_save.dtype.name),
+                                                           shape=tf.TensorShape(None),
+                                                           dtype=features_to_save.dtype.name,
+                                                           trainable=False,
+                                                           validate_shape=False, #to let the queue fill the variable whatever its size
+                                                           collections=[tf.GraphKeys.LOCAL_VARIABLES],
+                                                           synchronization=tf.VariableSynchronization.ON_WRITE,
+                                                           name=name)
+                        assign_samples=whole_samples_to_store.assign(samples_saving_queue.dequeue_up_to(samples_saving_queue.size()))#flatten_raw_images)
                         #assign_samples=tf.Print(assign_samples,[samples_saving_queue.size()], message="###################################################### Samples queue AFTER dequeue")#-> define a histogram on this buffer for monitoring purpose
                         #assign_samples=tf.Print(assign_samples,[assign_samples, samples_saving_queue.size()], message="###################################################### Samples queue AFTER dequeue")#-> define a histogram on this buffer for monitoring purpose
                         samples_hist=tf.summary.histogram(name+'_values',whole_samples_to_store)
