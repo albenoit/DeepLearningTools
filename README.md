@@ -35,7 +35,7 @@ A quick presentation of the system is available [here](https://docs.google.com/p
 
 # Machine Setup (validated with tensorflow 1.14)
 
-## anaconda installation (local installation):
+## anaconda installation (local account installation, non root installation, recommended):
 1. download and install the appropriate anaconda version from here: https://www.anaconda.com/distribution/
 2. create a specific environment to limit interractions with the system installation:
 conda create --name tf_gpu
@@ -47,13 +47,11 @@ conda install tensorflow-gpu pandas opencv matplotlib gdal gdal scikit-learn
 tensorflow_serving api is available elsewhere from this command:
 conda install -c qiqiao tensorflow_serving_api
 
-## pip installation (super user):
+## pip installation (local system installation, install as root):
 1. install python 2.7 or 3.x and the associated python pip, maybe create a specific environment with the virtualenv tool.
 2. install Tensorflow, Tensorflow serving and related tools using the requirements.txt file. It includes those packages and associated tools (opencv, pandas, etc.) : pip install -r requirements.txt
-Note that the first versions of the dependency lib grpcio may bring some troubles when starting the Tensorflow server.
-grpcio python library version 1.7.3 and latest version above 1.8.4 should work.
 
-# Optimized GPU based packages:
+# Optimized GPU based packages (non root once singularity is installed, does not pollute the local system and account, more reproducible, recommended):
 Have a try with containers to get an off-the-shelf system ready to run on NVIDIA GPUs.
 Install the Tensorflow docker container available at https://www.nvidia.com/en-us/gpu-cloud/containers/ .
 Recommendation : use singularity to use it more easily on laptops, desktops and  HPC, checkout there : https://sylabs.io/
@@ -63,7 +61,7 @@ Recommendation : use singularity to use it more easily on laptops, desktops and 
 ### build the image with GPU (as root):
   * build a custom image with the provided *tf_nv_addons.def* file that includes all python packages to complete the nvidia container : `singularity build tf_nv_addons.sif tf_nv_addons.def`
 ### run the image (as standard user):
-  * open a shell on this container, bind to your system folders of interest : `singularity shell --nv --bind /path/to/your/famework/copy/DeepLearningTools/:DeepLearningTools/ tf_nv_addons.sif`
+  * open a shell on this container, bind to your system folders of interest : `singularity shell --nv --bind /path/to/your/DeepLearningTools/:DeepLearningTools/ tf_nv_addons.sif`
   * run the framework, for example on the curve fitting example: `cd /DeepLearningTools/` followed by `python experiments_manager.py --usersettings examples/regression/mysettings_curve_fitting.py`
   * if the gpu is not found (error such as `libcuda reported version is: Invalid argument: expected %d.%d, %d.%d.%d, or %d.%d.%d.%d form for driver version; got "1"`, then tun command `nvidia-modprobe -u -c=0`
 # Demo with a pretrained network
@@ -95,12 +93,22 @@ python experiments_manager.py --predict --model_dir=experiments/1Dsignals_cluste
 
 The main script is experiments_manager.py can be used in 3 modes, here are some command examples:
 1. train a model in a context specified in a parameter script such as mysettings_curve_fitting.py (details provided in the following TODO section):
+..* if all the libraries are system installed
 ```
 python experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py
 ```
+..* if all the libraries are installed in a singularity container located at **/path/to/tf_nv_addons_py3.sif**
+```
+singularity run --nv /path/to/tf_nv_addons_py3.sif experiments_manager.py --usersettings examples/regression/mysettings_curve_fitting.py
+```
 2. start a Tensorflow server on the trained/training model :
+..* if tensorflow_model_server is installed on the system
 ```
 python experiments_manager.py --start_server --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53
+```
+..*  if tensorflow_model_server is installed on a singularity container located at **/path/to/tf_server.sif**
+```
+python experiments_manager.py --start_server --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53 -psi=/path/to/tf_server.sif
 ```
 3. interact with the Tensorflow server, sending input buffers and receiving answers,
 ```

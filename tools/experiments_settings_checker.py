@@ -67,17 +67,17 @@ class ExperimentsSettingsChecker(object):
             #look for an optionnal hyperparameters dictionnary
             if hasattr(self.experiments_settings, 'hparams'):
               if isinstance(self.experiments_settings.hparams, dict):
-                print('Found custom hyperparameters:'+str(self.experiments_settings.hparams))
+                print('INFO: Found custom hyperparameters:'+str(self.experiments_settings.hparams))
 
             if hasattr(self.experiments_settings, 'max_epoch_without_decrease'):
-              print('Found early_stop_max_epoch_without_decrease:'+str(self.experiments_settings.max_epoch_without_decrease))
+              print('INFO: Found early_stop_max_epoch_without_decrease:'+str(self.experiments_settings.max_epoch_without_decrease))
             else:
-              print('early_stop_max_epoch_without_decrease not found, add this variable to specify early_stopping stop condition. By default, 5 training epoch without decrease will lead to early stop but you can customize using this variable.')
+              print('INFO: early_stop_max_epoch_without_decrease not found, add this variable to specify early_stopping stop condition. By default, 5 training epoch without decrease will lead to early stop but you can customize using this variable.')
             #look for premade estimators to be used in place of a custom one defined by self.experiments_settings.model_file
             if hasattr(self.experiments_settings, 'premade_estimator'):
-              print('Using premade estimators, then not required to specify custom estimator parameters and functions')
+              print('INFO: Using premade estimators, then not required to specify custom estimator parameters and functions')
             else:
-              print('Using a custom estimator (premade_estimator is not specified), then checking required custom estimator parameters and functions...')
+              print('INFO: Using a custom estimator (premade_estimator is not specified), then checking required custom estimator parameters and functions...')
 
               #model serving specific stuff
               self.has('served_head', 'string output that will be provided by tensorflow-server')
@@ -89,6 +89,12 @@ class ExperimentsSettingsChecker(object):
                 assert os.path.exists(self.experiments_settings.model_file), '{model} targetted by model_file filename does not exist'.format(model=self.experiments_settings.model_file)
               self.assertPositive_above_zero('patchSize', 'the extend (in pixels/data samples width) of the input data samples provided to the model')
               self.assertPositive_above_equal_zero('field_of_view', 'the width/field of view of the model. With convolutionnal models, this corresponds to the neighborhood width in the input space that is taken into account to take a decision')
+
+            #look for an optionnal hyperparameters dictionnary
+            if hasattr(self.experiments_settings, 'serve_on_gpu'):
+              print('INFO: Exported models are prepared for GPU inference')
+            else:
+              print('INFO: did not find variable \'serve_on_gpu\' in the settings file, then exported models are prepared for CPU only inference')
 
 
               #train and validation flags and functions
@@ -103,18 +109,18 @@ class ExperimentsSettingsChecker(object):
               self.has('model_outputs_postprocessing_for_serving', 'function that receives the model outputs dictionnary and that returns a post processed version')
 
 
-            print('...All required parameters are set')
+            print('INFO:  All required parameters are set')
 
             #optionnal parameters:
             try:
                 self.has('save_model_variables_to_pandas', 'set \'save_model_variables_to_pandas\' to True to save model variables to a pandas Dataframe to facilitate model analysis after each validation step')
             except Exception as e:
-                print('OPTIONNAL argument could be added: '+str(e))
+                print('INFO: OPTIONNAL argument could be added: '+str(e))
 
             try:
                 self.has('save_model_variables_to_pandas', 'add the following function that returns the tuple (list of additionnal summaries, INTEGER) to log each INTEGER steps the specified validation summary results per training epoch: eval_addon_summaries=usersettings.get_validation_summaries(inputs, model_outputs_dict, labels) ')
             except Exception as e:
-                print('OPTIONNAL argument could be added: '+str(e))
+                print('INFO: OPTIONNAL argument could be added: '+str(e))
 
 
             print('*** Parameters check ended successfuly')

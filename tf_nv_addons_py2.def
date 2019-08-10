@@ -22,5 +22,16 @@ From: docker://nvcr.io/nvidia/tensorflow:19.06-py2
     pip install GDAL
     pip list
 
+
+%runscript
+    exec /usr/bin/python "$@"
+
+%help
+    A singularity container ready to run Tensorflow with optimized compilation with NVIDIA GPUs with compute capacity >5. Additional libraries have been added to the standard nvidia tensorflow container to run all the DeepLearningTools framework (https://github.com/albenoit/DeepLearningTools). Usage example:
+
+    * running as a shell : singularity shell --nv --bind /workspace/DeepLearningTools/:/DeepLearningTools/ tf_nv_addons_py3.sif
+
+    * running python scripts : cd DeepLearningTools && singularity run tf_nv_addons_py3.sif experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py
+
 %labels
-    Author alben
+    Author Alexandre Benoit, LISTIC Lab, August 2019

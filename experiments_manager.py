@@ -14,8 +14,8 @@ Several ideas are put together:
 -some tensorflow-serving client codes to reuse the trained model on single or streaming data
 
 
-#Machine Setup (tested with tensorflow from 1.4.1 to 1.13)
-1. install python 2.7 and python pip
+#Machine Setup (tested with tensorflow from 1.14)
+1. install python 2.7 or python 3.x and python pip
 2. install tensorflow and tensorflow serving using pip : pip install tensorflow-gpu tensorflow-serving-api
 Note that the first versions of the dependency lib grpcio may bring some troubles when starting the tensorflow server.
 grpcio python library version 1.7.3 and latest version above 1.8.4 should work.
@@ -34,7 +34,10 @@ The main script is experiments_manager.py can be used in 3 modes, here are some 
 1. train a model in a context specified in a parameters script such as mysettings_1D_experiments.py:
 -> python experiments_manager.py --usersettings=mysettings_1D_experiments.py
 2. start a tensorflow server on the trained/training model :
+2.a if tensorflow_model_server is installed on the system
 -> python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53
+2.b  if tensorflow_model_server is installed on a singularity container
+-> python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53 -psi=/patg/to/tf_server.sif
 3. interract with the tensorflow server, sending input buffers and receiving answers
 -> python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/
 
@@ -94,7 +97,7 @@ and to complete the session name folder to facilitate experiments tracking and c
 
 Some examples of such functions are put in the README.md and in the versionned mysettings_xxx.py demos
 
-This demo relies on Tensorflow 1.7 and above and makes use of Estimators
+This demo relies on Tensorflow 1.14 and above and makes use of Estimators
 Look at https://github.com/GoogleCloudPlatform/cloudml-samples/blob/master/census/tensorflowcore/trainer/model.py
 Look at some general guidelines on Tenforflow here https://github.com/vahidk/EffectiveTensorflow
 Look at the related webpages : http://python.usyiyi.cn/documents/effective-tf/index.html
@@ -146,6 +149,8 @@ parser.add_argument("-l","--predict_stream", default=0, type=int,
                     help="set the number of successive predictions, infinite loop if <0")
 parser.add_argument("-s","--start_server", action='store_true',
                     help="start the tensorflow server on the machine to run predictions")
+parser.add_argument("-psi","--singularity_tf_server_container_path", default='',
+                    help="start the tensorflow server on a singularity container to run predictions")
 parser.add_argument("-u","--usersettings",
                     help="filename of the settings file that defies an experiment")
 parser.add_argument("-r","--restart_interrupted", action='store_true',
@@ -446,28 +451,37 @@ def model_fn(features, labels, mode, params):
             raise ValueError('input features tensor is a dict, then, settings file MUST implement function features_dict_to_tensor(features): returns dense tensor to convert dict to the appropriate format. Received features: '+str(features))
     print('features='+str(features))
 
-    #FIXME for now tensorflow_server only works on CPU so using GPU only for training and validation
-    model_placement="/cpu:0"
-    if mode != tf.estimator.ModeKeys.PREDICT and len(usersettings.used_gpu_IDs)==1:
-        model_placement="/gpu:0"
-        print('**** model placed on GPU')
+    if (mode != tf.estimator.ModeKeys.PREDICT and len(usersettings.used_gpu_IDs)==0) or (mode == tf.estimator.ModeKeys.PREDICT and not(hasattr(usersettings, 'serve_on_gpu'))):
+      print('**** model placed on CPU')
+      model_placement="/cpu:0"
+      with tf.name_scope("data_preprocess"):
+          features=usersettings.data_preprocess(features, model_placement)
+      #FIXME currently not able to put model on a GPU... variables saving issue
+      model_scope='model'
+      with tf.variable_scope(model_scope), tf.device(model_placement):
+          model=loadModel(params.sessionFolder)
+          model_outputs_dict=model(   data=features,
+                                      hparams=params, #hyperparameters that may control model settings
+                                      mode=mode
+                                  )
     else:
-        print('**** model placed on CPU')
+      model_placement="/gpu:0"
+      print('**** model placed on GPU')
 
-    with tf.name_scope("data_preprocess"):
-        features=usersettings.data_preprocess(features, model_placement)
-    #FIXME currently not able to put model on a GPU... variables saving issue
-    model_scope='model'
-    with tf.variable_scope(model_scope):
-        model=loadModel(params.sessionFolder)
-        model_outputs_dict=model(   data=features,
-                                    hparams=params, #hyperparameters that may control model settings
-                                    mode=mode
-                                )
+      with tf.name_scope("data_preprocess"):
+          features=usersettings.data_preprocess(features, model_placement)
+      #FIXME currently not able to put model on a GPU... variables saving issue
+      model_scope='model'
+      with tf.variable_scope(model_scope):
+          model=loadModel(params.sessionFolder)
+          model_outputs_dict=model(   data=features,
+                                      hparams=params, #hyperparameters that may control model settings
+                                      mode=mode
+                                  )
 
-        print('==> Model specified in \"{modelFile}\" generates the following outputs:'.format(modelFile=usersettings.model_file))
-        for key, value in model_outputs_dict.items():
-            print('->'+str((key, value)))
+    print('==> Model specified in \"{modelFile}\" generates the following outputs:'.format(modelFile=usersettings.model_file))
+    for key, value in model_outputs_dict.items():
+        print('->'+str((key, value)))
 
     if usersettings.predict_using_smoothed_parameters is True:
         #TODO, have a look here to fix current issues : from https://medium.freecodecamp.org/how-to-deploy-an-object-detection-model-with-tensorflow-serving-d6436e65d1d9
@@ -1246,7 +1260,7 @@ def run(train_config_script=None, external_hparams=None):
 
   if FLAGS.debug is True:
       print('Running in debug mode. Press Enter to continue...')
-  if FLAGS.start_server is True:
+  if FLAGS.start_server is True :
       print('### START TENSORFLOW SERVER MODE ###')
 
       usersettings, sessionFolder, model_name = loadExperimentsSettings(os.path.join(scripts_WD,FLAGS.model_dir,settingsFile_saveName), isServingModel=True)
@@ -1278,10 +1292,15 @@ def run(train_config_script=None, external_hparams=None):
           raise ValueError('Could not find servable model, error='+str(e.message))
 
       get_served_model_info(one_model_path, usersettings.served_head)
-      tensorflow_start_cmd="tensorflow_model_server --port={port} --model_name={model} --model_base_path={model_dir}".format(port=usersettings.tensorflow_server_port,
-                                                                                                              model=model_name,
-                                                                                                              model_dir=model_folder)
-
+      tensorflow_start_cmd=" --port={port} --model_name={model} --model_base_path={model_dir}".format(port=usersettings.tensorflow_server_port,
+                                                                                          model=model_name,
+                                                                                          model_dir=model_folder)
+      if len(FLAGS.singularity_tf_server_container_path)>0:
+        print('Starting Tensorflow model server from provided singularity container : '+FLAGS.singularity_tf_server_container_path)
+        tensorflow_start_cmd='singularity run --nv '+FLAGS.singularity_tf_server_container_path+tensorflow_start_cmd
+      else:
+        print('Starting Tensorflow model server installed on system')
+        tensorflow_start_cmd='tensorflow_model_server '+tensorflow_start_cmd
       print('Starting tensorflow server with command :'+tensorflow_start_cmd)
       os.system(tensorflow_start_cmd)
 
