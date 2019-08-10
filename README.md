@@ -59,7 +59,11 @@ Recommendation : use singularity to use it more easily on laptops, desktops and 
 ### install singularity (as root) :
   * debian installation : https://wiki.debian.org/singularity
 ### build the image with GPU (as root):
-  * build a custom image with the provided *tf_nv_addons.def* file that includes all python packages to complete the nvidia container : `singularity build tf_nv_addons.sif tf_nv_addons.def`
+  * build a custom image with the provided *tf_nv_addons_py3.def* file that includes all python packages to complete the nvidia container :
+```
+singularity build tf_nv_addons_py3.sif tf_nv_addons_py3.def #container for model training and validation
+singularity build tf_server.sif tf_server.def               #container for model serving only
+```
 ### run the image (as standard user):
   * open a shell on this container, bind to your system folders of interest : `singularity shell --nv --bind /path/to/your/DeepLearningTools/:DeepLearningTools/ tf_nv_addons.sif`
   * run the framework, for example on the curve fitting example: `cd /DeepLearningTools/` followed by `python experiments_manager.py --usersettings examples/regression/mysettings_curve_fitting.py`
@@ -93,20 +97,21 @@ python experiments_manager.py --predict --model_dir=experiments/1Dsignals_cluste
 
 The main script is experiments_manager.py can be used in 3 modes, here are some command examples:
 1. train a model in a context specified in a parameter script such as mysettings_curve_fitting.py (details provided in the following TODO section):
-..* if all the libraries are system installed
+
+  * if all the libraries are system installed
 ```
 python experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py
 ```
-..* if all the libraries are installed in a singularity container located at **/path/to/tf_nv_addons_py3.sif**
+  * if all the libraries are installed in a singularity container located at **/path/to/tf_nv_addons_py3.sif**
 ```
 singularity run --nv /path/to/tf_nv_addons_py3.sif experiments_manager.py --usersettings examples/regression/mysettings_curve_fitting.py
 ```
 2. start a Tensorflow server on the trained/training model :
-..* if tensorflow_model_server is installed on the system
+  * if tensorflow_model_server is installed on the system
 ```
 python experiments_manager.py --start_server --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53
 ```
-..*  if tensorflow_model_server is installed on a singularity container located at **/path/to/tf_server.sif**
+  * if tensorflow_model_server is installed on a singularity container located at **/path/to/tf_server.sif**
 ```
 python experiments_manager.py --start_server --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53 -psi=/path/to/tf_server.sif
 ```
