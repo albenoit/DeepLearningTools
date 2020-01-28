@@ -1,17 +1,34 @@
 ''' helpers_loss, a collection of helpers to compute various losses and related tools
     @author, Alexandre Benoit, LISTIC Lab, FRANCE
 '''
-# python 2&3 compatibility management
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-import six
-
 import tensorflow as tf
 import numpy as np
+import tensorflow.keras.backend as K
+
+# some losses adequate with semantic segmentation
+def dice_coef(y_true, y_pred):
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+    intersection = K.sum(y_true_f * y_pred_f)
+    dice_coef = (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
+    return 1.0-dice_coef
+
+def jaccard_loss(y_true, y_pred):
+    ''' from https://gist.github.com/wassname/f1452b748efcbeb4cb9b1d059dce6f96
+    '''
+    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
+    sum_ = K.sum(K.abs(y_true) + K.abs(y_pred), axis=-1)
+    jac = (intersection + smooth) / (sum_ - intersection + smooth)
+    return (1 - jac) * smooth
+
+# a loss gradient lipshitz regularizer
+def get_IOgradient_norm_lipschitzPenalty(inputs, outputs, target_lipschitz):
+    gradients = tf.gradients(outputs, [inputs])[0]
+    print('Gradient=', gradients)
+    slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=[1]))
+    return tf.reduce_mean((slopes-target_lipschitz)**2)
 
 ################################
-import tensorflow.keras.backend as K
 def tensor_gram_matrix(tensor):
   ''' returns the gram matrix of a given tensor matrix
   Note that the input tensor is reshaped to a 2D matrix, preserving the last dimension
@@ -34,41 +51,77 @@ def weights_regularizer_soft_orthogonality(weights):
   I = tf.linalg.eye(weights_gram_matrix.get_shape().as_list()[0])
   gram_minus_ident = weights_gram_matrix-I
   loss= tf.reduce_sum(tf.math.square(gram_minus_ident))
-  #add to the GraphKeys.REGULARIZATION_LOSSES collection as for starndard losses such as tf.nn.l2_loss
-  tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES,loss)
   return loss
 
-def weights_regularizer_Spectral_Restricted_Isometry(weights):
-  ''' orthogonal regularization for weights presented here :  https://arxiv.org/abs/1810.09102
+from tensorflow.python.keras.engine import base_layer_utils
+class weights_L1L2_soft_ortho_regularizer(tf.Module):
+  def __init__(self, l1=0.0, l2=0.0, ortho=0.0, ortho_type='soft', nb_filters=0):
+    self.l1 = tf.keras.backend.cast_to_floatx(l1)
+    self.l2 = tf.keras.backend.cast_to_floatx(l2)
+    self.ortho = tf.keras.backend.cast_to_floatx(ortho)
+    self.nb_filters = tf.keras.backend.constant(nb_filters, tf.int32, name='nb_filters')
+    self.ortho_type=ortho_type
+    w_init = tf.random_normal_initializer()
+    self.v = tf.Variable(initial_value=w_init(shape=(self.nb_filters,1),dtype=tf.float32), trainable=True, name='srip_v')
+
+  @tf.function
+  def __call__(self, x):
+    if not self.l1 and not self.l2 and not self.ortho:
+      return K.constant(0.)
+    regularization = 0.
+    if self.l1:
+      regularization += self.l1 * tf.math.reduce_sum(tf.math.abs(x))
+    if self.l2:
+      regularization += self.l2 * tf.math.reduce_sum(tf.math.square(x))
+    if self.ortho:
+      if self.ortho_type is 'soft':
+        regularization += self.ortho * self.weights_regularizer_soft_orthogonality(x)
+      elif self.ortho_type is 'srip':
+        regularization += self.ortho * self.weights_regularizer_Spectral_Restricted_Isometry(x)
+      else:
+        raise ValueError('weights_L1L2_soft_ortho_regularizer : unexpected provided ortho_type, expeting \'soft\' or \'srip\', received '+self.ortho_type)
+    return regularization
+
+  def get_config(self):
+      return {'l1': float(self.l1), 'l2': float(self.l2), 'nb_filters':int(self.nb_filters), 'ortho':float(self.ortho), 'ortho_type':str(self.ortho_type)}
+
+  def weights_regularizer_soft_orthogonality(self, x):
+    ''' soft orthogonal regularization for weights:
+       => require the Gram matrix of the weight matrix to be close to identity
+      Args: x, the weights tensor of a given layer
+      Returns the weight penalty
+    '''
+    weights_gram_matrix=tensor_gram_matrix(x)
+    I = tf.linalg.eye(weights_gram_matrix.get_shape().as_list()[0])
+    gram_minus_ident = weights_gram_matrix-I
+    loss= tf.reduce_sum(tf.math.square(gram_minus_ident))
+    return loss
+
+  def weights_regularizer_Spectral_Restricted_Isometry(self, x):
+    ''' orthogonal regularization for weights presented here :  https://arxiv.org/abs/1810.09102
       => generally more efficient than weights_regularizer_soft_orthogonality
       => WARNING, works best at the beginning if the training but too
       restrictive when fine tuning and should be replaced by classical l2 weights penalty
-    Args: weights, the weights tensor of a given layer
+    Args: x, the weights tensor of a given layer
     Returns the weight penalty
 
     REMINDER : Other ideas with spectral norm : https://github.com/taki0112/Spectral_Normalization-Tensorflow
-  '''
-  weights_gram_matrix=tensor_gram_matrix(weights)
+    '''
+    weights_gram_matrix=tensor_gram_matrix(x)
 
-  Ident = tf.linalg.eye(weights_gram_matrix.get_shape().as_list()[0])
-  Norm  = weights_gram_matrix - Ident
+    Ident = tf.linalg.eye(weights_gram_matrix.get_shape().as_list()[0])
+    Norm  = weights_gram_matrix - Ident
 
-  b_k = np.random.rand(Norm.shape[1])
-  b_k = np.reshape(b_k, (Norm.shape[1],1))
-  v = tf.Variable(b_k, dtype=tf.float32, trainable=True)
+    v1 = tf.math.multiply(Norm, self.v)
+    norm1 = tf.reduce_sum(tf.math.square(v1))**0.5
 
-  v1 = tf.math.multiply(Norm, v)
-  norm1 = tf.reduce_sum(tf.math.square(v1))**0.5
+    v2 = tf.math.divide(v1,norm1)
 
-  v2 = tf.math.divide(v1,norm1)
+    v3 = tf.math.multiply(Norm,v2)
+    loss= tf.reduce_sum(tf.math.square(v3))**0.5
+    return loss
 
-  v3 = tf.math.multiply(Norm,v2)
-  loss= tf.reduce_sum(tf.math.square(v3))**0.5
-  #add to the GraphKeys.REGULARIZATION_LOSSES collection as for starndard losses such as tf.nn.l2_loss
-  tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES,loss)
-  return loss
-
-def focal_loss_softmax(labels,logits, gamma=2, reduceSum_not_reduceAverage=False):
+def focal_loss_softmax(logits, labels,  gamma=2, reduceSum_not_reduceAverage=False, name='loss'):
     """
     Focal loss, a cross entropy like loss that favors hard examples
     ... such that imbalanced data can be handled more easily
@@ -88,11 +141,42 @@ def focal_loss_softmax(labels,logits, gamma=2, reduceSum_not_reduceAverage=False
     eps = 1e-12
     y_pred=tf.clip_by_value(y_pred,eps,1.-eps)#improve the stability of the focal loss and see issues 1 for more information
     labels=tf.cast(tf.one_hot(labels,depth=nb_classes), tf.float32)#y_pred.shape[1])
-    L=-labels*((1-y_pred)**gamma)*tf.log(y_pred)
-    L=tf.reduce_mean(L)
+    L=-labels*((1-y_pred)**gamma)*tf.math.log(y_pred)
+    L=tf.math.reduce_mean(L, name=name)
     return L
 
 
+def self_balanced_focal_loss(alpha=3, gamma=2.0, name='loss'):
+    """
+    Original by Yang Lu:
+    from https://github.com/luyanger1799/Amazing-Semantic-Segmentation/blob/master/utils/losses.py
+    This is an improvement of Focal Loss, which has solved the problem
+    that the factor in Focal Loss failed in semantic segmentation.
+    It can adaptively adjust the weights of different classes in semantic segmentation
+    without introducing extra supervised information.
+    :param alpha: The factor to balance different classes in semantic segmentation.
+    :param gamma: The factor to balance different samples in semantic segmentation.
+    :return:
+    """
+
+    def loss(y_true, y_pred):
+        # cross entropy loss
+        y_pred = backend.softmax(y_pred, -1)
+        cross_entropy = backend.categorical_crossentropy(y_true, y_pred)
+
+        # sample weights
+        sample_weights = backend.max(backend.pow(1.0 - y_pred, gamma) * y_true, axis=-1)
+
+        # class weights
+        pixel_rate = backend.sum(y_true, axis=[1, 2], keepdims=True) / backend.sum(backend.ones_like(y_true),
+                                                                                   axis=[1, 2], keepdims=True)
+        class_weights = backend.max(backend.pow(backend.ones_like(y_true) * alpha, pixel_rate) * y_true, axis=-1)
+
+        # final loss
+        final_loss = class_weights * sample_weights * cross_entropy
+        return backend.mean(backend.sum(final_loss, axis=[1, 2]), name=name)
+
+    return loss
 
 def multi_loss(lossesList):
   ''' refactored from the original work of Y. Gal https://github.com/yaringal/multi-task-learning-example/blob/master/multi-task-learning-example.ipynb
@@ -133,14 +217,10 @@ def reconstruction_loss_MSE(inputs, reconstruction):
     inputs_flat = tf.layers.flatten(inputs)
     reconstruction_flat = tf.layers.flatten(reconstruction)
     # Reconstruction loss
-    mse_loss=tf.losses.mean_squared_error(
-                                    reconstruction,
-                                    inputs,
-                                    weights=1.0,
-                                    scope=None,
-                                    loss_collection=tf.GraphKeys.LOSSES,
-                                    #reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS
-                                    )
+    mse_loss=tf.keras.losses.MSE(
+                                  reconstruction,
+                                  inputs,
+                                )
     tf.summary.scalar('MSE_loss', mse_loss)
     return mse_loss
 
@@ -166,10 +246,10 @@ def reconstruction_loss_BCE_soft(inputs, reconstruction, w=0.8):
     reconstruction_flat = tf.layers.flatten(reconstruction)
 
     # handmade binary cross entropy loss taking into account the lower representation of the white pixels
-    xcross_loss=-tf.reduce_mean(w * inputs_flat * tf.log(reconstruction_flat + 1e-8),
+    xcross_loss=-tf.reduce_mean(w * inputs_flat * tf.math.log(reconstruction_flat + 1e-8),
                                          reduction_indices=[1]) - \
                          tf.reduce_mean(
-                             (1 - w) * (1 - inputs_flat) * tf.log(1 - reconstruction_flat + 1e-8),
+                             (1 - w) * (1 - inputs_flat) * tf.math.log(1 - reconstruction_flat + 1e-8),
                              reduction_indices=[1])
 
     xcross_loss=tf.reduce_mean(xcross_loss)
@@ -246,7 +326,7 @@ def swae_loss(code_list, target_z, batch_size, L=50):
   #theta=tf.Variable(tf.ones(generateTheta(L,code_list[0].shape[-1]).shape), trainable=False) #Define a Keras Variable for \theta_ls
   #theta=tf.Print(theta, [theta], message='theta')
   #target_z=tf.Variable(tf.ones(target_z_samples.shape), trainable=False) #Define a Keras Variable for samples of z)
-  theta=tf.py_func(generateTheta,[L, code_list[0].shape[-1]], tf.float32)
+  theta=tf.numpy_function(generateTheta,[L, code_list[0].shape[-1]], tf.float32)
   #theta=tf.Print(theta, [theta, target_z], message='theta, target_z')
 
   loss=0
@@ -258,19 +338,34 @@ def swae_loss(code_list, target_z, batch_size, L=50):
   #loss=tf.Print(loss, [loss], message='SWAE')
   return loss
 
-def get_regularization_loss(scope=None, debug=False):
-    ''' get all regularization losses that can be found in the current variable scope and returns the sum
-        Args:
-            scope: the variable scope to focus on (default is None i.e. current scope)
-            debug: set True to display the list of found loss
-        Returns the loss sum
-    '''
 
-    regularization_losses=tf.losses.get_regularization_losses(scope)
-    # list all weights
-    if debug is True:
-        print('Found the following regularisation losses')
-        for layer_loss in regularization_losses:
-            print(layer_loss)
-    print('Found {nb_losses} layers regularisation_losses within collection tf.GraphKeys.REGULARIZATION_LOSSES in scope {sc}'.format(nb_losses=len(regularization_losses), sc=scope))
-    weights_loss=tf.reduce_sum(regularization_losses)#tf.losses.get_regularization_loss()
+class UncorrelatedFeaturesConstraint (tf.keras.constraints.Constraint):
+    ''' from https://towardsdatascience.com/build-the-right-autoencoder-tune-and-optimize-using-pca-principles-part-ii-24b9cca69bd6
+    '''
+    def __init__(self, encoding_dim, weightage = 1.0):
+        self.encoding_dim = encoding_dim
+        self.weightage = weightage
+
+    def get_covariance(self, x):
+        x_centered_list = []
+
+        for i in range(self.encoding_dim):
+            x_centered_list.append(x[:, i] - K.mean(x[:, i]))
+
+        x_centered = tf.stack(x_centered_list)
+        covariance = K.dot(x_centered, K.transpose(x_centered)) / tf.cast(x_centered.get_shape()[0], tf.float32)
+
+        return covariance
+
+    # Constraint penalty
+    def uncorrelated_feature(self, x):
+        if(self.encoding_dim <= 1):
+            return 0.0
+        else:
+            output = K.sum(K.square(
+                self.covariance - tf.math.multiply(self.covariance, K.eye(self.encoding_dim))))
+            return output
+
+    def __call__(self, x):
+        self.covariance = self.get_covariance(x)
+        return self.weightage * self.uncorrelated_feature(x)

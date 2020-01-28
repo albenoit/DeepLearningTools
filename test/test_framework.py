@@ -5,19 +5,9 @@ experiment_setting_files_to_test=[
                 # basic scripts that do not require additionnal data (either already with the sources or downloaded automatically
                 #baby test, NO hyperparameters
                 {'script':'examples/regression/mysettings_curve_fitting.py', 'hparams':None},
-                {'script':'examples/regression/mysettings_curve_fitting_concrete_dropout.py', 'hparams':None},
                 #baby test, WITH hyperparameters
                 {'script':'examples/regression/mysettings_curve_fitting.py', 'hparams':{'nbEpoch':2}},
-                #scripts sensitive to tensorflow updates...
-                {'script':'examples/embedding/mysettings_1D_experiments.py', 'hparams':{'nbEpoch':2}},
-                {'script':'examples/generative/mysettings_began.py', 'hparams':{'nbEpoch':2}},
-
-
-                #WARNING : the following depend on some specific data that have to be downloaded and targetted in the settings script:
                 {'script':'examples/segmentation/mysettings_semanticSegmentation.py', 'hparams':{'nbEpoch':2}},
-                #FIXME:the premade estimator based model in examples/regression/mysettings_curve_fitting_premade_estimator.py impact on the following tests, possible cause : usersettings global variable in experiments_manager.py should be removed
-                {'script':'examples/regression/mysettings_curve_fitting_premade_estimator.py', 'hparams':None},
-
                 ]
 
 #basic function that just starts a demo script

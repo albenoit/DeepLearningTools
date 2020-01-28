@@ -2,19 +2,21 @@
 @author : Alexandre Benoit, LISTIC lab, FRANCE (plus some colleagues and interns such as Louis Klein on spring 2017)
 @brief  : a set of tools to preprocess data and build up input data pipelines
 '''
-
-# python 2&3 compatibility management
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-import six
-
 #### WARNING, you may have to remove one of the cv2 or gdal import depending on your machine compatibility
-import cv2
+try:
+  import cv2
+except:
+  print('WARNING, could not load the opencv library, this will impact your data pipeline if willing to use it')
 try:
   from osgeo import gdal
 except:
-  print('WARNING, could not load GDAL library, this will impact your data pipeline if willing to use it')
+  print('WARNING, could not load the GDAL library, this will impact your data pipeline if willing to use it')
+
+try:
+  import rasterio
+except:
+  print('WARNING, could not load the rasterio library, this will impact your data pipeline if willing to use it')
+
 import matplotlib.pyplot as plt
 import glob
 import os
@@ -26,6 +28,48 @@ import unicodedata
 
 dataprovider_namescope="data_input_pipeline"
 filenames_separator='###'
+
+def image_tfrecords_dataset(filename, haslabel=False):
+  ''' Assuming a set of tfrecords file is pointed by filename, ex:'images.tfrecords',
+  create a data provider that loads them for training/testing models
+  Args:
+    filename, path to the tfrecord files
+    haslabel, a boolean, false by default that specifies if an iteger label is expected or not
+  Returns: a tf.data.Dataset WITHOUT PREFETCH NOR BATCH, specify your own
+  '''
+  raw_image_dataset = tf.data.TFRecordDataset(filename)
+
+  # Create a dictionary describing the features.
+  image_feature_description = {
+      'height': tf.io.FixedLenFeature([], tf.int64),
+      'width': tf.io.FixedLenFeature([], tf.int64),
+      'depth': tf.io.FixedLenFeature([], tf.int64),
+      'image_raw': tf.io.FixedLenFeature([], tf.string),
+  }
+  if hasLabel:
+    image_feature_description.update({'label': tf.io.FixedLenFeature([], tf.int64)})
+
+  def _parse_image_function(example_proto):
+    # Parse the input tf.Example proto using the dictionary above.
+    return tf.io.parse_single_example(example_proto, image_feature_description)
+
+  return raw_image_dataset.map(_parse_image_function)
+
+def test_image_tfrecords_dataset_tfrecords_dataset(filename='test_dataset.tfrecords'):
+  '''suppose a dataset pointed by files 'test_dataset.tfrecords' exists, load it
+  and display the recorded samples_saving_queuet
+  Args: filename, path to the tfrecord files
+  '''
+  #Read the created dataset
+  dataset = imageSegmentation_tfrecords_dataset(filename)
+  for image_features in dataset:
+    image_raw = image_features['image_raw'].numpy().astype(np.uint8)
+    print('sample shape:', image_raw.shape)
+    if image_raw.shape[1]>3:
+      cv2.imshow('raw_image', image_raw[:,:,:3])
+      cv2.imshow('reference_image', image_raw[:,:,3:]*20) #semantic indexes are amplified for visibility
+    else:
+      cv2.imshow('raw_image', image_raw)
 
 def make_images_coarse(input_images, downscale_factor=2):
     """
@@ -58,7 +102,7 @@ def make_images_coarse(input_images, downscale_factor=2):
 
 def replace_nans_by_zeros(sample):
     ''' returns a tensor with input nan values replaced by zeros '''
-    return tf.where(tf.is_nan(sample), tf.zeros_like(sample), sample)
+    return tf.where(tf.math.is_nan(sample), tf.zeros_like(sample), sample)
 
 def plot_sample_channel_histograms(data_sample, filenameID=''):
     ''' Basic data analysis:
@@ -67,7 +111,7 @@ def plot_sample_channel_histograms(data_sample, filenameID=''):
     @param filenameID, the histogram filename prefix to be used
     '''
 
-    for channelID in six.moves.range(data_sample.shape[-1]):
+    for channelID in range(data_sample.shape[-1]):
         plt.figure('Channel ID='+str(channelID))
         plt.hist(data_sample[:,:,channelID])
         plt.title('Channel ID='+str(channelID))
@@ -99,7 +143,7 @@ def debug_show_data(data, message):
     '''used for data debugging:
     @param data, the tensor to show
     @param message, a string to describe the debug message
-    use example : tf.py_func(debug_show_data, [raw_sample_crops, 'raw_sample crop'], tf.float32)
+    use example : tf.py_function(debug_show_data, [raw_sample_crops, 'raw_sample crop'], tf.float32)
     '''
     print("########################################################### DEBUG : {message}:shape={shape}, data={data}".format(message=message, shape=data.shape, data=data))
     return np.float32(1.0)
@@ -133,18 +177,47 @@ def extractFilenames(root_dir, file_extension="*.jpg", raiseOnEmpty=True):
 
 def the_ugly_string_manager(filename):
   ''' horribly ugly code to ensure that a filename string complies with gdal and opencv
-      when dealing with python 2 or 3 and pure python or tensorflow py_function
+      when dealing with python 2 or 3 and pure python or tensorflow py_functiontion
       ... convert to input to unicode to recover properly to string
       FIXME : ... maybe just wait for the death of python2 and hope for a more
-      elegant python3
+      elegant python3... but still waiting...
   '''
+  #tf.print('filename=',filename)
+  #tf.print('dtype=', filename.dtype)
+  if isinstance(filename, tf.Tensor):
+      filename=filename.numpy()
   if not(isinstance(filename, bytes)):
-    filename=bytes(filename, 'utf-8')
-  filename_stra=(six.text_type(copy.deepcopy(filename)))
-  filename_str=unicodedata.normalize('NFC', filename_stra)
+      filename=bytes(filename, 'utf-8')
+  filename_str=unicodedata.normalize('NFC', str(filename))
   if filename_str[0]=='b':
     filename_str=filename_str[2:-1]
   return filename_str
+
+def imread_from_rasterio(filename, debug_mode=False):
+  ''' read an image using OpenCV
+      image is loaded as is. In case of a 3 channels image, BGR to RGB conversion
+      is applied
+      @param filename as a numpy array (coming from Tensorflow)
+      @param debug_mode to print more logs on this image read step
+  '''
+  #get a valid filename string
+  filename_str=the_ugly_string_manager(filename)
+
+  with rasterio.open(filename_str, 'r') as ds:
+    arr = ds.read()  # read all raster values
+
+    if arr is None:
+      raise ValueError('Could no read file {file}, exists={exists}'.format(file=filename_str,
+                                                                           exists=os.path.exists(filename_str)
+                                                                           )
+                      )
+  raster_array=arr.transpose([1,2,0])
+  if debug_mode == True:
+      print('Reading image with GDAL : {file}'.format(file=filename_str))
+      print('Image shape='+str(raster_array.shape))
+  img_array=raster_array.astype(np.float32)
+
+  return img_array
 
 def imread_from_gdal(filename, debug_mode=False):
   ''' read an image using OpenCV
@@ -156,17 +229,21 @@ def imread_from_gdal(filename, debug_mode=False):
   #get a valid filename string
   filename_str=the_ugly_string_manager(filename)
 
-  ds = gdal.Open(filename_str)
+  ds=gdal.Open(filename_str)
   if ds is None:
-      raise ValueError('Could no read file {file}, exists={exists}'.format(file=filename_str,
-                                                                           exists=os.path.exists(filename_str)
-                                                                           )
-                      )
+    raise ValueError('Could no read file {file}, exists={exists}'.format(file=filename_str,
+                                                                         exists=os.path.exists(filename_str)
+                                                                         )
+                    )
   raster_array=ds.ReadAsArray().transpose([1,2,0])
+
+  del ds #finally free memory...
   if debug_mode == True:
       print('Reading image with GDAL : {file}'.format(file=filename_str))
       print('Image shape='+str(raster_array.shape))
-  return raster_array.astype(np.float32)
+  img_array=raster_array.astype(np.float32)
+
+  return img_array
 
 def imread_from_opencv(filename, cv_imreadMode=-1, debug_mode=False):
   ''' read an image using OpenCV
@@ -175,18 +252,19 @@ def imread_from_opencv(filename, cv_imreadMode=-1, debug_mode=False):
       @param filename as a numpy array (coming from Tensorflow)
       @param cv_imreadMode as described in the official opencv doc. Note: cv2.IMREAD_UNCHANGED=-1
       @param debug_mode to print more logs on this image read step
-  '''
 
+  ISSUES : https://github.com/tensorflow/tensorflow/issues/33400
+  https://github.com/tensorflow/tensorflow/issues/27519
+  '''
   #get a valid filename string
   filename_str=the_ugly_string_manager(filename)
-  image= cv2.imread(filename_str, cv_imreadMode)
+  image=cv2.imread(filename_str, cv_imreadMode)
   if image is None:
       raise ValueError('Could no read file {file}, exists={exists}'.format(file=filename_str,
-                                                                           exists=os.path.exists(filename)
+                                                                           exists=os.path.exists(str(filename))
                                                                            )
-                      )
+                        )
   if debug_mode == True:
-      print('Reading image with OpenCV: {file} using mode {flag}'.format(file=filename_str, flag=cv_imreadMode))
       print('Image shape='+str(image.shape))
       if len(image.shape)>2:
           print('Image first layer min={minVal}, max={maxVal} (omitting nan values)'.format(minVal=np.nanmin(image[:,:,0]), maxVal=np.nanmax(image[:,:,0])))
@@ -204,15 +282,16 @@ def get_sample_entropy(sample):
         #count unique values occurences
         unique_values, values_idx, counts=tf.unique_with_counts(sample)
 
+        @tf.function
         def normalised_entropy(counts):
             classes_prob=tf.math.divide(tf.cast(counts, dtype=tf.float32), tf.cast(tf.reduce_sum(counts), dtype=tf.float32))
-            entropy= -tf.reduce_sum(classes_prob*tf.log(classes_prob))
-            return tf.math.divide(entropy,tf.log(tf.cast(tf.shape(counts)[0], dtype=tf.float32)))
+            entropy= -tf.reduce_sum(classes_prob*tf.math.log(classes_prob))
+            return tf.math.divide(entropy,tf.math.log(tf.cast(tf.shape(counts)[0], dtype=tf.float32)))
 
         #check if more than one class
         normalized_entropy=tf.cond(tf.greater(tf.shape(counts)[0], 1), lambda :normalised_entropy(counts), lambda :0.0)
 
-        #normalized_entropy=tf.Print(normalized_entropy, [counts, normalized_entropy, tf.py_func(get_samples_entropies, [tf.expand_dims(sample,0)], tf.float32)], message='tf_entropyVShandmade')
+        #normalized_entropy=tf.Print(normalized_entropy, [counts, normalized_entropy, tf.py_function(get_samples_entropies, [tf.expand_dims(sample,0)], tf.float32)], message='tf_entropyVShandmade')
         return normalized_entropy
 
 def get_sample_entropy_test(values=[0,0,0,1,1,1]):
@@ -245,6 +324,7 @@ def get_samples_entropies(samples_batch):
         entropies[it]=-(classes_prob*np.log(classes_prob)).sum()/np.log(float(len(classes_prob)))
     return entropies
 
+@tf.function
 def convert_semanticMap_contourMap(crops):
     '''
 	Convert a semantic map into a contour Map using Sobel operator
@@ -280,7 +360,7 @@ class FileListProcessor_Semantic_Segmentation:
 
     dataprovider_namescope=dataprovider_namescope+'/FileListProcessor_Semantic_Segmentation'
 
-    def __whiten_sample(self, sample):
+    def _whiten_sample(self, sample):
         ''' apply whitening to a raw+reference image tensorflow
         @param if self.no_reference is False, then input is expected to be a single tensor which first layers are the raw data and the last layer is dense semantic reference
         raw data and reference data are first sliced, whitening is applied on ra data only and finally a single tensor
@@ -302,7 +382,7 @@ class FileListProcessor_Semantic_Segmentation:
             else:
                 return tf.image.per_image_standardization(single_image_channels)
 
-    def __load_raw_ref_images_from_separate_files(self, raw_ref_img_filenames):
+    def _load_raw_ref_images_from_separate_files(self, raw_ref_img_filenames):
         ''' load one raw image and its related reference image and concatenate them into the same image
         images must be of the same size !
         TODO add asserts to heck matching sizes and expected depth
@@ -319,21 +399,27 @@ class FileListProcessor_Semantic_Segmentation:
             if self.use_alternative_imread is not None:
               if self.use_alternative_imread == 'opencv':
                 # use Opencv image reading methods WARNING, take care of the channels order that may change !!!
-                raw_image = tf.py_func(imread_from_opencv, [raw_img_filename, self.opencv_read_flags], tf.float32, name='raw_data_imread_opencv')
-                reference_image = tf.py_func(imread_from_opencv, [ref_img_filename, cv2.IMREAD_GRAYSCALE], tf.float32, name='ref_data_imread_opencv')
+                raw_image = tf.py_function(imread_from_opencv, [raw_img_filename, self.opencv_read_flags], tf.float32)
+                reference_image = tf.py_function(imread_from_opencv, [ref_img_filename, cv2.IMREAD_GRAYSCALE], tf.float32)
                 #add a third channel (to be compatible with raw_image rank when willing to concatenate
                 reference_image=tf.expand_dims(reference_image, -1)
               elif self.use_alternative_imread == 'gdal':
                 # use gdal image reading methods WARNING, take care of the channels order that may change !!!
-                raw_image = tf.py_func(imread_from_gdal, [raw_img_filename], tf.float32, name='raw_data_imread_gdal')
-                reference_image = tf.py_func(imread_from_gdal, [ref_img_filename], tf.float32, name='ref_data_imread_gdal')
+                raw_image = tf.py_function(imread_from_gdal, [raw_img_filename], tf.float32)
+                reference_image = tf.py_function(imread_from_gdal,[ref_img_filename], tf.float32)
+                #add a third channel (to be compatible with raw_image rank when willing to concatenate
+                reference_image=tf.expand_dims(reference_image, -1)
+              elif self.use_alternative_imread == 'rasterio':
+                # use gdal image reading methods WARNING, take care of the channels order that may change !!!
+                raw_image = tf.py_function(imread_from_rasterio, [raw_img_filename], tf.float32)
+                reference_image = tf.py_function(imread_from_rasterio, [ref_img_filename], tf.float32)
                 #add a third channel (to be compatible with raw_image rank when willing to concatenate
                 reference_image=tf.expand_dims(reference_image, -1)
             else:
                 # use Tensorflow image reading methods
                 #-> read raw data
-                single_raw_element = tf.read_file(raw_img_filename)
-                single_reference_element = tf.read_file(ref_img_filename)
+                single_raw_element = tf.io.read_file(raw_img_filename)
+                single_reference_element = tf.io.read_file(ref_img_filename)
                 #decode raw data using a specific decoder
                 raw_image=tf.image.decode_png(single_raw_element, channels=self.single_image_raw_depth, dtype=None, name="single_image_raw_read")
                 reference_image=tf.image.decode_png(single_reference_element, channels=self.single_image_reference_depth, dtype=None, name="single_image_reference_read")
@@ -343,7 +429,7 @@ class FileListProcessor_Semantic_Segmentation:
             return tf.cast(tf.concat([raw_image, reference_image], axis=2, name='concat_inputs'), dtype=tf.float32, name='to_float')
 
 
-    def __load_raw_ref_images_from_single_file(self, raw_img_filename):
+    def _load_raw_ref_images_from_single_file(self, raw_img_filename):
         ''' load one raw image with its related reference image encoded as the last channel
         @param raw_img_filename the filename of the raw image to load with last channel being the reference semantic data
         @return the concatenated image of same 2D siae but of depth = raw.depth+ref.depth)
@@ -352,10 +438,13 @@ class FileListProcessor_Semantic_Segmentation:
             print('raw_img_filename='+str(raw_img_filename))
             if self.use_alternative_imread == 'opencv':
               # use Opencv image reading methodcropss WARNING, take care of the channels order that may change !!!
-              raw_ref_image = tf.py_func(imread_from_opencv, [raw_img_filename, self.opencv_read_flags], tf.float32, name='raw_ref_data_imread_opencv')
+              raw_ref_image = tf.py_function(imread_from_opencv, [raw_img_filename, self.opencv_read_flags], tf.float32)
             elif self.use_alternative_imread == 'gdal':
               # use GDAL image reading methodcropss WARNING, take care of the channels order that may change !!!
-              raw_ref_image = tf.py_func(imread_from_gdal, [raw_img_filename], tf.float32, name='raw_ref_data_imread_gdal')
+              raw_ref_image = tf.py_function(imread_from_gdal, [raw_img_filename], tf.float32)
+            elif self.use_alternative_imread == 'rasterio':
+              # use GDAL image reading methodcropss WARNING, take care of the channels order that may change !!!
+              raw_ref_image = tf.py_function(imread_from_rasterio, [raw_img_filename], tf.float32)
             else:
               raise ValueError('Neither OpenCV nor GDAL selected to read data and ground truth from the same image')
             print('raw data channels='+str(self.single_image_raw_depth))
@@ -363,11 +452,13 @@ class FileListProcessor_Semantic_Segmentation:
             #concatenate both images in a single one
             return tf.cast(raw_ref_image, dtype=tf.float32, name='to_float')
 
-    def __generate_crops(self, input_image):
+    @tf.function(experimental_relax_shapes=True)
+    def _generate_crops(self, sample_filename):
         ''' considering an input tensor of any shape, divide it into overlapping windows and put them into a queue
           inspired from http://stackoverflow.com/questions/40186583/tensorflow-slicing-a-tensor-into-overlapping-blocks
           @param input_image image to be sampled
         '''
+        input_image=self._load_raw_images_from_filenames(sample_filename)
         with tf.name_scope('generate_crops'):
             if self.field_of_view > 0:
                 radius_of_view = (self.field_of_view-1)//2
@@ -381,17 +472,17 @@ class FileListProcessor_Semantic_Segmentation:
                     self.nbPatches=tf.cast(self.image_area_coverage_factor*tf.cast(height*width, dtype=tf.float32)/tf.constant(self.patchSize*self.patchSize, dtype=tf.float32), dtype=tf.int32, name='number_of_patches')
                     self.nbPatches=tf.minimum(self.nbPatches, tf.constant(self.max_patches_per_image, name='max_patches_per_image'), name='saturate_number_of_patches')
                     random_vector_shape = [self.nbPatches]
-                    top_coord = tf.random_uniform(random_vector_shape,0, height-self.patchSize+2*radius_of_view,dtype=tf.int32,name='patch_top_coord_top')
-                    left_coord = tf.random_uniform(random_vector_shape,0,width-self.patchSize+2*radius_of_view, dtype=tf.int32,name='patch_left_coord')
+                    top_coord = tf.random.uniform(random_vector_shape,0, height-self.patchSize+2*radius_of_view,dtype=tf.int32,name='patch_top_coord_top')
+                    left_coord = tf.random.uniform(random_vector_shape,0,width-self.patchSize+2*radius_of_view, dtype=tf.int32,name='patch_left_coord')
 
                     #manage global image borders padding
-                    paddings = [[radius_of_view,self.patchSize],[radius_of_view,self.patchSize],[0,0]]
+                    #paddings = [[radius_of_view,self.patchSize],[radius_of_view,self.patchSize],[0,0]]
 
-                    '''debug_1=tf.py_func(debug_show_data, [left_coord, 'flat_meshgrid_x'], tf.float32)
-                    debug_2=tf.py_func(debug_show_data, [top_coord, 'flat_meshgrid_y'], tf.float32)
+                    '''debug_1=tf.py_function(debug_show_data, [left_coord, 'flat_meshgrid_x'], tf.float32)
+                    debug_2=tf.py_function(debug_show_data, [top_coord, 'flat_meshgrid_y'], tf.float32)
                     '''
                     #with tf.control_dependencies([debug_1, debug_2]):
-                    input_image = tf.pad(input_image, paddings)
+                    #input_image = tf.pad(input_image, paddings)
                 else: #expecting TEST dataset use case : no padding, only processing original pixels, avoiding border effects
                     top_coord = tf.range(0, height-self.patchSize,self.patchSize-2*radius_of_view,dtype=tf.int32)
                     left_coord = tf.range(0,width-self.patchSize, self.patchSize-2*radius_of_view,dtype=tf.int32)
@@ -416,14 +507,15 @@ class FileListProcessor_Semantic_Segmentation:
                 print('boxes : '+str(boxes))
                 crops=tf.image.crop_and_resize(tf.expand_dims(input_image,0),#get batch to a "batch 4D tensor"
                                                boxes=boxes,
-                                               box_ind=tf.zeros(self.nbPatches, dtype=tf.int32),
+                                               box_indices=tf.zeros(self.nbPatches, dtype=tf.int32),
                                                crop_size=[self.patchSize,self.patchSize],
                                                method='nearest')#FIXME, MUST BE nearest neighbors here !!!'
                 print('crops : '+str(crops))
 
                 # return the per image dataset BUT filter out unnecessary crops BEFORE
-                return tf.data.Dataset.from_tensor_slices(crops).filter(self.crop_filter).flat_map(self.__image_transform)
+                return tf.data.Dataset.from_tensor_slices(crops).filter(self.crop_filter)#.map(self._image_transform, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
+    @tf.function
     def crop_filter(self, crop):
       ''' a tf.data.Dataset filter function
           Args:
@@ -433,31 +525,42 @@ class FileListProcessor_Semantic_Segmentation:
       '''
       print('crop_filter input: '+str(crop))
       with tf.name_scope('filter_crops'):
-        # default selection value : every crop is selected
-        selected_crop = tf.constant(True)
-        print('selected_crop INIT='+str(selected_crop))
-
+        print('*************************** FILTERS ***************************')
+        print(self.additionnal_filters)
         #next processing wrt config
         if self.balance_classes_distribution is True  and self.no_reference is False: #TODO second test is a safety test that could be removed is safety test done before
-            ref_slice=tf.slice(crop,
+            print('FileListProcessor_Semantic_Segmentation: crops filtering taking into account ground truth entropy')
+            def balance_classes_entropy(crop):
+              ref_slice=tf.slice(crop,
                                 begin=[0,0,self.single_image_raw_depth],
                                 size=[-1,-1,self.single_image_reference_depth])
-            selected_crop = tf.logical_and(selected_crop, tf.greater(get_sample_entropy(tf.reshape(ref_slice,[-1])), self.classes_entropy_threshold, name='minimum_labels_entropy_selection'))
+              return tf.greater(get_sample_entropy(tf.cast(tf.reshape(ref_slice,[-1]), tf.uint8)), self.classes_entropy_threshold, name='minimum_labels_entropy_selection')
+            # add this filter as first in the filters list
+            self.additionnal_filters.insert(0,balance_classes_entropy)
 
         if self.manage_nan_values is 'avoid':
             print('FileListProcessor_Semantic_Segmentation: crops with Nan values will be avoided')
-            selected_crop = tf.logical_and(selected_crop, tf.logical_not(tf.reduce_any(tf.is_nan(crop))))#tf.math.logical_and(selected_crops, tf.reduce_any(tf.is_nan(crop_candidate, axis=0)))
+            def has_no_nans(crop):
+              return tf.logical_not(tf.reduce_any(tf.math.is_nan(crop)))#tf.math.logical_and(selected_crops, tf.reduce_any(tf.is_nan(crop_candidate, axis=0)))
+            # add this filter as first in the filters list
+            self.additionnal_filters.insert(0,has_no_nans)
 
-        #manage optionnal filter:
-        for filter_func in self.additionnal_filters:
-          selected_crop = tf.logical_and(selected_crop, filter_func(crop))
+        #run all filters as a cascade, one skip the remaining filters as long as one filter refuses the crop
+        def run_filters_cond(filters, crop):
+          #if no more filter should be applied, then the crop is accepted
+          if len(filters)==0:
+              return  tf.constant(True)
+          print('--> applying filter:',filters[0])
+          # if current filter rejects the crop, then return stop, else, aply next filter
+          return tf.cond(filters[0](crop), lambda: run_filters_cond(filters[1:], crop), lambda:tf.constant(False))
+        print('Processing crop filter list :',self.additionnal_filters)
+        selected_crop=run_filters_cond(self.additionnal_filters, crop)
 
-        print('selected_crop AFTER='+str(selected_crop))
-        #TODO add more selection strategies
+        #selected_crop=tf.Print(selected_crop, [selected_crop], message=('Crop is selected'))
         return selected_crop
 
-
-    def __image_transform(self, input_image):
+    @tf.function
+    def _image_transform(self, input_image):
         ''' apply a set of transformation to an input image
         @param input_image, the image to be transformed. It must be a stack of
         the raw image (first layers) followed by the reference layer(s)
@@ -476,7 +579,8 @@ class FileListProcessor_Semantic_Segmentation:
                 transformed_image=tf.image.random_flip_left_right(transformed_image)
             if self.apply_random_flip_up_down:
                 transformed_image=tf.image.random_flip_up_down(transformed_image)
-
+            if self.apply_random_rot90:
+                transformed_image=tf.image.rot90(transformed_image, tf.random.uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
             single_image_channels=transformed_image #by default apply the folowing transform to all the image channels
             if self.no_reference is False: #if using a reference channel, then apply transform only of the raw data
 
@@ -501,11 +605,13 @@ class FileListProcessor_Semantic_Segmentation:
                 out_image= tf.concat([tf.cast(single_image_channels, dtype=tf.float32), reference_img], axis=2)
             else:
                 out_image= tf.cast(single_image_channels, dtype=tf.float32)
-            return tf.data.Dataset.from_tensors(out_image)
+            if self.crops_postprocess is not None:
+                out_image= self.crops_postprocess(out_image)
+            return out_image
 
-    def __create_dataset_raw_images_reader(self):
+    def _create_dataset_filenames(self):
         ''' given the chosen mode (using a list of filename pairs of raw+ref image or using a single filename poiting a single raw+ref(lastchannel) image)
-            -> create the dataset object instance that loads the filename lists
+            -> create the filenames dataset
         '''
         raw_sample=None
         datasetfiles=None
@@ -516,60 +622,58 @@ class FileListProcessor_Semantic_Segmentation:
         #print(datasetFiles)
 
         #apply general setup for dataset reader : read all the input list one time, shuffle if required to, read one by one
-        self.dataset=tf.data.Dataset.from_tensor_slices(datasetFiles)
+        self.dataset=tf.data.Dataset.from_tensor_slices(datasetFiles).repeat(self.nbEpoch)
         if self.shuffle_samples:
               self.dataset=self.dataset.shuffle(len(datasetFiles))
 
+    @tf.function(experimental_relax_shapes=True)
+    def _load_raw_images_from_filenames(self, filenames):
+      ''' function to be applied for each of the dataset sample
+          Args:
+              filenames: a single or tuple of filename(s) related to a given sample
+          Returns an Image tensor with raw data as first channels followed by the reference channels
+      '''
+      print('single sample input filename(s)='+str(filenames))
+      if self.image_pairs_raw_ref_input:
+        raw_sample=self._load_raw_ref_images_from_separate_files(raw_ref_img_filenames=filenames)
+      else: #raw and ref data in the same image of only raw data use cases
+        raw_sample=self._load_raw_ref_images_from_single_file(raw_img_filename=filenames)
+      if self.full_frame_mode == True:
+        self.cropSize=self.fullframe_ref_shape
+      else:
+        self.cropSize=[self.patchSize,self.patchSize,self.single_image_raw_depth+self.single_image_reference_depth]
+      print('Deep net will be fed by samples of shape='+str(self.cropSize))
+      return raw_sample#af.data.Dataset.from_tensors(raw_sample)
 
-        def __load_raw_images_from_filenames(filenames):
-          ''' function to be applied for each of the dataset sample
-          '''
-          print('single sample input filename(s)='+str(filenames))
-          if self.image_pairs_raw_ref_input:
-              raw_sample=self.__load_raw_ref_images_from_separate_files(raw_ref_img_filenames=filenames)
-          else: #raw and ref data in the same image of only raw data use cases
-              raw_sample=self.__load_raw_ref_images_from_single_file(raw_img_filename=filenames)
-          if self.full_frame_mode == True:
-              self.cropSize=self.fullframe_ref_shape
-          else:
-              self.cropSize=[self.patchSize,self.patchSize,self.single_image_raw_depth+self.single_image_reference_depth]
-          print('Deep net will be fed by samples of shape='+str(self.cropSize))
-          return tf.data.Dataset.from_tensors(raw_sample)
-        if self.debug:
-          print('input filename(s) dataset='+str(self.dataset))
-        self.dataset=self.dataset.flat_map(__load_raw_images_from_filenames)
-
-
-    def getIteratorInitializer(self):
-      ''' specify here all the ops to run at the init step '''
-      return self.dataset_iterator.initializer
-
-    def __create_data_pipeline(self):
+    def _create_data_pipeline(self):
         """ input pipeline is defined on the CPU parameters
         """
-        with tf.device("/cpu:0"),tf.name_scope(FileListProcessor_Semantic_Segmentation.dataprovider_namescope+'_gen_crops_then_transform'):
+        with tf.name_scope(FileListProcessor_Semantic_Segmentation.dataprovider_namescope+'_gen_crops_then_transform'):
             """create a first "queue" (actually a list) of pairs of image filenames
             and generate data samples (whole read images)
             """
             #1. let the dataset load the raw images and associates possible metadata as last channel(s)
-            self.__create_dataset_raw_images_reader()
+            self._create_dataset_filenames()
 
 
             #2. transform the dataset samples convert raw images into crops
             if self.full_frame_mode == True:
-              with tf.name_scope('full_raw_frame_prefectching'):
+              with tf.name_scope('full_raw_frame_prefetching'):
                 if self.apply_whitening:     # Subtract off the mean and divide by the variance of the pixels.
-                    self.dataset=self.dataset.flat_map(self.__whiten_sample)
+                    self.dataset=self.dataset.map(self._whiten_sample)
             else:
-                self.dataset=self.dataset.interleave(cycle_length=10, map_func=self.__generate_crops, num_parallel_calls=self.num_preprocess_threads)
+                if self.shuffle_samples:
+                    reader_threads=1
+                else:
+                    #parallel samples interleaving plays the role of shuffling
+                    reader=self.num_reader_threads
+                self.dataset=self.dataset.interleave(cycle_length=self.num_reader_threads, map_func=self._generate_crops, num_parallel_calls=self.num_reader_threads)
 
+            self.dataset=self.dataset.map(self._image_transform, num_parallel_calls=tf.data.experimental.AUTOTUNE)
             #finalise the dataset pipeline : filterout
-            if self.shuffle_samples:
-              self.dataset=self.dataset.shuffle(int(self.batch_size*self.max_patches_per_image)) #shuffle prefetch size set empirically high
             #finalize dataset (set nb epoch and batch size and prefetch)
-            self.dataset=self.dataset.repeat(self.nbEpoch).batch(self.batch_size, drop_remainder=True)
-            self.dataset=self.dataset.prefetch(int(self.batch_size*20))
-            self.dataset_iterator = self.dataset.make_initializable_iterator()
+            self.dataset=self.dataset.batch(self.batch_size, drop_remainder=True)
+            self.dataset=self.dataset.prefetch(tf.data.experimental.AUTOTUNE)#int(self.batch_size*20))
             print('Input data pipeline graph is now defined')
 
     """
@@ -599,9 +703,10 @@ class FileListProcessor_Semantic_Segmentation:
         image_area_coverage_factor: the number of patches per images is automatically computed to get nearly the same number
          of pixels as the input image (surface coverage), this factor is applied
          to this number of patches. However the maximum limit of patches is forced by max_patches_per_image
-        num_preprocess_threads: the number of threads run in parallel to generate input data
+        num_reader_threads: the number of parallel image readers used to generate input data
         apply_random_flip_left_right: set True if input should be randomly mirrored left-right,
         apply_random_flip_up_down: set True if input should be randomly mirrored up-down
+        apply_random_rot90: set True to apply random 90 deg rotations
         apply_random_brightness: set None is not used, set >0 if brighness should be randomly adjusted by this factor
         apply_random_saturation: set None is not used, set >0 if saturation should be randomly adjusted by this factor
         apply_whitening: set True to whiten RAW DATA ONLY !!!
@@ -615,6 +720,7 @@ class FileListProcessor_Semantic_Segmentation:
         field_of_view: size of the field of view of a pixel. Used to define the size of the overlap of adjacent crops of an image when not using random crops
         manage_nan_values: set 'zeros' to replace nan values by zeros, 'avoid' to avoid sample crops with nan values, None else and Exception will be raised to highlight potential dataset problems
         additionnal_filters: must be a list of functions (empty by default) that take 1 parameter, a tensor that represents an image crop with eventual ground truth as additionnal layers and that return True if crop is of interest, else False
+        crops_postprocess: a function (or None) that postprocesses the crops (can for example separate raw data and reference while cropping the latter or something else)
     """
     def __init__(self, filelist_raw_data,
                     filelist_reference_data,
@@ -623,9 +729,10 @@ class FileListProcessor_Semantic_Segmentation:
                     patch_ratio_vs_input=0.2,
                     max_patches_per_image=10,
                     image_area_coverage_factor=2.0,
-                    num_preprocess_threads=4,
+                    num_reader_threads=4,
                     apply_random_flip_left_right=True,
                     apply_random_flip_up_down=False,
+                    apply_random_rot90=False,
                     apply_random_brightness=0.5,
                     apply_random_saturation=0.5,
                     apply_whitening=True,
@@ -636,7 +743,8 @@ class FileListProcessor_Semantic_Segmentation:
                     opencv_read_flags=-1,#cv2.IMREAD_UNCHANGED=-1, #cv2.IMREAD_LOAD_GDAL | cv2.IMREAD_ANYDEPTH ):
                     field_of_view=0,
                     manage_nan_values=None,
-                    additionnal_filters=[],
+                    additionnal_filters=None,
+                    crops_postprocess=None,
                     debug=False):
         self.filelist_raw_data=filelist_raw_data
         self.filelist_reference_data=filelist_reference_data
@@ -645,9 +753,10 @@ class FileListProcessor_Semantic_Segmentation:
         self.patch_ratio_vs_input=patch_ratio_vs_input
         self.max_patches_per_image=max_patches_per_image
         self.image_area_coverage_factor=float(image_area_coverage_factor)
-        self.num_preprocess_threads=num_preprocess_threads
+        self.num_reader_threads=num_reader_threads
         self.apply_random_flip_left_right=apply_random_flip_left_right
         self.apply_random_flip_up_down=apply_random_flip_up_down
+        self.apply_random_rot90=apply_random_rot90
         self.apply_random_brightness=apply_random_brightness
         self.apply_random_saturation=apply_random_saturation
         self.apply_whitening=apply_whitening
@@ -658,19 +767,25 @@ class FileListProcessor_Semantic_Segmentation:
         self.opencv_read_flags=opencv_read_flags
         self.field_of_view = field_of_view
         self.manage_nan_values=manage_nan_values
-        self.additionnal_filters=additionnal_filters
+        self.crops_postprocess=crops_postprocess
         self.debug = debug
+        if additionnal_filters is None:
+          self.additionnal_filters=[]
+        else:
+          self.additionnal_filters=additionnal_filters
 
         if self.image_area_coverage_factor<=0:
           raise ValueError('Error when constructing DataProvider: image_area_coverage_factor must be above 0')
 
-        if not(isinstance(additionnal_filters, list)):
+        if not(isinstance(self.additionnal_filters, list)):
           raise ValueError('Error when constructing DataProvider: additionnal_filters must be a list of functions that take 1 parameter, a tensor that represents a crop with eventual ground truth as additionnal layers and return True if crop is of interest, else False')
 
         #first read the first raw and reference images to get aspect ratio and depth
         #FIXME : fast change to introduce gdal image loading, TO BE CLARIFIED ASAP !!!
         if self.use_alternative_imread == 'gdal':
           raw0=imread_from_gdal(filelist_raw_data[0], True)
+        elif self.use_alternative_imread == 'rasterio':
+          raw0=imread_from_rasterio(filelist_raw_data[0], True)
         else:
           raw0=imread_from_opencv(filelist_raw_data[0],opencv_read_flags, True)
         print('Read first raw image {filepath} of shape {shape}'.format(filepath=filelist_raw_data[0], shape=raw0.shape))
@@ -732,8 +847,9 @@ class FileListProcessor_Semantic_Segmentation:
             raise ValueError('field_of_view must be odd or 0 (current : {})'.format(self.field_of_view))
 
         #create the input pipeline
-        self.__create_data_pipeline()
-
+        self._create_data_pipeline()
+    def get_config(self):
+        return {'Datapipeline_cfg':None}
 
 def extract_feature_columns(data_dict, features_labels):
     ''' function that creates feature columns interpreters and applies them on
@@ -800,176 +916,33 @@ def breakup(x, lookback_len):
   windows = [tf.slice(x, [b], [lookback_len]) for b in six.moves.range(0, N-lookback_len)]
   return tf.stack(windows)
 
-def FileListProcessor_csv_time_seriesv2(files, csv_field_delim, record_defaults_values, temporal_series_length, shuffle_batches, buffer_size, batch_size, step_window, na_value_string='N/A', labels_cols_nb=1, device="/cpu:0", postprocess_fn=None):
-    ''' For time series data, this is a CSV file reader that reads KEEPING THE INPUT LIST ORDER and that generates samples with overlapping.
-    '''
-    with tf.device(device),tf.name_scope('csv_file_line_blocks_read_dataset'):
-        def decode_csv(line):
-            features = tf.decode_csv(line, record_defaults=record_defaults_values, field_delim=csv_field_delim, na_value=na_value_string)
-            labels = features[:labels_cols_nb]
-            return features[labels_cols_nb:], labels
 
-        ds_file = tf.data.Dataset.from_tensors(files).apply(tf.data.experimental.unbatch())
+def FileListProcessor_csv_time_series(files,
+                                      csv_field_delim,
+                                      record_defaults_values,
+                                      batch_size,
+                                      epochs,
+                                      temporal_series_length,
+                                      na_value_string='N/A',
+                                      labels_cols_nb=1,
+                                      per_sample_preprocess_fn=None,
+                                      selected_cols=None):
 
-        dataset = ds_file.flat_map(lambda file: (tf.data.TextLineDataset(file).skip(1)))
-
-        dataset = dataset.map(decode_csv)
-
-        features = dataset.window(temporal_series_length, step_window, 1, True).flat_map(lambda x, _: x.batch(temporal_series_length))
-        labels = dataset.window(temporal_series_length, step_window, 1, True).flat_map(lambda _, x: x.batch(temporal_series_length))
-
-        zipped = tf.data.Dataset.zip((features, labels))
-
-        if postprocess_fn is not None:
-            zipped = zipped.map(postprocess_fn)
-
-        zipped = zipped.shuffle(buffer_size)
-
-        zipped = zipped.batch(batch_size, drop_remainder=True)
-        zipped = zipped.repeat(2)
-        zipped = zipped.prefetch(1)
-    return zipped
-
-def FileListProcessor_csv_time_series(files, csv_field_delim, record_defaults_values, nblines_per_block, queue_capacity, shuffle_batches, na_value_string='N/A', labels_cols_nb=1, device="/cpu:0", breakup_fact=1):
-    ''' define a queue that prefetches 1D vectors coming from a set of csv files
-        records that can have empty cells but default values must be specified to replace empty spaces
-        @param files: the list of input csv files to read from
-        @param csv_field_delim: the cell delimiter in the csv file
-        @param record_defaults_values: the list of default values, for example: [['default_txt'],[1],[1.0]]
-        @param nblines_per_block:the number of lines to read at a time : this will enable to dequeue this number lines as a single datablock
-        @param queue_capacity: the number of sample slots available in the queue
-        @param na_value_string: the string used in the csv files to say 'abnormal'/'undefined' value
-        @param labels_cols_nb: the number of FIRST columns that should be used to generate labels (say if start_date and stop_date exist, this would let this parameter to 2)
-        @param device: the device where to place the data pipeline
-    '''
-    with tf.device(device),tf.name_scope('csv_file_line_blocks_read_enqueue'): # force input pipeline to be ran on the main cpu
-        filename_queue = tf.train.string_input_producer(files, num_epochs=None)
-        reader = tf.TextLineReader(skip_header_lines=1)
-        key, value = reader.read_up_to(filename_queue, num_records=nblines_per_block*breakup_fact, name='read_lines')
-        # Default values, in case of empty columns. Also specifies the type of the
-        # decoded result.
-        features = tf.decode_csv(
-            value, record_defaults=record_defaults_values, field_delim=csv_field_delim, na_value=na_value_string) #keep all the the first column (timestamp)
-        #stack all but first column in a single tensor
-        print('FileListProcessor_csv_time_series: features='+str(features))
-
-        timestamplabels=[tf.cast(features[i], dtype=tf.string) for i in six.moves.range(labels_cols_nb)]
-        timestamps=tf.string_join(timestamplabels)
-        raw_data_sample=tf.cast(tf.stack(features[labels_cols_nb:], axis=1), dtype=tf.float32)
-
-        print("FileListProcessor_csv_time_series: raw_data_sample="+str(raw_data_sample))
-        if breakup_fact>1:
-          raw_data_sample=breakup(raw_data_sample, lookback_len=nblines_per_block)
-          timestamps=breakup(timestamps, lookback_len=nblines_per_block)
-          print("BREAKEDUP raw_data_sample="+str(raw_data_sample))
-
-        '''raw_data_sample = tf.Print(raw_data_sample, [raw_data_sample],
-               'read lines = ', summarize=2, first_n=10)'''
-        print('FileListProcessor_csv_time_series: timestamps/labels='+str(timestamps))
-        #print('features='+str(features))
-        #print('raw_data_sample='+str(raw_data_sample))
-        #setup a data queue that will prefetch the data
-        if shuffle_batches:
-            data_queue=tf.RandomShuffleQueue(capacity=queue_capacity,
-                                             min_after_dequeue=queue_capacity/2,
-                                             dtypes=['string','float'],
-                                             shapes=[nblines_per_block,[nblines_per_block, raw_data_sample.get_shape().as_list()[-1]]],
-                                             name='shuffled_prefetch_data_queue')
-        else:
-            data_queue=tf.FIFOQueue(capacity=queue_capacity,
-                                   dtypes=['string','float'],
-                                   shapes=[nblines_per_block,[nblines_per_block, raw_data_sample.get_shape().as_list()[-1]]],
-                                   name='fifo_prefetched_data_queue')
-
-        #enqueue data ONLY if the requested number of lines has been grabbed
-        check_nblines_per_block_OK=tf.equal(tf.shape(key)[0],nblines_per_block)
-        if breakup_fact==1:
-          conditionned_enqueue_op=tf.cond(check_nblines_per_block_OK, lambda: data_queue.enqueue([timestamps,raw_data_sample]), lambda:tf.no_op())
-        else:
-          conditionned_enqueue_op=tf.cond(check_nblines_per_block_OK, lambda: data_queue.enqueue_many([timestamps,raw_data_sample]), lambda:tf.no_op())
-
-        #threading
-        thread_enqueue_data = tf.train.QueueRunner( data_queue,
-                                                    [conditionned_enqueue_op]*5)
-        tf.train.add_queue_runner(thread_enqueue_data)
-        #monitor queues:
-        #tf.summary.scalar('raw_crops_queue_size', self.raw_crops_queue.size())
-        tf.summary.scalar('data_queue_size', data_queue.size())
-
-        #reset op
-        reset_ops=[reader.reset()]
-    return data_queue, reset_ops
-
-def FileListProcessor_csv_lines(files, csv_field_delim, shuffle_batches, batch_size, features_labels, na_value_string='N/A', samples_window_size=1, samples_window_shift=1, nbEpoch=1, device="/cpu:0", debug=False):
-    ''' inspired by the official iris tutorial and related blog
-        https://developers.googleblog.com/2017/12/
-        define a queue that prefetches 1D vectors coming from a set of csv files
-        records that can have empty cells but default values must be specified to replace empty spaces
-        @param files: the list of input csv files to read from
-        @param csv_field_delim: the cell delimiter in the csv file
-        @param queue_capacity: the number of sample slots available in the queue
-        @param shuffle_batches: True to randomize extracted samples
-        @param batch_size: the number of elements to extract at each step
-        @param features_labels: a dictionary following architecture:
-        features_labels={'all_cols':{'names':colnames, 'record_defaults':record_defaults},
-                         'data_cols':{'names_opt_categories_or_buckets':data_cols, 'indexes':data_idx},
-                         'labels_cols':{'names':label_cols,'indexes':label_idx}}
-        where names_opt_categories_or_buckets is a dictionnary that contains at
-        least key 'name' and has an optionnal LIST specified by key :
-        ---'vocabulary_list' if column is categorial and should be one hot encoded according to the specified vocabulary
-        ---'buckets_boundaries' if column numeric but should be should be one hot encoded according to the specified boundarie values
-
-
-        @param na_value_string: the string used in the csv files to say 'abnormal'/'undefined' value
-        @param device: the device where to place the data pipeline
-    '''
-
-    with tf.device(device),tf.name_scope('csv_file_lines_read_enqueue'): # force input pipeline to be ran on the main cpu
-        def decode_csv(line):
-            if debug is True:
-                line=tf.Print(line,[line], message='RAW csv line=')
-            print('record default=',features_labels['all_cols']['record_defaults'])
-            parsed_line = tf.decode_csv(line, record_defaults=features_labels['all_cols']['record_defaults'], field_delim=csv_field_delim, na_value=na_value_string)
-            features = dict(zip(features_labels['all_cols']['names'], parsed_line))
-            unused_cols = set(features_labels['all_cols']['names']) - {col['name'] for col in features_labels['data_cols']['names_opt_categories_or_buckets']} \
-                                                                    - {col for col in features_labels['labels_cols']['names']}
-            print('### UNUSED COLUMNS='+str(unused_cols))
-            # Remove unused columns
-            for col in unused_cols:
-                features.pop(col)
-            print('### USED COLUMNS (data and labels)='+str(features))
-            print('features='+str(features))
-            return features
-
-        dataset = (tf.data.TextLineDataset(files)  # Read text file
-           .skip(1)  # Skip header row
-           .repeat(nbEpoch)
-           )
-        #decode csv line(s)
-        dataset=dataset.map(decode_csv)  # Decode each line in a multi thread mode (asynchronous reading)
-        #dataset=tf.data.Dataset.from_tensor_slices(dataset)
-        print("====================")  # ==> "(tf.float32, tf.int32)"
-        print(dataset.output_types)  # ==> "(tf.float32, tf.int32)"
-        print('####################')  # ==> "(tf.float32, tf.int32)"
-        print(dataset.output_shapes)
-        if samples_window_size>1: # group sets of consecutive lines into batches
-           #print('************************************ dataset='+str(dataset))
-
-           dataset=dataset.window(size=samples_window_size, shift=samples_window_shift, stride=1)
-           #print('************************************ dataset='+str(dataset))
-        print("+++++++++++++++++++++")  # ==> "(tf.float32, tf.int32)"
-        print(dataset.output_types)  # ==> "(tf.float32, tf.int32)"
-        print(dataset.output_shapes)
-
-        dataset=dataset.prefetch(10*batch_size)  # Make sure you always have 1 batch ready to serve
-
-        if shuffle_batches is True:
-            dataset=dataset.shuffle(buffer_size=5*batch_size)
-
-        #create batches of data (blocs)
-        dataset=dataset.batch(batch_size)
-
-        return dataset
+    def decode_csv(line):
+      features = tf.io.decode_csv(line, record_defaults=record_defaults_values, field_delim=csv_field_delim, na_value=na_value_string, select_cols=selected_cols)
+      labels = features[:labels_cols_nb]
+      raw_data= tf.stack(features[labels_cols_nb:], axis=0)
+      labels=tf.stack(labels, axis=0)
+      if per_sample_preprocess_fn is not None:
+          return per_sample_preprocess_fn(raw_data, labels)
+      return raw_data, labels
+    #create a dataset from the list of files to process
+    files_dataset=tf.data.Dataset.list_files(files).repeat(epochs)
+    #a thread processes each file and each one is read by line blocks of length 'temporal_series_length'
+    dataset = files_dataset.flat_map(lambda file: (tf.data.TextLineDataset(file).skip(1).batch(temporal_series_length, drop_remainder=True)))
+    #map the de
+    dataset = dataset.map(decode_csv, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    return dataset.batch(batch_size, drop_remainder=True).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
 def FileListProcessor_image_classification(sourceFolder, file_extension,
                                            use_alternative_imread=False,
@@ -994,14 +967,16 @@ def FileListProcessor_image_classification(sourceFolder, file_extension,
   ds = ds.map(map_func=load_image)
 
   dataset = (tf.data.TextLineDataset(files)  # Read text file
-     .skip(1)  # Skip header row
-     .map(decode_csv, num_parallel_calls=4)  # Decode each line in a multi thread mode (asynchronous reading)
-     .cache() # Warning: Caches entire dataset, can cause out of memory
-     .repeat(1)    # Repeats dataset only one time (one epoch) thus allowing to automatically switch between train and eval steps
-     .batch(batch_size)
-     .prefetch(5*batch_size)  # Make sure you always have 1 batch ready to serve
-     )
+             .skip(1)  # Skip header row
+             .map(decode_csv, num_parallel_calls=4)  # Decode each line in a multi thread mode (asynchronous reading)
+             .cache() # Warning: Caches entire dataset, can cause out of memory
+             .repeat(1)    # Repeats dataset only one time (one epoch) thus allowing to automatically switch between train and eval steps
+             )
+
   if shuffle_batches is True:
       dataset=dataset.shuffle(buffer_size=5*batch_size)
+
+  dataset=dataset.batch(batch_size).prefetch(5*batch_size)  # Make sure you always have 1 batch ready to serve
+
 
   return dataset

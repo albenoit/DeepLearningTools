@@ -2,37 +2,32 @@
 @author: Alexandre Benoit, LISTIC lab, FRANCE
 @brief : simple personnal file that defines experiment specific keys to be used with our programs
 '''
-# python 2&3 compatibility management
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-import six
 
 import DataProvider_input_pipeline
 import tensorflow as tf
 import numpy as np
-import os
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-from helpers import loss as helpers_loss
-from helpers import model as helpers_model
+import os
+import cv2 #for ClientIO only
 
 #-> set here your own working folder
 workingFolder='experiments/semantic_segmentation'
 
-#-> port number to be used when interracting with the tensorflow-server
-tensorflow_server_address='127.0.0.1'
-tensorflow_server_port=9000
-wait_for_server_ready_int_secs=5
-serving_client_timeout_int_secs=10#timeout limit when a client requests a served model
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
-session_name='Cityscapes'
+session_name='Oxford-IIIT-Pets'
 
 ''' define here some hyperparameters to adjust the experiment
 ===> Note that this dictionnary will complete the session name
 '''
-hparams={'nbClasses':34,#set the number of classes in the considered dataset
+hparams={'learningRate':0.001,
+         'nbClasses':34,#set the number of classes in the considered dataset
          'smoothedParams':True,
-         'nbEpoch':50}
+         'nbEpoch':20,
+         'batchSize':4,
+         'outChannels':3,
+         'patchSize':128,
+        }
 
 ''''set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
@@ -43,310 +38,206 @@ with other processing jobs, yours and the ones of your colleagues.
 Then, connect to the processing node and type in command line 'nvidia-smi'
 to check which gpu is free (very few used memory and GPU )
 '''
-used_gpu_IDs=[0]
+used_gpu_IDs=[]
 #set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
-XLA_FLAG=tf.OptimizerOptions.ON_1#OFF
+useXLA=True
+
+#profile some training steps to check pipeline processing time bottlenecks (from Tensorboard)
+use_profiling=True
 
 #-> define here the used model under variable 'model'
-model_file='examples/segmentation/model_densenet_2D.py'
-display_model_layers_info=False #a flag to enable the display of additionnal console information on the model properties (for debug purpose)
+model_file='examples/segmentation/model_mobilenetV2_Unet.py'
 
-field_of_view=109
-test_patch_overlapping_ratio=0.75 #-> patch overlapping when evaluating/predicting
+# activate weight moving averaging over itarations (Polyak-Ruppert)
+weights_moving_averages=False
 
-#-> define here a string name used for the train, eval and served models
-input_data_name='input'
-model_head_embedding_name='code'
-model_head_prediction_name=tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY
-served_head=model_head_prediction_name #define here the output that will be provided by tensorflow-server
-
-#-> set the number of summaries store per training epoch (more=more precise BUT higer cost)
-nb_summary_per_train_epoch=4
-
-#define image patches extraction parameters
-patchSize=224
-server_patch_size=256
-server_crops_per_batch=4
-
-#random seed used to init weights, etc. Use an integer value to make experiments reproducible
+# random seed used to init weights, etc. Use an integer value to make experiments reproducible
 random_seed=42
 
-# learning rate decaying parameters
+
+#semantic segmentation task image patches config
+field_of_view=109
+test_patch_overlapping_ratio=0.75 #-> patch overlapping when evaluating/predicting
+patchSize=128
+server_patch_size=128
+server_crops_per_batch=4
+
+
+# stop condition, taking into account if val_loss does not decrease for early_stopping_patience epoch
 nbEpoch=hparams['nbEpoch']
-weights_weight_decay=0.0001
-initial_learning_rate=0.0001
-num_epochs_per_decay=10 #number of epoch keepng the same learning rate
-learning_rate_decay_factor=0.1 #factor applied to current learning rate when NUM_EPOCHS_PER_DECAY is reached
-predict_using_smoothed_parameters=hparams['smoothedParams']#set True to use trained parameters values smoothed along the training steps (better results expected BUT STILL DOES NOT WORK WELL IN THIS CODE VERSION)
-#set here paths to your data used for train, val, testraw_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
-#-> a first set of data
-raw_data_dir_train_ = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
-reference_data_dir_train_ = "/home/alben/workspace/Datasets/CityScapes/gtFine_trainvaltest/gtFine/train/"
-raw_data_dir_train=(raw_data_dir_train_, reference_data_dir_train_)
-raw_data_dir_val_ = "/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/val/"
-reference_data_dir_val_ = "/home/alben/workspace/Datasets/CityScapes/gtFine_trainvaltest/gtFine/val/"
+early_stopping_patience=10
+
+#set here paths to your data used for train, val
+#=> download tensorflow dataset for demo purpose
+try:
+  import tensorflow_datasets as tfds
+  dataset, info = tfds.load('oxford_iiit_pet:3.0.0', with_info=True)
+  print('Dataset info :', info)
+  nb_train_images=info.splits['train'].num_examples#len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train_, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
+  nb_val_images=info.splits['test'].num_examples#len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val_, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
+except :
+  print('WARING : Could not load tensorflow_datasets module required for train and validation processes')
+  print('--> NOTE THAT THIS WILL NOT IMPACT MODEL SERVING')
+  nb_train_images=1
+  nb_val_images=1
+
+raw_data_dir_train_ = ""#"/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
+reference_data_dir_train_ = ""#"/home/alben/workspace/Datasets/CityScapes/gtFine_trainvaltest/gtFine/train/"
+raw_data_dir_val_ = ""#"/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/val/"
+reference_data_dir_val_ = ""#"/home/alben/workspace/Datasets/CityScapes/gtFine_trainvaltest/gtFine/val/"
 raw_data_filename_extension='*.png'
 ref_data_filename_extension='*labelIds.png'
-#load all image files to use for training or testing
-nb_train_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train_, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
-nb_val_images=len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val_, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
-reference_labels=['semantic_labels']
-
+raw_data_dir_train=(raw_data_dir_train_, reference_data_dir_train_)
 raw_data_dir_val=(raw_data_dir_val_, reference_data_dir_val_)
+
 number_of_crops_per_image=100
 nb_train_samples=nb_train_images*number_of_crops_per_image# number of images * number of crops per image
-nb_test_samples=7000#nb_val_images*number_of_crops_per_image
-eval_not_rerun_until_sec=3600*12 #wait for 12h between 2 evaluations (long runs)
-batch_size=4
+nb_val_samples=nb_val_images*number_of_crops_per_image
+VAL_SUBSPLITS = 5
+batch_size=hparams['batchSize']
+steps_per_epoch=nb_train_samples//batch_size
+validation_steps=nb_val_samples//batch_size//VAL_SUBSPLITS
+reference_labels=['semantic_labels']
 
-####################################################
-## Define here use case specific metrics, loss, etc.
-#with tf.name_scope("loss"):
-def data_preprocess(features, model_placement):
-    ''' define here the chosen data preprocessing that will be applied
-    all the time, for training, validation and serving
-    Manually specify here on which device this preprocessing should be done.
-    For convenience, the placement of the model that follows this step is also provided
-    so that you may want to place it on the same device.
-    Args:
-        features: the input data that is being processed
-        model_placement: the device where the following model will be placed
-    Returns:
-       the preprocessed data
-    '''
-    # do nothing, train and val input paipeline standardize data on their own and
-    # serving will do its own too
-    return features
+########## MODEL SERVING/PRODUCTION PARAMETERS SECTION ################
+#-> port number to be used when interracting with the tensorflow-server
+tensorflow_server_address='127.0.0.1'
+tensorflow_server_port=9000
+wait_for_server_ready_int_secs=5
+serving_client_timeout_int_secs=1#timeout limit when a client requests a served model
+serve_on_gpu=True #uncomment to activate model serving on GPU instead of CPU
+served_input_names=['input']
+served_head_names=['semantic_labels', 'logits']
 
-def model_outputs_postprocessing_for_serving(model_outputs_dict):
-    ''' define here the post-processings to be applied to each of the model outputs when used withtensorflow serving
-        WARNING, in case of multiple outputs, ONE of them must be named as the
-        default serving output: tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY
-    Args:
-        model_outputs_dict: the original model outputs dictionary
-    Returns:
-       the postprocessed outputs dictionnary
-    '''
-    #in this use case, we have two outputs:
-    #->  code that is kept as is
-    #->  semantic map logits from which we extract the most probable class index for each pixel
-    postprocessed_outputs={#model_head_embedding_name:model_outputs_dict['code'],
-                           model_head_prediction_name:tf.saturate_cast(tf.argmax(model_outputs_dict['logits_semantic_map'],3, name='argmax_image'), tf.uint8),
-                           }
-    return postprocessed_outputs
+########## LOCAL PARAMETERS (ONLY USED BELOW) SECTION ################
 
-def getOptimizer(loss, learning_rate, global_step):
+########## TRAIN/VAL PERSONNALIZED FUNCTIONS SECTION ################
+
+# add here any additionnal callback to use along the train/val process
+def addon_callbacks(model, train_samples, val_samples):
+  ''' optionnal callbacks can be defined here
+  Arg: the defined model
+  Returns a list of tf.keras.callbacks or an empty list
+  '''
+  # Note this link to add pr_curves : https://medium.com/@akionakas/precision-recall-curve-with-keras-cd92647685e1
+  return []
+
+def get_learningRate():
+  ''' define here the learning rate
+  Returns a sclalar (float) or a scheduler
+  '''
+  return hparams['learningRate']
+
+def get_optimizer(model, loss, learning_rate):
     '''define here the specific optimizer to be used
+    Returns a tensorflow optimizer object
     '''
-    #get gradient summary information and the gradient norm
-    tvars, raw_grads, gradient_norm=helpers_model.track_gradients(loss)
+    optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
-    return tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
+    return optimizer
 
-def get_total_loss(inputs, model_outputs_dict, labels, weights_loss):
-    '''a specific loss for data reconstruction when dealing with autoencoders
+def get_metrics(model, loss):
+
+  #define a custom Mean IoU metric, taking into the fact that predictions are per class logits
+  class MeanIoU(tf.keras.metrics.MeanIoU):
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        # sparse code
+        y_true = tf.argmax(y_true, axis=-1)
+        y_pred = tf.argmax(y_pred, axis=-1)
+        return super(MeanIoU, self).update_state(y_true, y_pred, sample_weight)
+
+  return ['accuracy', MeanIoU(num_classes=hparams['outChannels'])]
+
+def get_total_loss(model):
+    '''a specific loss can be defined here or simply use a string that refers to a keras loss
     Args:
-        inputs: the input data samples batch
-        model_outputs_dict: the dictionnay of model outputs, field names must comply withthe ones defined in the model_file
-        labels: the reference data / ground truth if available
-        weights_loss: the model weights loss that may be used for regularization
-    '''
-    labels=tf.squeeze(labels, axis=[-1])
-
-    #-> restrict to the center part of the images
-    logits_semantic_crops=tf.slice(model_outputs_dict['logits_semantic_map'], begin=[0,field_of_view//2, field_of_view//2, 0], size =[-1,patchSize-field_of_view, patchSize-field_of_view, -1])
-    cross_entropy_segmentation_loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits_semantic_crops, labels=labels))
-
-    return cross_entropy_segmentation_loss+weights_weight_decay*weights_loss
-
-def get_validation_summaries(inputs, model_outputs_dict, labels):
-    ''' add here (if required) some summaries to be applied on the validation dataset
-    Args:
-        inputs: the input data samples batch
-        model_outputs_dict: the dictionnay of model outputs, field names must comply withthe ones defined in the model_file
-        labels: the reference data / ground truth if available
+        model: the model to be optimized that may be used to focus loss on a set of specific layers or so
     Returns:
-        a list of summaries
+        a keras implemented loss represented by a string or a custom loss
+        => it is recommended to return a tensor named 'loss' in order to enable some
+        useful default options such as early stopping
     '''
-    labels=tf.squeeze(labels, squeeze_dims=-1)
-    semantic_segm_argmax_map=tf.cast(tf.argmax(model_outputs_dict['logits_semantic_map'],3, name='argmax_image'), tf.int32)
 
-    with tf.name_scope('image_summaries'):
-        raw_rgb_min= tf.reduce_min(inputs, axis=[1,2,3], keepdims=True)
-        raw_rgb_max= tf.reduce_max(inputs, axis=[1,2,3], keepdims=True)
-        raw_images_rgb_0_1=(inputs-raw_rgb_min)/(raw_rgb_max-raw_rgb_min)
-        raw_images_display=tf.saturate_cast(raw_images_rgb_0_1*255.0, dtype=tf.uint8)
-        reference_images_crops_regions_display=tf.expand_dims(tf.saturate_cast((labels*255)/(hparams['nbClasses']-1), dtype=tf.uint8),-1)
-        semantic_segm_argmax_map_crops_display=tf.saturate_cast(tf.expand_dims((semantic_segm_argmax_map*255)/(hparams['nbClasses']-1),-1), dtype=tf.uint8)
-        print('*********reference shape='+str(reference_images_crops_regions_display.get_shape().as_list()))
-        return ([tf.summary.image("input", raw_images_display),
-                tf.summary.image("references_center_crop_regions", reference_images_crops_regions_display),
-                tf.summary.image("semantic_segmentation", semantic_segm_argmax_map_crops_display),
-               ], nb_test_samples/4)
 
-def get_eval_metric_ops(inputs, model_outputs_dict, labels):
-    """Return a dict of the evaluation Ops.
-    Args:
-        inputs: the input data samples batch
-        model_outputs_dict: the dictionnay of model outputs, field names must comply withthe ones defined in the model_file
-        labels: the reference data / ground truth if available
-    Returns:
-        Dict of metric results keyed by name.
-    """
-    labels=tf.squeeze(labels, squeeze_dims=-1)
+    return 'sparse_categorical_crossentropy'
 
-    semantic_segm_argmax_map=tf.cast(tf.argmax(model_outputs_dict['logits_semantic_map'],3, name='argmax_image'), tf.int32)
-    print('Evaluating on the center part of the window (skeeping border effects, TODO, adjust size wrt receptive field shape)')
-    print('-> semantic map shape={seg_shp}, ref_shape={ref_shp}'.format(seg_shp=semantic_segm_argmax_map.get_shape().as_list(),
-                                                                    ref_shp=labels.get_shape().as_list()))
-
-    return {
-            'Accuracy': tf.metrics.accuracy(
-                        labels=labels,
-                        predictions=semantic_segm_argmax_map,
-                        weights=None,
-                        metrics_collections=None,
-                        updates_collections=None,
-                        name='Accuracy_metric'
-                        ),
-            'IoU' : tf.metrics.mean_iou(
-                                labels=labels,
-                                predictions=semantic_segm_argmax_map,
-                                num_classes=hparams['nbClasses'],
-                                weights=None,
-                                metrics_collections=None,
-                                updates_collections=None,
-                                name='IoU_metric')
-            }
-
-'''Define here the input pipelines :
--1. a common function for train and validation modes
--2. a specific one for the serving model_extra_update_ops
 '''
-def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batches):
-    ''' define an input pipeline able to load temporal series from a set of
-    CSV files and a batch size specified as inputs
-    TODO, look at the doc here : https://www.tensorflow.org/programmers_guide/datasets
-    @param batch_size : the expected size of a batch
-    @param raw_data_files_folder : the folder where CSV files are stored
-    @param shuffle_batches : a boolean that activates batch shuffling
-    '''
+Define here the input pipelines : a common function for train and validation modes
+'''
+def get_input_pipeline(raw_data_files_folder, isTraining):
+  ''' define an input pipeline a basic example here:
+  -> load a standard dataset with tuples (image, label)
+  TODO, look at the doc here : https://www.tensorflow.org/programmers_guide/datasets
+  @param raw_data_files_folder : the variable that could target a dataset/folder...
+  @param isTraining : a boolean that activates batch shuffling
+  '''
+  def normalize(input_image, input_mask):
+    input_image = tf.cast(input_image, tf.float32) / 255.0
+    input_mask -= 1
+    return input_image, input_mask
 
-    class IteratorInitializerHook(tf.train.SessionRunHook):
-        """Hook to initialise data iterator after Session is created."""
+  if isTraining:
+    @tf.function
+    def load_image_train(datapoint):
+      input_image = tf.image.resize(datapoint['image'], (128, 128))
+      input_mask = tf.image.resize(datapoint['segmentation_mask'], (128, 128))
 
-        def __init__(self):
-            super(IteratorInitializerHook, self).__init__()
-            self.iterator_initializer_func = None
+      if tf.random.uniform(()) > 0.5:
+        input_image = tf.image.flip_left_right(input_image)
+        input_mask = tf.image.flip_left_right(input_mask)
 
-        def after_create_session(self, session, coord):
-            """Initialise the iterator after the session has been created."""
-            self.iterator_initializer_func(session)
-    iterator_initializer_hook = IteratorInitializerHook()
+      input_image, input_mask = normalize(input_image, input_mask)
 
-    if nb_train_images==0:
-        raise ValueError('No training image found, abording!')
-    if nb_val_images==0:
-        raise ValueError('No training image found, abording!')
-    # get model field of view computed at the training step or compute it with the test_patch_overlapping_ratio
-    def get_fov(isTraining):
-        fov=0
-        if isTraining is False:
-            if test_patch_overlapping_ratio < 1.0 and test_patch_overlapping_ratio > 0.0 :
-                fov = int(np.ceil(test_patch_overlapping_ratio*patchSize) // 2 * 2 + 1)
-            elif test_patch_overlapping_ratio == 0 :
-                fov = 0
-            else :
-                fov = field_of_view
-        return fov
+      return input_image, input_mask
+    target_dataset = dataset['train'].map(load_image_train, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    target_dataset=target_dataset.cache().shuffle(100).batch(batch_size).repeat()
+    target_dataset=target_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+  else:
+    def load_image_test(datapoint):
+      input_image = tf.image.resize(datapoint['image'], (patchSize, patchSize))
+      input_mask = tf.image.resize(datapoint['segmentation_mask'], (patchSize, patchSize))
 
-    import cv2
-    isTraining=shuffle_batches
-    def apply_pixel_transforms(isTraining):
-        if isTraining:
-            return 0.5
-        else:
-            return None
-    def input_fn():
-        #load all image files to use for training or testing
-        raw_data_files=DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_files_folder[0], file_extension=raw_data_filename_extension)
-        dataset_references_train=DataProvider_input_pipeline.extractFilenames(raw_data_files_folder[1], ref_data_filename_extension)
-        nb_raw_images=len(raw_data_files)
-        nb_ref_images=len(dataset_references_train)
-        print('Input files found (raw, ref)='+str((nb_raw_images, nb_ref_images)))
-        if nb_raw_images!=nb_ref_images:
-            raise ValueError('Raw images and reference image numbers differ, check datasets')
+      input_image, input_mask = normalize(input_image, input_mask)
 
-        #init the input pipeline
-        dataset_nbEpoch=nbEpoch#for the training dataset
-        if isTraining is False:
-          dataset_nbEpoch=1
-        data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation(raw_data_files, dataset_references_train,
-                nbEpoch=dataset_nbEpoch,
-                shuffle_samples=shuffle_batches,
-                patch_ratio_vs_input=patchSize,
-                max_patches_per_image=number_of_crops_per_image,
-                image_area_coverage_factor=int(isTraining)+1.0,#factor 2 on training, 1 on testing
-                num_preprocess_threads=4,#4 threads on training, 1 on testing
-                apply_random_flip_left_right=isTraining,
-                apply_random_flip_up_down=False,
-                apply_random_brightness=apply_pixel_transforms(isTraining),
-                apply_random_saturation=apply_pixel_transforms(isTraining),
-                apply_whitening=True,
-                batch_size=batch_size,
-                use_alternative_imread='opencv',
-                balance_classes_distribution=isTraining,
-                classes_entropy_threshold=0.6,
-                opencv_read_flags=cv2.IMREAD_UNCHANGED,
-                field_of_view=get_fov(isTraining),
-                manage_nan_values='avoid')
+      return input_image, input_mask
+    target_dataset = dataset['test'].map(load_image_test).batch(batch_size)
 
-        #retreive a batch of samples
-        with tf.name_scope("retrieve_batch"):
-            # batch sample retrieval
-            data_batch=data_provider.dataset_iterator.get_next()
-            # extract raw data,  reference data will be extracted at the optimizer level
-            raw_images=tf.slice( data_batch,
-                                        begin=[0,0,0,0],
-                                        size=[-1,-1,-1,data_provider.single_image_raw_depth])
-            with tf.name_scope('prepare_reference_data'):
-                #-> get reference data restricted to the center part of the images
-                reference_crops=tf.cast(
-                                        tf.slice( data_batch,
-                                            begin=[0,field_of_view//2, field_of_view//2, data_provider.single_image_raw_depth],
-                                            size=[-1,patchSize-field_of_view, patchSize-field_of_view,data_provider.single_image_reference_depth])
-                                    ,dtype=tf.int32)
-        #finally manage the dataset iterator
-        iterator_init = data_provider.getIteratorInitializer()
-        # Set runhook to initialize the iterator
-        iterator_initializer_hook.iterator_initializer_func = \
-            lambda sess: sess.run(iterator_init)
-        return raw_images, reference_crops
-    return input_fn, iterator_initializer_hook
+  return target_dataset
+
 '''
 ################################################################################
 ## Serving (production) section, define here :
--get_input_pipeline_serving():  the input placeholder of the server that will receive the data
+-get_served_module():  define how the model will be applied on production data, applying custom pre and post processing
 -class Client_IO, a class to specifiy input data requests and response on the client side when serving a model
 For performance/enhancement of the model, have a look here for graph optimization: https://github.com/tensorflow/tensorflow/blob/r1.4/tensorflow/tools/graph_transforms/README.md
 '''
 serving_img_shape=[server_crops_per_batch, server_patch_size,server_patch_size,3]
-def get_input_pipeline_serving():
-    '''Build the serving inputs, expecting messages made of :
-    -> a batch of size 1 of a single image in the uint8 format (no preliminary normalisation is expected).
-    ---> the input is then converted into a float32 4D batch
-    '''
-    serialized_tf_example = tf.placeholder(
-        dtype=tf.uint8,
-        shape=serving_img_shape,
-        name='serialized_input_data')
-    serialized_tf_example_4d=tf.map_fn(tf.image.per_image_standardization, tf.cast(serialized_tf_example, dtype=tf.float32))
-    print('Served input='+str(serialized_tf_example_4d))
-    return tf.estimator.export.ServingInputReceiver(
-        serialized_tf_example_4d, {input_data_name: serialized_tf_example})
+def get_served_module(model, model_name):
+  ''' following https://www.tensorflow.org/guide/saved_model
+      Create a custom module to specify how the model will be used in production/serving
+      specific preprocessing can be defined as well as post-processing
+  '''
+  class ExportedModule(tf.Module):
+    def __init__(self, model):
+      super().__init__()
+      self.model=model
 
+    @tf.function(input_signature=[tf.TensorSpec(shape=serving_img_shape, dtype=tf.uint8)])
+    def served_model(self, input):
+      ''' a decorated function that specifies the input data format, processing and output dict
+        Args: input tensor(s)
+        Returns a dictionnary of {'output key':tensor}
+      '''
+      def normalize(input_image):
+        return input_image/ 255.0
 
-import cv2
+      input_standardized_casted=tf.map_fn(normalize, tf.cast(input, tf.float32))
+      logits=model(input_standardized_casted)
+
+      return {served_head_names[0]:tf.saturate_cast(tf.argmax(logits,3, name='argmax_image'), tf.uint8),
+              served_head_names[1]:logits}
+  return ExportedModule(model)
+
 class Client_IO:
     ''' A specific class dedicated to clients that need to interract with
     a Tensorflow server that runs the above model
@@ -399,13 +290,13 @@ class Client_IO:
         self.nb_crops_colums=np.maximum(1,(self.outframe.shape[1]-field_of_view)//self.patch_effective_width)
         self.crops_positions_in=[]
         self.crops_positions_code=[]
-        for l in six.moves.range(self.nb_crops_lines):
-          for c in six.moves.range(self.nb_crops_colums):
+        for l in range(self.nb_crops_lines):
+          for c in range(self.nb_crops_colums):
             self.crops_positions_in.append((l*self.patch_effective_width,c*self.patch_effective_width))
         #adding bottom and right borders
-        for l in six.moves.range(self.nb_crops_lines):
+        for l in range(self.nb_crops_lines):
           self.crops_positions_in.append((l*self.patch_effective_width,self.outframe.shape[1]-server_patch_size))
-        for c in six.moves.range(self.nb_crops_colums):
+        for c in range(self.nb_crops_colums):
           self.crops_positions_in.append((self.outframe.shape[0]-server_patch_size,c*self.patch_effective_width))
         self.crops_positions_in.append((self.outframe.shape[0]-server_patch_size,self.outframe.shape[1]-server_patch_size))
         print('Number of crops required to process the input image = '+str(len(self.crops_positions_in)))
@@ -457,41 +348,9 @@ class Client_IO:
 
         self.labels = [
             #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
-            Label(  'unlabeled'            ,  0 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-            Label(  'ego vehicle'          ,  1 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-            Label(  'rectification border' ,  2 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-            Label(  'out of roi'           ,  3 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-            Label(  'static'               ,  4 ,      255 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-            Label(  'dynamic'              ,  5 ,      255 , 'void'            , 0       , False        , True         , (111, 74,  0) ),
-            Label(  'ground'               ,  6 ,      255 , 'void'            , 0       , False        , True         , ( 81,  0, 81) ),
-            Label(  'road'                 ,  7 ,        0 , 'flat'            , 1       , False        , False        , (128, 64,128) ),
-            Label(  'sidewalk'             ,  8 ,        1 , 'flat'            , 1       , False        , False        , (244, 35,232) ),
-            Label(  'parking'              ,  9 ,      255 , 'flat'            , 1       , False        , True         , (250,170,160) ),
-            Label(  'rail track'           , 10 ,      255 , 'flat'            , 1       , False        , True         , (230,150,140) ),
-            Label(  'building'             , 11 ,        2 , 'construction'    , 2       , False        , False        , ( 70, 70, 70) ),
-            Label(  'wall'                 , 12 ,        3 , 'construction'    , 2       , False        , False        , (102,102,156) ),
-            Label(  'fence'                , 13 ,        4 , 'construction'    , 2       , False        , False        , (190,153,153) ),
-            Label(  'guard rail'           , 14 ,      255 , 'construction'    , 2       , False        , True         , (180,165,180) ),
-            Label(  'bridge'               , 15 ,      255 , 'construction'    , 2       , False        , True         , (150,100,100) ),
-            Label(  'tunnel'               , 16 ,      255 , 'construction'    , 2       , False        , True         , (150,120, 90) ),
-            Label(  'pole'                 , 17 ,        5 , 'object'          , 3       , False        , False        , (153,153,153) ),
-            Label(  'polegroup'            , 18 ,      255 , 'object'          , 3       , False        , True         , (153,153,153) ),
-            Label(  'traffic light'        , 19 ,        6 , 'object'          , 3       , False        , False        , (250,170, 30) ),
-            Label(  'traffic sign'         , 20 ,        7 , 'object'          , 3       , False        , False        , (220,220,  0) ),
-            Label(  'vegetation'           , 21 ,        8 , 'nature'          , 4       , False        , False        , (107,142, 35) ),
-            Label(  'terrain'              , 22 ,        9 , 'nature'          , 4       , False        , False        , (152,251,152) ),
-            Label(  'sky'                  , 23 ,       10 , 'sky'             , 5       , False        , False        , ( 70,130,180) ),
-            Label(  'person'               , 24 ,       11 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
-            Label(  'rider'                , 25 ,       12 , 'human'           , 6       , True         , False        , (255,  0,  0) ),
-            Label(  'car'                  , 26 ,       13 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
-            Label(  'truck'                , 27 ,       14 , 'vehicle'         , 7       , True         , False        , (  0,  0, 70) ),
-            Label(  'bus'                  , 28 ,       15 , 'vehicle'         , 7       , True         , False        , (  0, 60,100) ),
-            Label(  'caravan'              , 29 ,      255 , 'vehicle'         , 7       , True         , True         , (  0,  0, 90) ),
-            Label(  'trailer'              , 30 ,      255 , 'vehicle'         , 7       , True         , True         , (  0,  0,110) ),
-            Label(  'train'                , 31 ,       16 , 'vehicle'         , 7       , True         , False        , (  0, 80,100) ),
-            Label(  'motorcycle'           , 32 ,       17 , 'vehicle'         , 7       , True         , False        , (  0,  0,230) ),
-            Label(  'bicycle'              , 33 ,       18 , 'vehicle'         , 7       , True         , False        , (119, 11, 32) ),
-            Label(  'license plate'        , -1 ,       -1 , 'vehicle'         , 7       , False        , True         , (  0,  0,142) ),
+            Label(  'unlabeled'            ,  0 ,      0 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
+            Label(  'sidewalk'             ,  1 ,      1 , 'flat'            , 1       , False        , False        , (244, 35,232) ),
+            Label(  'person'               , 2 ,       2 , 'human'           , 2       , True         , False        , (220, 20, 60) ),
         ]
         #--------------------------------------------------------------------------------
         # Create dictionaries for a fast lookup
@@ -529,7 +388,7 @@ class Client_IO:
         crops=[]
         #self.crop_index is not updated here, decodeResponse will do this FIXME, any async issue ?
         crop_index=self.crop_index
-        for i in six.moves.range(server_crops_per_batch):
+        for i in range(server_crops_per_batch):
           #end of the list border effect management (add a zeroes patch
           if crop_index+i>=len(self.crops_positions_in):
             current_crop=np.zeros(serving_img_shape[1:], dtype=np.uint8)
@@ -544,7 +403,7 @@ class Client_IO:
         self.frame_patch=np.array(crops)
         if self.debugMode is True:
           print('Batch request shape={shp}, crop index={cropIdx}'.format(shp=self.frame_patch.shape, cropIdx=crop_index))
-          for idx in six.moves.range(server_crops_per_batch):
+          for idx in range(server_crops_per_batch):
             cv2.imshow('input crop'+str(idx), self.frame_patch[idx,:,:,:])
           cv2.waitKey(5)
 
@@ -559,7 +418,7 @@ class Client_IO:
             Args:
             result: a PredictResponse object that contains the request result
         '''
-        response = np.reshape(np.array(result.outputs[served_head].int_val),serving_img_shape[:-1]).astype(np.uint8)
+        response = np.reshape(np.array(result.outputs[served_head_names[0]].int_val),serving_img_shape[:-1]).astype(np.uint8)
 
         if self.debugMode is True:
             print('Answer shape='+str(response.shape))
