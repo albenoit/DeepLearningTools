@@ -29,7 +29,7 @@ import unicodedata
 dataprovider_namescope="data_input_pipeline"
 filenames_separator='###'
 
-def image_tfrecords_dataset(filename, haslabel=False):
+def image_tfrecords_dataset(filename, hasLabels=False):
   ''' Assuming a set of tfrecords file is pointed by filename, ex:'images.tfrecords',
   create a data provider that loads them for training/testing models
   Args:
@@ -44,32 +44,57 @@ def image_tfrecords_dataset(filename, haslabel=False):
       'height': tf.io.FixedLenFeature([], tf.int64),
       'width': tf.io.FixedLenFeature([], tf.int64),
       'depth': tf.io.FixedLenFeature([], tf.int64),
-      'image_raw': tf.io.FixedLenFeature([], tf.string),
+      'image_raw': tf.io.VarLenFeature(tf.float32),
   }
-  if hasLabel:
+  if hasLabels:
     image_feature_description.update({'label': tf.io.FixedLenFeature([], tf.int64)})
 
   def _parse_image_function(example_proto):
     # Parse the input tf.Example proto using the dictionary above.
-    return tf.io.parse_single_example(example_proto, image_feature_description)
+    flat_sample=tf.io.parse_single_example(example_proto, image_feature_description)
+    sample=tf.reshape(tf.sparse.to_dense(flat_sample['image_raw']), (flat_sample['height'], flat_sample['width'], flat_sample['depth']))
+    return sample
 
   return raw_image_dataset.map(_parse_image_function)
 
-def test_image_tfrecords_dataset_tfrecords_dataset(filename='test_dataset.tfrecords'):
+def test_image_tfrecords_dataset(filename='test_dataset.tfrecords'):
   '''suppose a dataset pointed by files 'test_dataset.tfrecords' exists, load it
   and display the recorded samples_saving_queuet
   Args: filename, path to the tfrecord files
   '''
   #Read the created dataset
-  dataset = imageSegmentation_tfrecords_dataset(filename)
-  for image_features in dataset:
-    image_raw = image_features['image_raw'].numpy().astype(np.uint8)
-    print('sample shape:', image_raw.shape)
-    if image_raw.shape[1]>3:
-      cv2.imshow('raw_image', image_raw[:,:,:3])
-      cv2.imshow('reference_image', image_raw[:,:,3:]*20) #semantic indexes are amplified for visibility
+  dataset = image_tfrecords_dataset(filename)
+  for sample in dataset:
+    #print('sample shape', sample.shape)
+    image_raw = sample.numpy()
+    reference=None
+    print('image_raw.shape[-1]',image_raw.shape[-1])
+    if image_raw.shape[-1]==4:
+      print('RGB image + reference channel')
+      input_crop=image_raw[:,:,:3]
+      reference=image_raw[:,:,3]
+    elif image_raw.shape[-1]==3:
+      print('Single RGB image ')
+      input_crop=image_raw
+    elif image_raw.shape[-1]==2:
+      print('Gray image + reference channel')
+      input_crop=image_raw[:,:,0]
+      reference=image_raw[:,:,1]
+    elif image_raw.shape[-1]==1 or len(image_raw.shape)==2:
+      print('Single gray image')
+      input_crop=image_raw
     else:
-      cv2.imshow('raw_image', image_raw)
+      raise ValueError('Failed to display array of shape '+str(image_raw.shape))
+
+    #display relying on OpenCV
+    sample_minVal=np.min(input_crop)
+    sample_maxVal=np.max(input_crop)
+    print('Sample value range (min, max)=({minVal}, {maxVal})'.format(minVal=sample_minVal, maxVal=sample_maxVal))
+    input_crop_norm=(input_crop-sample_minVal)*255.0/(sample_maxVal-sample_minVal)
+    cv2.imshow('TEST input crop rescaled (0-255)', cv2.cvtColor(input_crop_norm.astype(np.uint8), cv2.COLOR_RGB2BGR))
+    if reference is not None:
+      cv2.imshow('TEST reference crop (classID*20)', reference.astype(np.uint8)*20)
+      cv2.waitKey()
 
 def make_images_coarse(input_images, downscale_factor=2):
     """
