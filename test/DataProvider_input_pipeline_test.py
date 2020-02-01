@@ -43,8 +43,10 @@ parser.add_argument('--field_of_view', dest='field_of_view', default=0,
                     help='specify the boundary width reduction on the reference data to remove')
 parser.add_argument('--write_tfRecords', dest='write_tfRecords', action='store_true',
                     help='activate tf records writing, to be loaded at full speed for the next training session')
-parser.add_argument('--tfRecords_name', dest='tfRecords_name', default='/tmp/myDataset',
-                    help='activate tf records writing, to be loaded at full speed for the next training session')
+parser.add_argument('--tfRecords_name', dest='tfRecords_name', default='myDataset',
+                    help='specifiy a file name to your tfrecord files, default is myDataset')
+parser.add_argument('--read_tfRecords', dest='read_tfRecords', action='store_true',
+                    help='activate tfrecord read test to check what has been writen, what is read next')
 
 processCommands = parser.parse_args()
 field_of_view=processCommands.field_of_view
@@ -142,79 +144,103 @@ def _bytes_feature(value):
     value = value.numpy() # BytesList won't unpack a string from an EagerTensor.
   return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
-def _float_feature(value):
+def _float32_feature_list(value):
   """Returns a float_list from a float / double."""
-  return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
+  return tf.train.Feature(float_list=tf.train.FloatList(value=value))
 
-def _int64_feature(value):
+def _int64_feature_scalar(value):
   """Returns an int64_list from a bool / enum / int / uint."""
   return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
 # Create a dictionary with features that may be relevant.
-def image_example(image_tensor):#, label):
-  image_string=tf.io.serialize_tensor(image_tensor)
+def image_example(image_tensor, label=None):
   image_shape = image_tensor.shape
+  print('image_example.shape',image_shape)
 
   feature = {
-      'height': _int64_feature(image_shape[0]),
-      'width': _int64_feature(image_shape[1]),
-      'depth': _int64_feature(image_shape[2]),
-      #'label': _int64_feature(label),
-      #'image_raw': _bytes_feature(image_string),
+      'height': _int64_feature_scalar(image_shape[0]),
+      'width': _int64_feature_scalar(image_shape[1]),
+      'depth': _int64_feature_scalar(image_shape[2]),
+      'image_raw': _float32_feature_list(image_tensor.numpy().flatten().tolist()),
   }
+  if label is not None:
+    image_feature_description.update({'label': _int64_feature_scalar(label)})
 
-  return tf.train.Example(features=tf.train.Features(feature=feature))
+
+  return tf.train.Example(features=tf.train.Features(feature=feature)).SerializeToString()
 
 if processCommands.write_tfRecords:
   #setup
-  ''' dataset recorder, display loop below is then ran AFTER full dataset recording :
-  writer = tf.data.experimental.TFRecordWriter(file_out)
-  writer.write(serialized_features_dataset)
-  '''
   file_out = "%s.tfrecords" % processCommands.tfRecords_name
   print('Samples will be written as tfrecords in files: ', file_out)
-  writer= tf.io.TFRecordWriter(file_out)
 
-#######################################################################
-### Samples extraction loop
-for step, batch in enumerate(data_provider.dataset):
-  print('====== New step='+str(step))#, 'batch=',batch[0])
-  sample=batch[0]
+
+def write_dataset_no_display():
+  # add serialization node to the dataprovider and write the dataset directly
+  def serialize_sample(sample):
+    ''' takes as input a tensor, transform to protobuffer and
+        returns it serialized
+    '''
+    return tf.py_function(image_example, [sample[0]], tf.string)
+
+  writer = tf.data.experimental.TFRecordWriter(file_out)
+  print('Writing dataset without display...can be long...')
+  writer.write(data_provider.dataset.map(serialize_sample))
+  print('Dataset writing done !')
+
+def read_dataset_display():
   if processCommands.write_tfRecords:
-    sample_proto=image_example(sample)
-    print('Serialized sample:', sample_proto)
-    writer.write(sample_proto.SerializeToString())
-  if allow_display is True:
-    input_crop=sample[:,:,:3].numpy()
-    reference =sample[:,:,3:].numpy()
-    contours=get_semantic_contours(tf.expand_dims(sample[:,:,3:],0)).numpy().squeeze(0)
-    print('input_crop shape =', input_crop.shape)
-    print('reference_crop shape =', reference.shape)
-    print('contours_crop shape =', contours.shape)
-    sample_minVal=np.min(input_crop)
-    sample_maxVal=np.max(input_crop)
-    print('Sample value range (min, max)=({minVal}, {maxVal})'.format(minVal=sample_minVal, maxVal=sample_maxVal))
-    input_crop_norm=(input_crop-sample_minVal)*255.0/(sample_maxVal-sample_minVal)
-    cv2.imshow('input crop', cv2.cvtColor(input_crop_norm.astype(np.uint8), cv2.COLOR_RGB2BGR))
-    cv2.imshow('reference crop', reference.astype(np.uint8)*int(255/nb_classes))
-    cv2.imshow('reference contours_disp', contours.astype(np.uint8)*255)
-    cv2.waitKey(1000)
-
-if processCommands.write_tfRecords:
-  writer.close()
-#loop ended, final pause before closing
-if allow_display is True:
-  print('finished crop sample display, press a key to stop from an active opencv image show window')
-  cv2.waitKey()
-
-print('######## Stopped process at step '+str(step))
-cv2.waitKey()
-
-if process_labels_histogram is True:
-    nb_pix=np.sum(class_count)
-    plt.plot(class_count/nb_pix)
-    plt.title('Class probabilities, nb_pixels='+str(nb_pix))
-    plt.savefig('RS_dataset_Class probabilities.eps')
-    #DataProvider_input_pipeline.plot_sample_channel_histograms(result, filenameID="last_crop_")
+    writer=tf.io.TFRecordWriter(file_out)
+  #######################################################################
+  ### Samples extraction loop
+  for step, batch in enumerate(data_provider.dataset):
+    print('====== New step='+str(step))#, 'batch=',batch[0])
+    sample=batch[0]
+    if processCommands.write_tfRecords:
+      sample_proto=image_example(sample)
+      #print('Serialized sample:', sample_proto)
+      writer.write(sample_proto)
+      writer.flush()
     if allow_display is True:
-        plt.show()
+      input_crop=sample[:,:,:3].numpy()
+      reference =sample[:,:,3:].numpy()
+      contours=get_semantic_contours(tf.expand_dims(sample[:,:,3:],0)).numpy().squeeze(0)
+      print('input_crop shape =', input_crop.shape)
+      print('reference_crop shape =', reference.shape)
+      print('contours_crop shape =', contours.shape)
+      sample_minVal=np.min(input_crop)
+      sample_maxVal=np.max(input_crop)
+      print('Sample value range (min, max)=({minVal}, {maxVal})'.format(minVal=sample_minVal, maxVal=sample_maxVal))
+      input_crop_norm=(input_crop-sample_minVal)*255.0/(sample_maxVal-sample_minVal)
+      cv2.imshow('input crop', cv2.cvtColor(input_crop_norm.astype(np.uint8), cv2.COLOR_RGB2BGR))
+      cv2.imshow('reference crop', reference.astype(np.uint8)*int(255/nb_classes))
+      cv2.imshow('reference contours_disp', contours.astype(np.uint8)*255)
+      cv2.waitKey(1000)
+
+  if processCommands.write_tfRecords:
+    writer.close()
+
+  if allow_display is True:
+    print('finished crop sample display, press a key to stop from an active opencv image show window')
+    cv2.waitKey()
+  if process_labels_histogram is True:
+      nb_pix=np.sum(class_count)
+      plt.plot(class_count/nb_pix)
+      plt.title('Class probabilities, nb_pixels='+str(nb_pix))
+      plt.savefig('RS_dataset_Class probabilities.eps')
+      #DataProvider_input_pipeline.plot_sample_channel_histograms(result, filenameID="last_crop_")
+      if allow_display is True:
+          plt.show()
+
+
+if processCommands.write_tfRecords and processCommands.avoid_display:
+  write_dataset_no_display()
+else:
+  read_dataset_display()
+
+if processCommands.write_tfRecords and processCommands.read_tfRecords:
+  print('Attempting to read the writen tfrecords...')
+  DataProvider_input_pipeline.test_image_tfrecords_dataset(filename=file_out)
+  print('tfrecord reading done')
+
+print('Test script end')
