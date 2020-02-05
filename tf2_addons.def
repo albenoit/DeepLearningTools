@@ -1,0 +1,35 @@
+BootStrap: docker
+From: docker://tensorflow/tensorflow:nightly-gpu-py3-jupyter
+
+%post
+    apt-get update
+    apt-get install -y python3-gdal
+    apt-get install -y python3-tk
+    apt-get install -y graphviz
+    apt-get install -y build-essential cmake git pkg-config libjpeg8-dev libtiff5-dev  libavcodec-dev libavformat-dev libswscale-dev libv4l-dev  libgtk2.0-dev libatlas-base-dev gfortran
+    apt-get install -y nvidia-modprobe libcupti-dev
+    apt-get install -y python3-pip
+    python3 -m pip install opencv-python>=4.1.0
+    python3 -m pip install rasterio
+    python3 -m pip install seaborn
+    python3 -m pip install pydot pydot-ng
+    python3 -m pip install tensorflow-datasets tensorflow-addons
+    python3 -m pip install -q git+https://github.com/tensorflow/examples.git
+    python3 -m pip install Pillow
+
+    python3 -m pip list
+
+%runscript
+    exec /usr/bin/python3 "$@"
+
+%help
+    A singularity container ready to run Tensorflow with optimized compilation with NVIDIA GPUs with compute capacity >5. Additional libraries have been added to the standard nvidia tensorflow container to run all the DeepLearningTools framework (https://github.com/albenoit/DeepLearningTools). Usage example:
+
+    * build the container: singularity build tf2_addons.sif tf2_addons.def
+
+    * running as a shell : singularity shell --nv --bind /workspace/DeepLearningTools/:/DeepLearningTools/ tf2_addons.sif
+
+    * running python scripts : cd DeepLearningTools && singularity run tf_nv_addons_py3.sif experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py
+
+%labels
+    Author Alexandre Benoit, LISTIC Lab, August 2019
