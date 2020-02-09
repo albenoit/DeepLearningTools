@@ -142,7 +142,7 @@ def focal_loss_softmax(logits, labels,  gamma=2, reduceSum_not_reduceAverage=Fal
     y_pred=tf.clip_by_value(y_pred,eps,1.-eps)#improve the stability of the focal loss and see issues 1 for more information
     labels=tf.cast(tf.one_hot(labels,depth=nb_classes), tf.float32)#y_pred.shape[1])
     L=-labels*((1-y_pred)**gamma)*tf.math.log(y_pred)
-    L=tf.math.reduce_mean(L, name=name)
+    L=tf.math.reduce_mean(tf.reduce_sum(L, axis=[1,2]), name=name)
     return L
 
 
