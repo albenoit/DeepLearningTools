@@ -98,8 +98,8 @@ class ExperimentSettings(object):
     #tensorflow serving and client dialog
     self.wait_for_server_ready_int_secs=self.assertPositive_above_zero('wait_for_server_ready_int_secs', 'the number of seconds to wait for a tensorflow service before timeout on first contact')
     self.serving_client_timeout_int_secs=self.assertPositive_above_zero('serving_client_timeout_int_secs', 'the number of seconds to wait for a tensorflow service before timeout for each request')
-    self.served_head_names=self.assertType('served_head_names', list, 'a string providing the name of the target output(s), relates to the get_served_module function behaviors')
-    self.served_input_names=self.assertType('served_input_names', list, 'a string providing the name of the inputs of the served model, relates to the get_served_module function behaviors')
+    self.served_head_names=self.assertType('served_head_names', list, 'a list string(s) providing the name(s) of the target output, relates to the get_served_module function behaviors')
+    self.served_input_names=self.assertType('served_input_names', list, 'a list of string(s) providing the name(s) of the input(s) of the served model, relates to the get_served_module function behaviors')
     self.Client_IO=self.has('Client_IO', 'a Client_IO class that defines how a client talks to a tensorflow server')
     self.tensorflow_server_address=self.has('tensorflow_server_address', 'a string specifying the IP adress of the tensorflow server to be contacted by a client')
     self.tensorflow_server_port=self.has('tensorflow_server_port', 'an integer that specifies the port use to communicate whith the tensorflow server')

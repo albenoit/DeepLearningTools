@@ -1,6 +1,16 @@
 '''
 @author: Alexandre Benoit, LISTIC lab, FRANCE
 @brief : simple personnal file that defines experiment specific keys to be used with our programs
+==> application : semantic segmentation on the cats and dogs Oxford III Pets dataset
+
+FULL PROCESS USE EXAMPLE:
+1. TRAIN/VAL : start a train/val session using command (a singularity container with an optimized version of Tensorflow is used here):
+singularity run --nv /home/alben/install/nvidia/tf2_addons.sif experiments_manager.py --usersettings=examples/segmentation/mysettings_semanticSegmentation.py
+
+2. SERVE MODEL : start a tensorflow model server on the produced eperiment models using command (the -psi command permits to start tensorflow model server installed in a singularity container):
+
+3. REQUEST MODEL : start a client that sends continuous requests to the server
+
 '''
 
 import DataProvider_input_pipeline
@@ -12,7 +22,7 @@ import os
 import cv2 #for ClientIO only
 
 #-> set here your own working folder
-workingFolder='experiments/semantic_segmentation'
+workingFolder='experiments/examples/semantic_segmentation'
 
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='Oxford-IIIT-Pets'
@@ -222,7 +232,7 @@ def get_served_module(model, model_name):
       super().__init__()
       self.model=model
 
-    @tf.function(input_signature=[tf.TensorSpec(shape=serving_img_shape, dtype=tf.uint8)])
+    @tf.function(input_signature=[tf.TensorSpec(shape=serving_img_shape, dtype=tf.uint8, name=served_input_names[0])])
     def served_model(self, input):
       ''' a decorated function that specifies the input data format, processing and output dict
         Args: input tensor(s)
@@ -348,9 +358,9 @@ class Client_IO:
 
         self.labels = [
             #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
-            Label(  'unlabeled'            ,  0 ,      0 , 'void'            , 0       , False        , True         , (  0,  0,  0) ),
-            Label(  'sidewalk'             ,  1 ,      1 , 'flat'            , 1       , False        , False        , (244, 35,232) ),
-            Label(  'person'               , 2 ,       2 , 'human'           , 2       , True         , False        , (220, 20, 60) ),
+            Label(  'background'            ,  0 ,      0 , 'background'            , 0       , False        , True         , (  0,  0,  0) ),
+            Label(  'pet_boundaries'        ,  1 ,      1 , 'ambiguous'            , 1       , False        , False        , (244, 35,232) ),
+            Label(  'pet_body'              ,  2 ,      2 , 'foreground'           , 2       , True         , False        , (220, 20, 60) ),
         ]
         #--------------------------------------------------------------------------------
         # Create dictionaries for a fast lookup
@@ -409,7 +419,7 @@ class Client_IO:
 
         if self.debugMode is True:
             print('Input frame'+str(self.frame_patch.shape))
-        return self.frame_patch
+        return {served_input_names[0]:self.frame_patch}
 
     def decodeResponse(self, result):
         ''' receive the server response and decode as requested

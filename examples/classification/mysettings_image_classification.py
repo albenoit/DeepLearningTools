@@ -1,17 +1,17 @@
 '''
 @author: Alexandre Benoit, LISTIC lab, FRANCE
 @brief : simple personnal file that defines experiment specific keys to be used with our programs
-==> application for cats and dogs classification inspired from https://www.tensorflow.org/tutorials/images/classification
+==> application : cats and dogs classification inspired from https://www.tensorflow.org/tutorials/images/classification
 
 FULL PROCESS USE EXAMPLE:
 1. TRAIN/VAL : start a train/val session using command (a singularity container with an optimized version of Tensorflow is used here):
 singularity run --nv /home/alben/install/nvidia/tf2_addons.sif experiments_manager.py --usersettings=examples/classification/mysettings_image_classification.py
 
 2. SERVE MODEL : start a tensorflow model server on the produced eperiment models using command (the -psi command permits to start tensorflow model server installed in a singularity container):
-python3 experiments_manager.py --start_server -m=experiments/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2019-12-17--15:04:15 -psi=/home/alben/install/nvidia/tf_server.sif
+python3 experiments_manager.py --start_server -m=experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2019-12-17--15:04:15 -psi=/home/alben/install/nvidia/tf_server.sif
 
 3. REQUEST MODEL : start a client that sends continuous requests to the server
-python3 experiments_manager.py --predict_stream=-1 -m=experiments/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2019-12-17--15:04:15
+python3 experiments_manager.py --predict_stream=-1 -m=experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2019-12-17--15:04:15
 '''
 
 import tensorflow as tf
@@ -22,7 +22,7 @@ import os
 import cv2 #for ClientIO only
 
 #-> set here your own working folder
-workingFolder='experiments/cats_dogs_classification'
+workingFolder='experiments/examples/cats_dogs_classification'
 
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='my_trials'
@@ -201,7 +201,7 @@ def get_served_module(model, model_name):
       super().__init__()
       self.model=model
 
-    @tf.function(input_signature=[tf.TensorSpec(shape=[1,hparams['imgHeight'], hparams['imgWidth'], 3], dtype=tf.uint8)])
+    @tf.function(input_signature=[tf.TensorSpec(shape=[1,hparams['imgHeight'], hparams['imgWidth'], 3], dtype=tf.uint8, name=served_input_names[0])])
     def served_model(self, input):
       ''' a decorated function that specifies the input data format, processing and output dict
         Args: input tensor(s)
@@ -261,7 +261,7 @@ class Client_IO:
         frame = cv2.resize(self.read_frame(), (hparams['imgHeight'], hparams['imgWidth']))
 
         self.frame = np.expand_dims(frame, 0)
-        return self.frame
+        return {served_input_names[0]:self.frame}
 
     def decodeResponse(self, result):
         ''' receive the server response and decode as requested

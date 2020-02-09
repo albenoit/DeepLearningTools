@@ -99,6 +99,7 @@ import datetime, time
 import tensorflow as tf
 import numpy as np
 import pandas as pd
+import importlib
 import imp
 import copy
 
@@ -167,7 +168,6 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
     print('Saving checkpoint...')
     super(MyCustomModelSaverExporterCallback, self).on_epoch_end(epoch, logs)
 
-    self.epochs_since_last_save += 1
     if self.save_freq == 'epoch':
       try:
         if False:#self.model._in_multi_worker_mode():
@@ -253,7 +253,7 @@ def loadModel_def_file(sessionFolder):
   '''
   model_path=os.path.join(sessionFolder,os.path.basename(usersettings.model_file))
   try:
-    model_def=imp.load_source('model_def', model_path)
+    model_def=imp.load_source('model_def', model_path)#importlib.import_module("".join(model_path.split('.')[:-1]))#
   except Exception as e:
     raise ValueError('loadModel_def_file: Failed to load model file {model} from sessionFolder {sess}, error message={err}'.format(model=usersettings.model_file, sess=sessionFolder, err=e))
   model=model_def.model
@@ -354,7 +354,7 @@ def run_experiment(usersettings):
     print(model.summary())
     model.summary(print_fn=lambda x: fh.write(x + '\n'))
 
-  try:
+  '''try:
     receptive_field_info=tf.contrib.receptive_field.compute_receptive_field_from_graph_def(
                                                           model,
                                                           input_node,
@@ -364,7 +364,7 @@ def run_experiment(usersettings):
                                                       )
   except Exception as e:
     print('Receptive field computation failed, reason=',e)
-
+  '''
   #####################################
   # prepare all standard callbacks
   all_callbacks=[]
@@ -618,26 +618,22 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
         predictionIdx=predictionIdx+1
         start_time=time.time()
         sample=client_io.getInputData(predictionIdx)
+        if not(isinstance(sample, dict)):
+          raise ValueError('Expecting a dictionnary of values that will further be converted to proto buffers. Dictionnary keys must correspond to the usersettings.served_input_names strings list')
         if FLAGS.debug:
-            print('Input data is ready (data, shape)'+str((sample, sample.shape)))
+            print('Input data is ready, data=',sample)
             print('Time to prepare collect data request:',round(time.time() - start_time, 2))
             start_time=time.time()
-        if False:#FIXME Multihead inference mode to be managed ...len(experiment_settings.served_head_names)>1:
-          raise ValueError('Multihead prediction NOT YET IMPLEMENTED')
-
-          request = inference_pb2.MultiInferenceRequest()
-          request.tasks.add().model_spec.name = 'default'
-          request.tasks[0].model_spec.signature_name = 'regress_x_to_y'
-          request.tasks[0].method_name = 'tensorflow/serving/regress'
-          request.tasks.add().model_spec.name = 'default'
-          request.tasks[1].model_spec.signature_name = 'classify_x_to_y'
-          request.tasks[1].method_name = 'tensorflow/serving/classify'
-        else:
-          request = predict_pb2.PredictRequest()
-          request.model_spec.name = model_name
-          request.model_spec.signature_name = model_name#experiment_settings.served_head_names[0]
-          request.inputs[experiment_settings.served_input_names[0]].CopyFrom(
-              tf.make_tensor_proto(sample, shape=sample.shape))
+        request = predict_pb2.PredictRequest()
+        request.model_spec.name = model_name
+        request.model_spec.signature_name = model_name#experiment_settings.served_head_names[0]
+        for inputname in usersettings.served_input_names:
+          #print('input name:',inputname)
+          feature=sample[inputname]
+          feature_proto=tf.make_tensor_proto(feature, shape=feature.shape)
+          #print('->feature:',sample[inputname])
+          #print('->proto:',feature_proto)
+          request.inputs[inputname].CopyFrom(feature_proto)
         if FLAGS.debug:
           print('Time to prepare request:',round(time.time() - start_time, 2))
       except StopIteration:
