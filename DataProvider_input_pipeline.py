@@ -94,7 +94,7 @@ def test_image_tfrecords_dataset(filename='test_dataset.tfrecords'):
     cv2.imshow('TEST input crop rescaled (0-255)', cv2.cvtColor(input_crop_norm.astype(np.uint8), cv2.COLOR_RGB2BGR))
     if reference is not None:
       cv2.imshow('TEST reference crop (classID*20)', reference.astype(np.uint8)*20)
-      cv2.waitKey()
+    cv2.waitKey()
 
 def make_images_coarse(input_images, downscale_factor=2):
     """
@@ -832,9 +832,14 @@ class FileListProcessor_Semantic_Segmentation:
             #-> case of raw images plus separate reference images
             ref0=cv2.imread(filelist_reference_data[0],self.opencv_read_flags)
             print('read first reference image {filepath} of shape {shape}'.format(filepath=filelist_reference_data[0], shape=ref0.shape))
-            if raw0.shape[:2] != ref0.shape[:2]:
+            if (raw0.shape[0] != ref0.shape[0]) or (raw0.shape[1] != ref0.shape[1]):
                 raise ValueError('FileListProcessor_input::__init__ Error, first input files do not have the same pixel size')
-            self.single_image_raw_depth=raw0.shape[2]
+            if len(raw0.shape)>2:
+                self.single_image_raw_depth=raw0.shape[2]
+            elif len(raw0.shape)==2:
+                self.single_image_raw_depth=1
+            else:
+                raise ValueError('input image shape not supported:'+str(raw0.shape))
             self.single_image_reference_depth=1
             self.fullframe_ref_shape=list(raw0.shape)
             self.fullframe_ref_shape[-1]=self.single_image_raw_depth+self.single_image_reference_depth
