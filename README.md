@@ -6,7 +6,7 @@ All the resulting experiments logs can be compared. Model versioning is enabled.
 
 This framework can be driven by higher level tools such as [hyperopt](https://hyperopt.github.io/) to explore the hyperparameters space, etc. (see examples/hyperopt for demo(s))
 
-@brief : the main script 'experiments_manager.py' enables training, validating and serving Tensorflow2.x models with python3
+@brief : the main script 'experiments_manager.py'  enables training, validating and serving Tensorflow2.x models with python3
 
 @author : Alexandre Benoit, LISTIC lab, FRANCE
 
@@ -133,4 +133,3 @@ moved to a separated settings script such as 'examples/regression/mysettings_cur
 To adapt to new case studies, just update the mysettingsxxx.py file and adjust I/O functions.
 For any experiment, the availability of all the required fields in the settings file is checked by the tools/experiments_settings.py script. Exceptions are raised on errors, have a look in this file to ensure you prepared everything right and compare your settings file to the provided examples.
 In addition and as a reminder, here are the functions prototypes:
-
