@@ -49,14 +49,14 @@ I consider here Singularity instead of Docker for some reason such as use simpli
 ### install singularity (as root) :
   * debian installation : https://wiki.debian.org/singularity
 ### build the image with GPU (as root):
-  * build a custom image with the provided *tf2_addons.def* file that includes all python packages to build the container :
-  * the tf_server.def file is also provided to build a tensorflow model server container.
+  * build a custom image with the provided *install/tf2_addons.def* file that includes all python packages to build the container :
+  * the install/tf_server.def file is also provided to build a tensorflow model server container.
 ```
-singularity build tf2_addons.sif tf2_addons.def #container for model training and validation
-singularity build tf_server.sif tf_server.def               #container for model serving only
+singularity build tf2_addons.sif install/tf2_addons.def #container for model training and validation
+singularity build tf_server.sif install/tf_server.def               #container for model serving only
 ```
 ### run the image (as standard user):
-  * open a shell on this container, bind to your system folders of interest : `singularity shell --nv --bind /path/to/your/DeepLearningTools/:DeepLearningTools/ tf_nv_addons.sif`
+  * open a shell on this container, bind to your system folders of interest : `singularity shell --nv --bind /path/to/your/DeepLearningTools/:DeepLearningTools/ tf2_addons.sif`
   * run the framework, for example on the curve fitting example: `cd /DeepLearningTools/` followed by `python experiments_manager.py --usersettings examples/regression/mysettings_curve_fitting.py`
   * if the gpu is not found (error such as `libcuda reported version is: Invalid argument: expected %d.%d, %d.%d.%d, or %d.%d.%d.%d form for driver version; got "1"`, sometimes, NVIDIA module should be reloaded after a suspend period. Recover it using command `nvidia-modprobe -u -c=0`
 
@@ -75,51 +75,46 @@ conda install -c qiqiao tensorflow_serving_api
 
 ### pip installation (local system installation, install as root):
 1. install python 2.7 or 3.x and the associated python pip, maybe create a specific environment with the virtualenv tool.
-2. install Tensorflow, Tensorflow serving and related tools using the requirements.txt file. It includes those packages and associated tools (opencv, pandas, etc.) : pip install -r requirements.txt
+2. install Tensorflow, Tensorflow serving and related tools using the install/requirements.txt file. It includes those packages and associated tools (opencv, pandas, etc.) : pip install -r install/requirements.txt
 
 # How to train/test/serve a model ?
 
 The main script is experiments_manager.py can be used in 3 modes, here are some command examples:
-1. train a model in a context specified in a parameter script such as examples/regression/mysettings_curve_fitting.py (details provided in the following TODO section):
-
-  * if all the libraries are system installed
-```
-python experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py
-```
-  * if all the libraries are installed in a singularity container located at **/path/to/tf2_addons.sif**
+1. **train a model** in a context specified in a parameter script such as examples/regression/mysettings_curve_fitting.py (details provided in the following TODO section):
+  * ***RECOMMENDED :if all the libraries are installed in a singularity container located at /path/to/tf2_addons.sif***
 ```
 singularity run --nv /path/to/tf2_addons.sif experiments_manager.py --usersettings examples/regression/mysettings_curve_fitting.py
 ```
-2. start a Tensorflow server on the trained/training model :
-  * if tensorflow_model_server is installed on the system as well as the python libraries
+  * ***if all the libraries are system installed***
 ```
-python experiments_manager.py --start_server --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53
+python experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py
 ```
-OR relying on a lightweight installation (python3 and standard libs, no more requirements)
+2. **start a Tensorflow server on the trained/training model :**
 
-```
-python3 start_model_serving.py --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53
-
-```
-  * if tensorflow_model_server is installed on a singularity container located at **/path/to/tf_server.sif**
-```
-python experiments_manager.py --start_server --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53 -psi=/path/to/tf_server.sif
-```
-OR relying on a lightweight installation (python3 and standard libs, no more requirements)
-
+   * ***RECOMMENDED : if tensorflow_model_server is installed on a singularity container located at /path/to/tf_server.sif**
+   relying on a lightweight host installation (python3 and standard libs, no more requirements)
 ```
 python3 start_model_serving.py --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53 -psi=/path/to/tf_server.sif
 ```
 
-3. interact with the Tensorflow server, sending input buffers and receiving answers,
+  * ***if tensorflow_model_server is installed on the system as well as the python libraries***
+```
+python experiments_manager.py --start_server --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53
+```
+   or 
+```
+python3 start_model_serving.py --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53
+```
 
-  * if all the libraries are system installed
-```
-python experiments_manager.py --predict --model_dir=experiments/curve_fitting/my_test_2018-01-03--14\:40\:53/
-```
-  * if all the libraries are installed in a singularity container located at **/path/to/tf2_addons.sif**
+3. **Request Tensorflow model server, sending input buffers and receiving answers**
+  * ***RECOMMENDED : if all the libraries are installed in a singularity container located at /path/to/tf2_addons.sif***
 ```
 singularity run --nv /path/to/tf2_addons.sif experiments_manager.py --predict --model_dir=experiments/curve_fitting/my_test_2018-01-03--14\:40\:53/
+```
+
+  * ***if all the libraries are system installed***
+```
+python experiments_manager.py --predict --model_dir=experiments/curve_fitting/my_test_2018-01-03--14\:40\:53/
 ```
  
 ## NOTE :
