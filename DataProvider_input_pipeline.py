@@ -427,6 +427,7 @@ class FileListProcessor_Semantic_Segmentation:
                 raw_image = tf.py_function(imread_from_opencv, [raw_img_filename, self.opencv_read_flags], tf.float32)
                 reference_image = tf.py_function(imread_from_opencv, [ref_img_filename, cv2.IMREAD_GRAYSCALE], tf.float32)
                 #add a third channel (to be compatible with raw_image rank when willing to concatenate
+                raw_image=tf.cond(tf.rank(raw_image)==3, true_fn=lambda :raw_image, false_fn=lambda: tf.expand_dims(raw_image, -1))
                 reference_image=tf.expand_dims(reference_image, -1)
               elif self.use_alternative_imread == 'gdal':
                 # use gdal image reading methods WARNING, take care of the channels order that may change !!!
@@ -584,7 +585,6 @@ class FileListProcessor_Semantic_Segmentation:
         #selected_crop=tf.Print(selected_crop, [selected_crop], message=('Crop is selected'))
         return selected_crop
 
-    @tf.function
     def _image_transform(self, input_image):
         ''' apply a set of transformation to an input image
         @param input_image, the image to be transformed. It must be a stack of

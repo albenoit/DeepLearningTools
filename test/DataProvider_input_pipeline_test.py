@@ -17,11 +17,11 @@ os.chdir(sessionFolder)
 '''first focus on a set of folders with raw ad reference data,
 here all data parameters are hard written since all data is supposed to be versionned
 '''
-raw_data_dir_train = "../../datasamples/semantic_segmentation/raw_data/"
-reference_data_dir_train = "../../datasamples/semantic_segmentation/labels/"
-#raw_data_dir_train ="/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
-#reference_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/gtFine_trainvaltest/gtFine/train/"
-nb_classes=33
+#raw_data_dir_train = "../../datasamples/semantic_segmentation/raw_data/"
+#reference_data_dir_train = "../../datasamples/semantic_segmentation/labels/"
+raw_data_dir_train ="/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
+reference_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/gtFine_trainvaltest/gtFine/train/"
+nb_classes=34
 patchSize=256
 patchesPerImage=1000
 allow_display=True
@@ -61,35 +61,6 @@ if processCommands.labels_count:
 #get list of filenames
 dataset_raw_files=DataProvider_input_pipeline.extractFilenames(raw_data_dir_train, '*.png')
 dataset_references_files=DataProvider_input_pipeline.extractFilenames(reference_data_dir_train, '*labelIds.png')
-
-if processCommands.check_data:
-    print('Trying to load each image of the train dataset, this may take some time...')
-    nb_channels = cv2.imread(dataset_raw_files[0], cv2.IMREAD_LOAD_GDAL | cv2.IMREAD_ANYDEPTH).shape[-1]
-    print('--> First image number of channels='+str(nb_channels))
-
-    for imageIdx, imageName in enumerate(dataset_raw_files):
-        print('Testing image : '+imageName)
-        img=cv2.imread(imageName, cv2.IMREAD_LOAD_GDAL | cv2.IMREAD_ANYDEPTH)
-        if nb_channels != img.shape[-1]:
-            raise ValueError('Error, the number of channels differs with image : ' +str(imageName))
-        if img is None:
-            raw_input('Failed to read image '+imageName)
-            os.rename(imageName, imageName+'.unreadable')
-        if not(np.isfinite(img)).any():
-            raw_input('Nan or inf found in file to read image '+imageName)
-            os.rename(imageName, imageName+'.unreadable')
-
-        ''' Display images section '''
-        if allow_display is True:
-            #print('Labels (min, max)='+str((img_labels.min(), img_labels.max())))
-            input_rgb, cloud_map, img_labels=display_sentinel_image(img, mask_clouds_OPAQUE=True, mask_clouds_CIRRUS=False)
-            img_labels[np.where(cloud_map)]=23
-            cv2.imshow('input image', DataProvider_input_pipeline.scaleImg_0_255(input_rgb).astype(np.uint8))
-            cv2.imshow('reference image', img[:,:,-1].astype(np.uint8)*int(255/nb_classes))
-            cv2.imshow('cloud image', cloud_map.astype(np.uint8)*255)
-            cv2.waitKey()
-            #DataProvider_input_pipeline.plot_sample_channel_histograms(img, filenameID="image_"+str(imageIdx)+'_')
-            #plt.show()
 
 ###############################
 #prepare dataset input pipeline
@@ -164,7 +135,7 @@ def image_example(image_tensor, label=None):
       'image_raw': _float32_feature_list(image_tensor.numpy().flatten().tolist()),
   }
   if label is not None:
-    image_feature_description.update({'label': _int64_feature_scalar(label)})
+    feature.update({'label': _int64_feature_scalar(label)})
 
 
   return tf.train.Example(features=tf.train.Features(feature=feature)).SerializeToString()
@@ -193,6 +164,7 @@ def read_dataset_display():
     writer=tf.io.TFRecordWriter(file_out)
   #######################################################################
   ### Samples extraction loop
+  class_pixel_counts=np.zeros(nb_classes)
   for step, batch in enumerate(data_provider.dataset):
     print('====== New step='+str(step))#, 'batch=',batch[0])
     sample=batch[0]
@@ -201,9 +173,10 @@ def read_dataset_display():
       #print('Serialized sample:', sample_proto)
       writer.write(sample_proto)
       writer.flush()
+    reference =sample[:,:,3:].numpy()
+    class_pixel_counts+=np.array(np.histogram(reference, bins=[-1]+np.linspace(start=0, stop=33, num=34).tolist())[0])
     if allow_display is True:
       input_crop=sample[:,:,:3].numpy()
-      reference =sample[:,:,3:].numpy()
       contours=get_semantic_contours(tf.expand_dims(sample[:,:,3:],0)).numpy().squeeze(0)
       print('input_crop shape =', input_crop.shape)
       print('reference_crop shape =', reference.shape)
@@ -224,14 +197,13 @@ def read_dataset_display():
     print('finished crop sample display, press a key to stop from an active opencv image show window')
     cv2.waitKey()
   if process_labels_histogram is True:
-      nb_pix=np.sum(class_count)
-      plt.plot(class_count/nb_pix)
-      plt.title('Class probabilities, nb_pixels='+str(nb_pix))
+      plt.plot(class_pixel_counts)
+      plt.title('Class pixels count')
       plt.savefig('RS_dataset_Class probabilities.eps')
+      print('class_pixel_counts', class_pixel_counts)
       #DataProvider_input_pipeline.plot_sample_channel_histograms(result, filenameID="last_crop_")
       if allow_display is True:
           plt.show()
-
 
 if processCommands.write_tfRecords and processCommands.avoid_display:
   write_dataset_no_display()
