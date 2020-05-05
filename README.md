@@ -81,23 +81,24 @@ conda install -c qiqiao tensorflow_serving_api
 
 The main script is experiments_manager.py can be used in 3 modes, here are some command examples:
 1. **train a model** in a context specified in a parameter script such as examples/regression/mysettings_curve_fitting.py (details provided in the following TODO section):
-  * ***RECOMMENDED :if all the libraries are installed in a singularity container located at /path/to/tf2_addons.sif***
+   * ***RECOMMENDED :if all the libraries are installed in a singularity container located at /path/to/tf2_addons.sif***
 ```
 singularity run --nv /path/to/tf2_addons.sif experiments_manager.py --usersettings examples/regression/mysettings_curve_fitting.py
 ```
-  * ***if all the libraries are system installed***
+
+   * ***if all the libraries are system installed***
 ```
 python experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py
 ```
 2. **start a Tensorflow server on the trained/training model :**
 
-   * ***RECOMMENDED : if tensorflow_model_server is installed on a singularity container located at /path/to/tf_server.sif**
+   * ***RECOMMENDED : if tensorflow_model_server is installed on a singularity container located at /path/to/tf_server.sif***
    relying on a lightweight host installation (python3 and standard libs, no more requirements)
 ```
 python3 start_model_serving.py --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53 -psi=/path/to/tf_server.sif
 ```
 
-  * ***if tensorflow_model_server is installed on the system as well as the python libraries***
+   * ***if tensorflow_model_server is installed on the system as well as the python libraries***
 ```
 python experiments_manager.py --start_server --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53
 ```
@@ -107,12 +108,13 @@ python3 start_model_serving.py --model_dir=experiments/curve_fitting/my_test_201
 ```
 
 3. **Request Tensorflow model server, sending input buffers and receiving answers**
-  * ***RECOMMENDED : if all the libraries are installed in a singularity container located at /path/to/tf2_addons.sif***
+
+   * ***RECOMMENDED : if all the libraries are installed in a singularity container located at /path/to/tf2_addons.sif***
 ```
 singularity run --nv /path/to/tf2_addons.sif experiments_manager.py --predict --model_dir=experiments/curve_fitting/my_test_2018-01-03--14\:40\:53/
 ```
 
-  * ***if all the libraries are system installed***
+   * ***if all the libraries are system installed***
 ```
 python experiments_manager.py --predict --model_dir=experiments/curve_fitting/my_test_2018-01-03--14\:40\:53/
 ```
