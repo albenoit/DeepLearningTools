@@ -102,6 +102,7 @@ import pandas as pd
 import importlib
 import imp
 import copy
+import configparser
 
 try:
     import tensorflow_addons as tfa
@@ -346,7 +347,10 @@ def run_experiment(usersettings):
   # generate the model description
   #-> as an image in the session folder
   model_name_str=usersettings.model_name
-  plot_model(model, to_file=usersettings.sessionFolder+'/'+model_name_str+'.png')
+  try:
+    plot_model(model, to_file=usersettings.sessionFolder+'/'+model_name_str+'.png')
+  except Exception as e:
+    print('Counld not plot model, error:',e)
 
   #-> as a printed log and write the network summary to file in the session folder
   with open(usersettings.sessionFolder+'/'+model_name_str+'.txt','w') as fh:
@@ -369,15 +373,17 @@ def run_experiment(usersettings):
   # prepare all standard callbacks
   all_callbacks=[]
 
+  # -> terminate on NaN loss values
+  all_callbacks.append(tf.keras.callbacks.TerminateOnNaN())
   # -> apply early stopping
   early_stopping_patience=usersettings.early_stopping_patience if hasattr(usersettings, 'early_stopping_patience') else 5
   all_callbacks.append(tf.keras.callbacks.EarlyStopping(
-                            monitor='loss',
+                            monitor='val_loss',
                             patience=early_stopping_patience
                           )
                         )
-  all_callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.2,
-                              patience=(early_stopping_patience*3)//2, min_lr=0.00001, verbose=True)
+  all_callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1,
+                              patience=(early_stopping_patience*2)//3, min_lr=0.00001, verbose=True)
                         )
 
   #-> checkpoint each epoch
@@ -525,7 +531,7 @@ def WaitForServerReady(host, port):
       host:tensorfow server address
       port: port address of the PredictionService.
   """
-  from grpc.beta import implementations
+  from grpc import implementations
   from grpc.framework.interfaces.face import face
   from tensorflow_serving.apis import predict_pb2
   from tensorflow_serving.apis import prediction_service_pb2
@@ -539,7 +545,7 @@ def WaitForServerReady(host, port):
                                                              port=port,
                                                              delay=usersettings.wait_for_server_ready_int_secs))
       channel = implementations.insecure_channel(host, int(port))
-      stub = prediction_service_pb2.beta_create_PredictionService_stub(channel)
+      stub = prediction_service_pb2.PredictionServiceStub(channel)
       stub.Predict(request, 1)
     except face.AbortionError as error:
       # Missing model error will have details containing 'Servable'
@@ -573,7 +579,7 @@ def _create_rpc_callback(client, debug):
       try:
           if FLAGS.debug:
               print(result_future.result())
-          response=client.decodeResponse(result_future.result())
+          client.decodeResponse(result_future.result())
       except Exception as e:
           raise ValueError('Exception encountered on client callback : '.format(error=e))
   return _callback
@@ -590,6 +596,8 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
     num_tests: Number of test images to use, infinite prediction loop if <0.
   Raises:
     IOError: An error occurred processing test data set.
+
+  Hint : have a look here to track api use updates : https://github.com/tensorflow/serving/blob/master/tensorflow_serving/example/mnist_client.py
   """
   from tensorflow_serving.apis import predict_pb2 #for single head models
   from tensorflow_serving.apis import inference_pb2 #for multi head models
@@ -605,8 +613,8 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
   # specify option to support messages larger than alloed by default
   grpc_options=None
   if usersettings.grpc_max_message_length !=0:
-    grpc_options = [('grpc.max_send_message_length', grpc_max_message_size)]
-    grpc_options = [('grpc.max_receive_message_length', grpc_max_message_size)]
+    grpc_options = [('grpc.max_send_message_length', usersettings.grpc_max_message_length)]
+    grpc_options = [('grpc.max_receive_message_length', usersettings.grpc_max_message_length)]
   channel = grpc.insecure_channel(server, options=grpc_options)
   stub = prediction_service_pb2_grpc.PredictionServiceStub(channel)
   #allocate a clientIO instance defined for the experiment
@@ -628,11 +636,8 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
         request.model_spec.name = model_name
         request.model_spec.signature_name = model_name#experiment_settings.served_head_names[0]
         for inputname in usersettings.served_input_names:
-          #print('input name:',inputname)
           feature=sample[inputname]
           feature_proto=tf.make_tensor_proto(feature, shape=feature.shape)
-          #print('->feature:',sample[inputname])
-          #print('->proto:',feature_proto)
           request.inputs[inputname].CopyFrom(feature_proto)
         if FLAGS.debug:
           print('Time to prepare request:',round(time.time() - start_time, 2))
@@ -747,6 +752,8 @@ def run(train_config_script=None, external_hparams=None):
       print('Running in debug mode. Press Enter to continue...')
   if FLAGS.start_server is True :
       print('### START TENSORFLOW SERVER MODE ###')
+      print('WARNING, this function expects some libraries to be installed, mostly dedicated to the training processing.')
+      print('-> to run tensorflow model server on minimal install run start_model_serving.py')
 
       usersettings, sessionFolder = loadExperimentsSettings(os.path.join(FLAGS.model_dir,SETTINGSFILE_COPY_NAME), isServingModel=True)
 
@@ -871,6 +878,14 @@ def run(train_config_script=None, external_hparams=None):
         settings_src_file=settings_file
         print('Willing to copy {src} to {dst}'.format(src=settings_src_file, dst=settings_copy_fullpath))
         shutil.copyfile(settings_src_file, settings_copy_fullpath)
+        #prepare a config file for model serving
+        serving_config = configparser.ConfigParser()
+        serving_config['SERVER'] = { 'host': usersettings.tensorflow_server_address,
+                              'port': usersettings.tensorflow_server_port,
+                              'model_name': usersettings.model_name,
+                            }
+        with open(os.path.join(sessionFolder, 'model_serving_setup.ini'), 'w') as configfile:
+          serving_config.write(configfile)
       else:
         usersettings.recoverFromCheckpoint=True
       res, last_exported_model=run_experiment(usersettings)
