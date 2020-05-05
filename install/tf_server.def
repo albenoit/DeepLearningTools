@@ -1,0 +1,16 @@
+BootStrap: docker
+From: tensorflow/serving:2.1.0-gpu
+
+%runscript
+    exec /usr/bin/tensorflow_model_server "$@"
+
+%help
+    A singularity container ready to run Tensorflow model server with optimized compilation with NVIDIA GPUs. Ready to be used with the DeepLearningTools framework (https://github.com/albenoit/DeepLearningTools). Usage example, when a model is exported at least a first time in an experiment fomder, say for example experiments/curve_fitting/my_test_2018-01-03--14:40:53:
+
+    * if tensorflow_model_server is installed on a singularity container located at /path/to/tf_server.sif
+
+python experiments_manager.py --start_server --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53 -psi=/path/to/tf_server.sif
+
+
+%labels
+    Author Alexandre Benoit, LISTIC Lab, August 2019

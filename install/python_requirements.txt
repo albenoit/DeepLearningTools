@@ -1,0 +1,12 @@
+tfx
+sklearn
+shap
+hyperopt
+opencv-python
+rasterio
+seaborn
+pydot
+pydot-ng
+tensorflow-datasets
+tensorflow-addons
+Pillow
