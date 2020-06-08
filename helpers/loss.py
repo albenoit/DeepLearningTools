@@ -66,6 +66,23 @@ def get_batch_flat_tensors(labels, logits):
   y_pred = tf.reshape(logits, [logits_shape[0], flat_sample_dim, logits_shape[-1]])
   return y_true, y_pred
 
+
+@tf.function
+def preds_labels_preprocess_softmax_flatten(logits, labels):
+  '''
+  a tf.function to simplify the optimisation graph:
+  1. apply softmax to input logits
+  2. flatten each sample of the input batch
+  Args:
+          logits the predicted logits with shape [batchsize, ..., classes]
+          labels (integer values, will be one hot encoded internally [batchsize, ..., 1]
+  Returns  sample flatten y_true, y_pred (softmaxed logits) tensors
+  '''
+  pred_probs = tf.nn.softmax(logits, axis=-1)
+  y_true, y_pred=get_batch_flat_tensors(labels, pred_probs)
+  return y_true, y_pred
+
+
 def focal_loss_softmax(logits, labels,  gamma=3., weight_class_sample_prob=False, weight_class_global_prob=False, train_class_probs=None, name='loss'):
     """
     Focal loss, a cross entropy like loss that favors hard examples
@@ -83,8 +100,8 @@ def focal_loss_softmax(logits, labels,  gamma=3., weight_class_sample_prob=False
     Returns:
       A scalar loss value
     """
-    y_pred=tf.nn.softmax(logits,axis=-1)
-    y_true, y_pred=get_batch_flat_tensors(labels, y_pred)
+    y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
+    
     eps=1e-15
     y_pred=tf.clip_by_value(y_pred, eps, 1.-eps)#avoid undefined values
     L=-y_true*((1-y_pred)**gamma)*tf.math.log(y_pred)
@@ -111,8 +128,7 @@ def multiclass_dice_loss_softmax(logits, labels, weight_class_sample_prob=False,
           train_class_probs, a numpy array of class weights
       Returns the average dice loss
     """
-    pred_probs = tf.nn.softmax(logits, axis=-1)
-    y_true, y_pred=get_batch_flat_tensors(labels, pred_probs)
+    y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
     intersects = tf.reduce_sum(y_true * y_pred, axis=1)
     denominators = tf.reduce_sum(y_true + y_pred, axis=1)
     smooth=1.
@@ -137,8 +153,8 @@ def multiclass_jaccard_loss_softmax(logits, labels, weight_class_sample_prob=Fal
           train_class_probs, a numpy array of class weights
       Returns the average jaccard loss
     """
-    pred_probs = tf.nn.softmax(logits, axis=-1)
-    y_true, y_pred=get_batch_flat_tensors(labels, pred_probs)
+    y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
+
     intersects = tf.reduce_sum(y_true * y_pred, axis=1)
     denominators = tf.reduce_sum(y_true + y_pred, axis=1)-intersects
     smooth=1.
@@ -168,8 +184,8 @@ def multiclass_tversky_loss_softmax(logits, labels, alpha=0.7, weight_class_samp
           focal if value 0., activate the focal loss as presented in https://arxiv.org/pdf/1810.07842.pdf, recommended value was 0.75
       Returns the average jaccard loss
     """
-    pred_probs = tf.nn.softmax(logits, axis=-1)
-    y_true, y_pred=get_batch_flat_tensors(labels, pred_probs)
+    y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
+
     true_pos = tf.reduce_sum(    y_true * y_pred,     axis=1)
     false_pos = tf.reduce_sum( (1-y_true) * y_pred,     axis=1)
     false_neg = tf.reduce_sum(     y_true * (1-y_pred), axis=1)
