@@ -300,6 +300,7 @@ def imread_from_opencv(filename, cv_imreadMode=-1, debug_mode=False):
         return cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
   return image.astype(np.float32)
 
+@tf.function(experimental_relax_shapes=True)
 def get_sample_entropy(sample):
     ''' @return the entropy of the input tensor
     '''
@@ -307,7 +308,6 @@ def get_sample_entropy(sample):
         #count unique values occurences
         unique_values, values_idx, counts=tf.unique_with_counts(sample)
 
-        @tf.function
         def normalised_entropy(counts):
             classes_prob=tf.math.divide(tf.cast(counts, dtype=tf.float32), tf.cast(tf.reduce_sum(counts), dtype=tf.float32))
             entropy= -tf.reduce_sum(classes_prob*tf.math.log(classes_prob))
@@ -349,7 +349,7 @@ def get_samples_entropies(samples_batch):
         entropies[it]=-(classes_prob*np.log(classes_prob)).sum()/np.log(float(len(classes_prob)))
     return entropies
 
-@tf.function
+@tf.function(input_signature=[tf.TensorSpec(shape=[None, None, None], dtype=tf.int32)])
 def convert_semanticMap_contourMap(crops):
     '''
 	Convert a semantic map into a contour Map using Sobel operator
@@ -478,121 +478,128 @@ class FileListProcessor_Semantic_Segmentation:
             #concatenate both images in a single one
             return tf.cast(raw_ref_image, dtype=tf.float32, name='to_float')
 
-    @tf.function(experimental_relax_shapes=True)
     def _generate_crops(self, sample_filename):
         ''' considering an input tensor of any shape, divide it into overlapping windows and put them into a queue
           inspired from http://stackoverflow.com/questions/40186583/tensorflow-slicing-a-tensor-into-overlapping-blocks
           @param input_image image to be sampled
         '''
+        print('_generate_crops, input tensor=', sample_filename)
         input_image=self._load_raw_images_from_filenames(sample_filename)
-        with tf.name_scope('generate_crops'):
-            if self.field_of_view > 0:
-                radius_of_view = (self.field_of_view-1)//2
-            else:
-                radius_of_view=0
-            with tf.name_scope('prepare_crops_bbox'):
-                height=tf.cast(tf.shape(input_image)[0], dtype=tf.int32, name='image_height')
-                width=tf.cast(tf.shape(input_image)[1], dtype=tf.int32, name='image_width')
-                #width=tf.Print(width,[height, width], message='height, width')
-                if self.shuffle_samples == True:
-                    self.nbPatches=tf.cast(self.image_area_coverage_factor*tf.cast(height*width, dtype=tf.float32)/tf.constant(self.patchSize*self.patchSize, dtype=tf.float32), dtype=tf.int32, name='number_of_patches')
-                    self.nbPatches=tf.minimum(self.nbPatches, tf.constant(self.max_patches_per_image, name='max_patches_per_image'), name='saturate_number_of_patches')
-                    random_vector_shape = [self.nbPatches]
-                    top_coord = tf.random.uniform(random_vector_shape,0, height-self.patchSize+2*radius_of_view,dtype=tf.int32,name='patch_top_coord_top')
-                    left_coord = tf.random.uniform(random_vector_shape,0,width-self.patchSize+2*radius_of_view, dtype=tf.int32,name='patch_left_coord')
+        print('_generate_crops::input_image=', input_image)
 
-                    #manage global image borders padding
-                    #paddings = [[radius_of_view,self.patchSize],[radius_of_view,self.patchSize],[0,0]]
+        @tf.function(input_signature=[tf.TensorSpec(shape=[None, None, None], dtype=tf.float32)])#, experimental_relax_shapes=True)
+        def crops_dataset(input_image):
+          with tf.name_scope('generate_crops'):
+              if self.field_of_view > 0:
+                  radius_of_view = (self.field_of_view-1)//2
+              else:
+                  radius_of_view=0
+              with tf.name_scope('prepare_crops_bbox'):
+                  height=tf.cast(tf.shape(input_image)[0], dtype=tf.int32, name='image_height')
+                  width=tf.cast(tf.shape(input_image)[1], dtype=tf.int32, name='image_width')
+                  #tf.print('height, width', [height, width])
+                  if self.shuffle_samples == True:
+                      self.nbPatches=tf.cast(self.image_area_coverage_factor*tf.cast(height*width, dtype=tf.float32)/tf.constant(self.patchSize*self.patchSize, dtype=tf.float32), dtype=tf.int32, name='number_of_patches')
+                      self.nbPatches=tf.minimum(self.nbPatches, tf.constant(self.max_patches_per_image, name='max_patches_per_image'), name='saturate_number_of_patches')
+                      random_vector_shape = tf.expand_dims(self.nbPatches,0)
+                      top_coord = tf.random.uniform(random_vector_shape,0, height-self.patchSize,dtype=tf.int32,name='patch_top_coord_top')
+                      left_coord = tf.random.uniform(random_vector_shape,0,width-self.patchSize, dtype=tf.int32,name='patch_left_coord')
+                      #tf.print('top_coord : ', top_coord)
+                  
+                  else: #expecting TEST dataset use case : no padding, only processing original pixels, avoiding border effects
+                      top_coord = tf.range(0, height-self.patchSize,self.patchSize-2*radius_of_view,dtype=tf.int32)
+                      left_coord = tf.range(0,width-self.patchSize, self.patchSize-2*radius_of_view,dtype=tf.int32)
 
-                    '''debug_1=tf.py_function(debug_show_data, [left_coord, 'flat_meshgrid_x'], tf.float32)
-                    debug_2=tf.py_function(debug_show_data, [top_coord, 'flat_meshgrid_y'], tf.float32)
-                    '''
-                    #with tf.control_dependencies([debug_1, debug_2]):
-                    #input_image = tf.pad(input_image, paddings)
-                else: #expecting TEST dataset use case : no padding, only processing original pixels, avoiding border effects
-                    top_coord = tf.range(0, height-self.patchSize,self.patchSize-2*radius_of_view,dtype=tf.int32)
-                    left_coord = tf.range(0,width-self.patchSize, self.patchSize-2*radius_of_view,dtype=tf.int32)
+                      flat_meshgrid_y, flat_meshgrid_x = tf.meshgrid(top_coord, left_coord)
+                      left_coord = tf.reshape(flat_meshgrid_x, [-1])
+                      top_coord =  tf.reshape(flat_meshgrid_y, [-1])
+                      self.nbPatches = tf.shape(left_coord)[0]
 
-                    flat_meshgrid_y, flat_meshgrid_x = tf.meshgrid(top_coord, left_coord)
-                    left_coord = tf.reshape(flat_meshgrid_x, [-1])
-                    top_coord =  tf.reshape(flat_meshgrid_y, [-1])
-                    self.nbPatches = tf.shape(left_coord)[0]
+                  #normalize coordinates
+                  left_coord = tf.cast(left_coord, dtype=tf.float32, name='patch_left_coord')
+                  top_coord = tf.cast(top_coord, dtype=tf.float32, name='patch_top_coord')
 
-                #normalize coordinates
-                left_coord = tf.cast(left_coord, dtype=tf.float32, name='patch_left_coord')
-                top_coord = tf.cast(top_coord, dtype=tf.float32, name='patch_top_coord')
+                  height_norm=tf.cast(height, tf.float32)
+                  width_norm=tf.cast(width, tf.float32)
+                  print((top_coord, height_norm,width_norm))
+                  top_coord_normalized=tf.math.divide(top_coord,height_norm)
+                  left_coord_normalized=tf.math.divide(left_coord,width_norm)
+                  bottom_coord_normalized=(top_coord+self.patchSize)/height_norm
+                  right_coord_normalized=(left_coord+self.patchSize)/width_norm
+                  boxes=tf.stack([top_coord_normalized, left_coord_normalized, bottom_coord_normalized, right_coord_normalized], axis=1)
+                  print('boxes : '+str(boxes))
+                  #tf.print('boxes : ',boxes)
+                  crops=tf.image.crop_and_resize(tf.expand_dims(input_image,0),#get batch to a "batch 4D tensor"
+                                                boxes=boxes,
+                                                box_indices=tf.zeros(self.nbPatches, dtype=tf.int32),
+                                                crop_size=[self.patchSize,self.patchSize],
+                                                method='nearest')#FIXME, MUST BE nearest neighbors here !!!'
+                  print('crops : '+str(crops))
 
-                height_norm=tf.cast(height, tf.float32) - 1.
-                width_norm=tf.cast(width, tf.float32) - 1.
-                print((top_coord, height_norm,width_norm))
-                top_coord_normalized=tf.math.divide(top_coord,height_norm)
-                left_coord_normalized=tf.math.divide(left_coord,width_norm)
-                bottom_coord_normalized=(top_coord+self.patchSize)/height_norm
-                right_coord_normalized=(left_coord+self.patchSize)/width_norm
-                boxes=tf.stack([top_coord_normalized, left_coord_normalized, bottom_coord_normalized, right_coord_normalized], axis=1)
-                print('boxes : '+str(boxes))
-                crops=tf.image.crop_and_resize(tf.expand_dims(input_image,0),#get batch to a "batch 4D tensor"
-                                               boxes=boxes,
-                                               box_indices=tf.zeros(self.nbPatches, dtype=tf.int32),
-                                               crop_size=[self.patchSize,self.patchSize],
-                                               method='nearest')#FIXME, MUST BE nearest neighbors here !!!'
-                print('crops : '+str(crops))
+                  # return the per image dataset BUT filter out unnecessary crops BEFORE
+                  return tf.data.Dataset.from_tensor_slices(crops).filter(self._crop_filter)#.map(self._image_transform, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        return crops_dataset(input_image)
 
-                # return the per image dataset BUT filter out unnecessary crops BEFORE
-                return tf.data.Dataset.from_tensor_slices(crops).filter(self.crop_filter)#.map(self._image_transform, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-
-    @tf.function
-    def crop_filter(self, crop):
+    def _crop_filter(self, crop):
       ''' a tf.data.Dataset filter function
           Args:
            crops: a set of crop candidates
           Returns:
            selected_crops: a vector of size equal to the number of input crops with True for accepted candidates, False if not
       '''
-      print('crop_filter input: '+str(crop))
-      with tf.name_scope('filter_crops'):
-        print('*************************** FILTERS ***************************')
-        print(self.additionnal_filters)
-        #next processing wrt config
-        if self.balance_classes_distribution is True  and self.no_reference is False: #TODO second test is a safety test that could be removed is safety test done before
-            print('FileListProcessor_Semantic_Segmentation: crops filtering taking into account ground truth entropy')
-            def balance_classes_entropy(crop):
-              ref_slice=tf.slice(crop,
-                                begin=[0,0,self.single_image_raw_depth],
-                                size=[-1,-1,self.single_image_reference_depth])
-              return tf.greater(get_sample_entropy(tf.cast(tf.reshape(ref_slice,[-1]), tf.uint8)), self.classes_entropy_threshold, name='minimum_labels_entropy_selection')
-            # add this filter as first in the filters list
-            self.additionnal_filters.insert(0,balance_classes_entropy)
+      print('_crop_filter, input tensor=', crop)
+      
+      @tf.function(input_signature=[tf.TensorSpec(shape=[None, None, None], dtype=tf.float32)])
+      def crop_filter(crop):
+        with tf.name_scope('filter_crops'):
+          print('*************************** FILTERS ***************************')
+          print(self.additionnal_filters)
+          #next processing wrt config
+          if self.balance_classes_distribution is True  and self.no_reference is False: #TODO second test is a safety test that could be removed is safety test done before
+              print('FileListProcessor_Semantic_Segmentation: crops filtering taking into account ground truth entropy')
+              @tf.function(input_signature=[tf.TensorSpec(shape=[None, None, None], dtype=tf.float32)])
+              def balance_classes_entropy(crop):
+                ref_slice=tf.slice(crop,
+                                  begin=[0,0,self.single_image_raw_depth],
+                                  size=[-1,-1,self.single_image_reference_depth])
+                return tf.greater(get_sample_entropy(tf.cast(tf.reshape(ref_slice,[-1]), tf.uint8)), self.classes_entropy_threshold, name='minimum_labels_entropy_selection')
+              # add this filter as first in the filters list
+              self.additionnal_filters.insert(0,balance_classes_entropy)
 
-        if self.manage_nan_values is 'avoid':
-            print('FileListProcessor_Semantic_Segmentation: crops with Nan values will be avoided')
-            def has_no_nans(crop):
-              return tf.logical_not(tf.reduce_any(tf.math.is_nan(crop)))#tf.math.logical_and(selected_crops, tf.reduce_any(tf.is_nan(crop_candidate, axis=0)))
-            # add this filter as first in the filters list
-            self.additionnal_filters.insert(0,has_no_nans)
+          if self.manage_nan_values is 'avoid':
+              print('FileListProcessor_Semantic_Segmentation: crops with Nan values will be avoided')
+              @tf.function(input_signature=[tf.TensorSpec(shape=None, dtype=tf.float32)])
+              def has_no_nans(crop):
+                return tf.logical_not(tf.reduce_any(tf.math.is_nan(crop)))#tf.math.logical_and(selected_crops, tf.reduce_any(tf.is_nan(crop_candidate, axis=0)))
+              # add this filter as first in the filters list
+              self.additionnal_filters.insert(0,has_no_nans)
 
-        #run all filters as a cascade, one skip the remaining filters as long as one filter refuses the crop
-        def run_filters_cond(filters, crop):
-          #if no more filter should be applied, then the crop is accepted
-          if len(filters)==0:
-              return  tf.constant(True)
-          print('--> applying filter:',filters[0])
-          # if current filter rejects the crop, then return stop, else, aply next filter
-          return tf.cond(filters[0](crop), lambda: run_filters_cond(filters[1:], crop), lambda:tf.constant(False))
-        print('Processing crop filter list :',self.additionnal_filters)
-        selected_crop=run_filters_cond(self.additionnal_filters, crop)
+          #run all filters as a cascade, one skip the remaining filters as long as one filter refuses the crop
+          def run_filters_cond(filters, crop):
+            #if no more filter should be applied, then the crop is accepted
+            if len(filters)==0:
+                return  tf.constant(True)
+            print('--> applying filter:',filters[0])
+            # if current filter rejects the crop, then return stop, else, aply next filter
+            return tf.cond(filters[0](crop), lambda: run_filters_cond(filters[1:], crop), lambda:tf.constant(False))
+          print('Processing crop filter list :',self.additionnal_filters)
+          selected_crop=run_filters_cond(self.additionnal_filters, crop)
 
-        #selected_crop=tf.Print(selected_crop, [selected_crop], message=('Crop is selected'))
-        return selected_crop
+          #selected_crop=tf.Print(selected_crop, [selected_crop], message=('Crop is selected'))
+          return selected_crop
+      return crop_filter(crop)
 
     def _image_transform(self, input_image):
-        ''' apply a set of transformation to an input image
-        @param input_image, the image to be transformed. It must be a stack of
-        the raw image (first layers) followed by the reference layer(s)
-        @return the transformed raw+reference concatenated image, only geometric transforms are applied to the reference image
-        '''
+      ''' apply a set of transformation to an input image
+      @param input_image, the image to be transformed. It must be a stack of
+      the raw image (first layers) followed by the reference layer(s)
+      @return the transformed raw+reference concatenated image, only geometric transforms are applied to the reference image
+      '''
+      print('_image_transform, input tensor=', input_image)
+      @tf.function(input_signature=[tf.TensorSpec(shape=[None, None, None], dtype=tf.float32)])
+      def image_transform(input_image):
         with tf.name_scope('image_transform'):
-            print('__image_transform input: '+str(input_image))
+            print('image_transform input: '+str(input_image))
 
             #retreive a single crop
             """ standard cropping scheme """
@@ -633,6 +640,7 @@ class FileListProcessor_Semantic_Segmentation:
             if self.crops_postprocess is not None:
                 out_image= self.crops_postprocess(out_image)
             return out_image
+      return image_transform(input_image)
 
     def _create_dataset_filenames(self):
         ''' given the chosen mode (using a list of filename pairs of raw+ref image or using a single filename poiting a single raw+ref(lastchannel) image)
@@ -651,7 +659,6 @@ class FileListProcessor_Semantic_Segmentation:
         if self.shuffle_samples:
               self.dataset=self.dataset.shuffle(len(datasetFiles))
 
-    @tf.function(experimental_relax_shapes=True)
     def _load_raw_images_from_filenames(self, filenames):
       ''' function to be applied for each of the dataset sample
           Args:
@@ -683,6 +690,7 @@ class FileListProcessor_Semantic_Segmentation:
 
             #2. transform the dataset samples convert raw images into crops
             if self.full_frame_mode == True:
+              self.dataset=self.dataset.map(map_func=self._load_raw_images_from_filenames, num_parallel_calls=self.num_reader_threads)
               with tf.name_scope('full_raw_frame_prefetching'):
                 if self.apply_whitening:     # Subtract off the mean and divide by the variance of the pixels.
                     self.dataset=self.dataset.map(self._whiten_sample)
