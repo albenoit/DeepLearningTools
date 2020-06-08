@@ -383,7 +383,7 @@ def run_experiment(usersettings):
                           )
                         )
   all_callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1,
-                              patience=(early_stopping_patience*2)//3, min_lr=0.00001, verbose=True)
+                              patience=(early_stopping_patience*2)//3, min_lr=0.000001, verbose=True)
                         )
 
   #-> checkpoint each epoch
