@@ -1,5 +1,9 @@
 ''' helpers_loss, a collection of helpers to compute various losses and related tools
     @author, Alexandre Benoit, LISTIC Lab, FRANCE
+
+    WARNING, many loss to be tested ! check/compare with the original papers !!!
+
+    NOTE,maybe have a look here: https://niftynet.readthedocs.io/en/dev/niftynet.layer.loss_segmentation.html
 '''
 import tensorflow as tf
 import numpy as np
@@ -82,7 +86,49 @@ def preds_labels_preprocess_softmax_flatten(logits, labels):
   y_true, y_pred=get_batch_flat_tensors(labels, pred_probs)
   return y_true, y_pred
 
+@tf.function
+def smooth_labels(labels, factor):
+    # smooth the labels
+    labels *= (tf.constant(1., tf.float32) - factor)
+    labels += (factor / labels.shape[-1])
+    #tf.print('labels', labels)
+    return labels
 
+def weighted_xcrosspow_loss_softmax(logits, labels, gamma=0.3, weight_class_sample_prob=False, weight_class_global_prob=False, train_class_probs=None, name='loss'):
+    """
+    a cross entropy loss with a power low, same idea as for focal loss but, limits oversupression of high scores
+    from https://arxiv.org/pdf/1809.00076.pdf
+    added specific weightings
+
+    Args:
+      labels: A tensor of shape [batch_size,...] with class indexes (that willbe one hot encoded internally).
+      logits: A float32 tensor of shape [batch_size,...,num_classes].
+      gamma
+      weight_class_sample_prob: if True, per sample class loss by the related class sample probability
+      weight_class_global_prob, set True to weight the loss with respect to train dataset true class probabilities
+      train_class_probs, a numpy array of class weights
+    Returns:
+      A cross entropy tensor of shape [batchsize, classes]
+    """
+    y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
+    
+    eps=1e-10
+    y_pred=tf.clip_by_value(y_pred, eps, 1.-eps)#avoid undefined values
+    #standard cross entropy ^ gamma
+    L=y_true*tf.math.pow(-tf.math.log(y_pred), gamma)
+
+    if weight_class_sample_prob:
+        class_rates = get_sample_class_probabilities(y_true)
+        class_rates=tf.reshape(class_rates, [-1,1,y_pred.shape[-1]])
+        weighting_factor=pow(tf.ones_like(L) * 3.0, class_rates)
+        L*=weighting_factor
+    if weight_class_global_prob:
+      train_class_weights_factor=tf.constant(train_class_probs, dtype=tf.float32)
+      train_class_weights_factor=tf.reshape(train_class_weights_factor, [-1,1,y_pred.shape[-1]])
+      L*=train_class_weights_factor
+      per_sample_loss=tf.reduce_sum(L, axis=-1)
+      return tf.math.reduce_mean(per_sample_loss, name=name)
+            
 def focal_loss_softmax(logits, labels,  gamma=3., weight_class_sample_prob=False, weight_class_global_prob=False, train_class_probs=None, name='loss'):
     """
     Focal loss, a cross entropy like loss that favors hard examples
@@ -115,8 +161,7 @@ def focal_loss_softmax(logits, labels,  gamma=3., weight_class_sample_prob=False
       train_class_weights_factor=tf.reshape(train_class_weights_factor, [-1,1,y_pred.shape[-1]])
       L*=train_class_weights_factor
     per_sample_loss=tf.reduce_sum(L, axis=-1)
-    L=tf.math.reduce_mean(per_sample_loss, name=name)
-    return L
+    return tf.math.reduce_mean(per_sample_loss, name=name)
 
 def multiclass_dice_loss_softmax(logits, labels, weight_class_sample_prob=False, weight_class_global_prob=False, train_class_probs=None, name='loss'):
     """ multiclass Sørensen-Dice index measure, softmax is applied internally on the y_preds
@@ -151,7 +196,7 @@ def multiclass_jaccard_loss_softmax(logits, labels, weight_class_sample_prob=Fal
           weight_class_sample_prob, set True to weight the loss with respect to sample true class probabilities
           weight_class_global_prob, set True to weight the loss with respect to train dataset true class probabilities
           train_class_probs, a numpy array of class weights
-      Returns the average jaccard loss
+      Returns the average jaccard measures of shape [batchsize, classes]
     """
     y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
 
@@ -214,6 +259,14 @@ def multiclass_tversky_loss_softmax(logits, labels, alpha=0.7, weight_class_samp
     #tf.print('tversky is finite', tf.math.reduce_prod(tf.cast(tf.math.is_finite(tversky_losses), dtype=tf.int8)))
     #tf.print('final_loss', tf.reduce_mean(tversky_losses, name=name))
     return tf.reduce_mean(tversky_losses, name=name)
+
+def exponentialLogLoss(loss, gamma=0.3, name='loss'):
+  ''' REMINDER from https://arxiv.org/pdf/1809.00076.pdf
+    apply a power low on the input loss function
+    Args: a tensor of (preliminary weighted) metrics in range [0,1]
+    Returns the average of (-log(loss))^gamma
+  '''
+  return tf.reduce_mean(tf.math.pow(-1.*tf.math.log(loss), gamma), name=name)
 
 # a loss gradient lipshitz regularizer
 def get_IOgradient_norm_lipschitzPenalty(inputs, outputs, target_lipschitz):

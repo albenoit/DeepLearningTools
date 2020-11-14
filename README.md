@@ -23,6 +23,7 @@ A quick presentation of the system is available [here](https://docs.google.com/p
 * Each experiment is stored in a specific folder for model versioning and comparison.
 * Restart training after failure made easy.
 * Reproducible experiments with random_seeds
+* Activate various optimization options such as XLA, mixed precision and multi GPU processing
 * *Have a look at the examples folder to start from typical ML problem examples.*
 
 ## Approach:

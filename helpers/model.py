@@ -81,8 +81,8 @@ class SubpixelConv2D(tf.Module):
     self.lr_conv_channels=self.input_dims[3]*(self.factor**2)
 
     kernel_regul=helpers.loss.Regularizer_L1L2Ortho( l1=0.0,
-                                                     l2=0.0001,
-                                                     ortho=0.,#0001,
+                                                     l2=0.0,
+                                                     ortho=0.001,
                                                      ortho_type='srip',
                                                      nb_filters=self.lr_conv_channels)
       
@@ -134,7 +134,7 @@ def atrous_Spatial_pyramid_pooling(input_features, outing_nb_features=256, rates
     ##1x1 conv
     pooled_features_regul=helpers.loss.Regularizer_L1L2Ortho( l1=0.0,
                                                 l2=0.0,#001,
-                                                ortho=0.0001,
+                                                ortho=0.001,
                                                 ortho_type='srip',
                                                 nb_filters=outing_nb_features)
     pooled_features=tf.keras.layers.Conv2D(
@@ -145,9 +145,9 @@ def atrous_Spatial_pyramid_pooling(input_features, outing_nb_features=256, rates
                           data_format='channels_last',
                           dilation_rate=(1, 1),
                           activation=None,
-                          use_bias=True,
+                          use_bias=False,
                           kernel_initializer=tf.keras.initializers.Orthogonal(),
-                          bias_initializer=tf.initializers.constant(0.001),
+                          bias_initializer=None,#tf.initializers.constant(0.001),
                           kernel_regularizer=pooled_features_regul,
                           bias_regularizer=None,
                           activity_regularizer=None,
@@ -165,7 +165,7 @@ def atrous_Spatial_pyramid_pooling(input_features, outing_nb_features=256, rates
         print('rate, kernel',(rate, kernel_size))
         kernel_regul=helpers.loss.Regularizer_L1L2Ortho( l1=0.0,
                                                 l2=0.0,#001,
-                                                ortho=0.0001,
+                                                ortho=0.001,
                                                 ortho_type='srip',
                                                 nb_filters=outing_nb_features)
         if kernel_size==1:#prefer standard conv
@@ -177,9 +177,9 @@ def atrous_Spatial_pyramid_pooling(input_features, outing_nb_features=256, rates
                           data_format='channels_last',
                           dilation_rate=(1, 1),
                           activation=None,
-                          use_bias=True,
+                          use_bias=False,
                           kernel_initializer=tf.keras.initializers.Orthogonal(),
-                          bias_initializer=tf.initializers.constant(0.001),
+                          bias_initializer=None,#tf.initializers.constant(0.001),
                           kernel_regularizer=kernel_regul,
                           bias_regularizer=None,
                           activity_regularizer=None,
@@ -215,7 +215,7 @@ def atrous_Spatial_pyramid_pooling(input_features, outing_nb_features=256, rates
     #fusion and compression layer
     kernel_regul_asppout=helpers.loss.Regularizer_L1L2Ortho( l1=0.0,
                                                 l2=0.0,
-                                                ortho=0.0001,
+                                                ortho=0.001,
                                                 ortho_type='srip',
                                                 nb_filters=outing_nb_features)
     aspp_features=tf.keras.layers.Conv2D(

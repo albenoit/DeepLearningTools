@@ -60,6 +60,7 @@ class ExperimentSettings(object):
     self.useXLA=self.assertType('useXLA', bool, 'activate or not XLA graph optimization, must be boolean')
     self.model_export_filename=''
     self.weights_moving_averages=self.assertType('weights_moving_averages', bool, 'weights_moving_averages must be boolean')
+    self.enable_mixed_precision=self.hasOrDefault('enable_mixed_precision', False)
     #model fitting parameters
     self.batch_size=self.assertPositive_above_zero('batch_size', 'the number of samples processed for each batch')
     self.nbEpoch=self.assertPositive_above_zero('nbEpoch', 'the number of times the training set is processed for training')

@@ -108,6 +108,9 @@ try:
     import tensorflow_addons as tfa
 except:
     print('WARNING, tensorflow_addons could not be loaded, this may generate errors but should not impact model serving')
+
+from tensorflow.keras.mixed_precision import experimental as mixed_precision
+
 #constants
 SETTINGSFILE_COPY_NAME='experiment_settings.py'
 WEIGHTS_MOVING_AVERAGE_DECAY=0.998
@@ -162,7 +165,6 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
                                                               )
     self.settings=settings
     self.settings.model_export_filename=settings.sessionFolder+'/exported_models'
-    self.version_count=0
 
   def on_epoch_end(self, epoch, logs=None):
     #call parent function
@@ -188,16 +190,62 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
     if current==self.best:
       print('EXPORTING A NEW MODEL VERSION FOR SERVING')
       print('Exporting model at epoch {}.'.format(epoch))
-      self.version_count+=1
       exported_module=usersettings.get_served_module(self.model, self.settings.model_name)
       if not(hasattr(exported_module, 'served_model')):
         raise ValueError('Experiment settings file MUST have \'served_model\' function with @tf.function decoration.')
+      output_path='{folder}/{version}'.format(folder=self.settings.model_export_filename, version=epoch)
+      signatures={self.settings.model_name:exported_module.served_model}
       tf.saved_model.save(
         exported_module,
-        '{folder}/{version}'.format(folder=self.settings.model_export_filename, version=self.version_count),
-        signatures={self.settings.model_name:exported_module.served_model},
+        output_path,
+        signatures=signatures,
         options=None
         )
+      '''export to TensorRT, WIP
+       refer to https://www.tensorflow.org/api_docs/python/tf/experimental/tensorrt/Converter
+       and
+       https://docs.nvidia.com/deeplearning/frameworks/tf-trt-user-guide/index.html
+      '''
+      try:
+        '''params=None
+        if True:#precision_mode is not None:
+          precision_mode='FP16'
+        #tensorflow doc/issue ConversionParams not found
+        params = tf.experimental.tensorrt.ConversionParams(
+                          precision_mode=precision_mode,
+        # Set this to a large enough number so it can cache all the engines.
+        maximum_cached_engines=16)
+        converter = tf.experimental.tensorrt.Converter(
+              input_saved_model_dir=output_path,
+              input_saved_model_signature_key=signatures,
+              conversion_params=params)
+    
+      
+        
+        #NVIDIA doc: 
+        from tensorflow.python.compiler.tensorrt import trt_convert as trt
+        conversion_params = trt.DEFAULT_TRT_CONVERSION_PARAMS
+        print('conversion_params',conversion_params)
+        conversion_params = conversion_params._replace(
+        max_workspace_size_bytes=(1<<32))
+        conversion_params = conversion_params._replace(precision_mode="FP16")
+        conversion_params = conversion_params._replace(maximum_cached_engines=100)
+
+        print('creating converter')
+        converter = tf.experimental.tensorrt.Converter(#trt.TrtGraphConverterV2(
+          input_saved_model_dir=output_path,
+          input_saved_model_signature_key=signatures,
+          conversion_params=conversion_params)
+
+        print('converting')
+        converter.convert()
+        print('saving')
+        converter.save(output_path+'_trt')
+        print('Exported model to NVIDIA TensorRT')
+        '''
+      except Exception as e:
+        print('Failed to export to TensorRT but original saved model has been exported. Reported error:',e)
+
       print('Model export OK at epoch {}.'.format(epoch))
       older_versions=os.listdir(self.settings.model_export_filename)
       print('Available model versions:',older_versions)
@@ -330,6 +378,14 @@ def run_experiment(usersettings):
       if usersettings.weights_moving_averages:
         optimizer=tfa.optimizers.MovingAverage(optimizer, average_decay=0.9999, name='weights_ema')
       metrics=usersettings.get_metrics(model, loss)
+      
+      if usersettings.enable_mixed_precision:
+        # use AMP
+        print('Using Automatic Mixed Precision along the optimization process')
+        policy = mixed_precision.Policy('mixed_float16')
+        mixed_precision.set_policy(policy)
+        #optimizer = tf.train.experimental.enable_mixed_precision_graph_rewrite(optimizer)
+
       print('Compiling model...')
       model.compile(optimizer=optimizer,
                     loss=loss,# you can use a different loss on each output by passing a dictionary or a list of losses
@@ -348,9 +404,16 @@ def run_experiment(usersettings):
   #-> as an image in the session folder
   model_name_str=usersettings.model_name
   try:
-    plot_model(model, to_file=usersettings.sessionFolder+'/'+model_name_str+'.png')
+    from tensorflow.keras.layers import Layer
+    model._layers = [
+        layer for layer in model._layers if isinstance(layer, Layer)
+    ]
+    plot_model(model,
+               to_file=usersettings.sessionFolder+'/'+model_name_str+'.png',
+               show_shapes=True)
+    input('Graph drawn, written here', usersettings.sessionFolder+'/'+model_name_str+'.png')
   except Exception as e:
-    print('Counld not plot model, error:',e)
+    print('Could not plot model, error:',e)
 
   #-> as a printed log and write the network summary to file in the session folder
   with open(usersettings.sessionFolder+'/'+model_name_str+'.txt','w') as fh:
