@@ -46,7 +46,7 @@ def model(usersettings):
 
     #manage metadata
     h_meta=tf.keras.layers.Concatenate(axis=-1)([yesterday_isfree, today_isfree, tomorrow_isfree])
-    h=tf.keras.layers.Dense(units=10, kernel_regularizer=tf.keras.regularizers.l2(0.001))(h_meta)
+    h_meta=tf.keras.layers.Dense(units=1, kernel_regularizer=tf.keras.regularizers.l2(0.001))(h_meta)
     
     #fuse all features together
     h=tf.keras.layers.Concatenate(axis=-1)([h_ts, h_meta])
