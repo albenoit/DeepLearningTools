@@ -42,7 +42,7 @@ def start_model_serving(flags):
   model_folder=os.path.join(model_dir,'exported_models')
   print('Considering served model parent directory:'+model_folder)
   config_file=os.path.join(model_dir, config_filename)
-  print('Reding config file : ', config_file)
+  print('Reading config file : ', config_file)
   #load server config
   if os.path.exists(config_file) == False:
     raise ValueError("COnfig file does not exist")
