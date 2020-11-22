@@ -67,7 +67,7 @@ useXLA=True
 use_profiling=True
 
 # define here the used model under variable 'model'
-model_file='private/model_ts_AE.py'
+model_file='private/model_ts_TCN.py'
 
 # activate weight moving averaging over itarations (Polyak-Ruppert)
 weights_moving_averages=hparams['smoothedParams']
@@ -86,7 +86,7 @@ raw_data_dir_train = "/home/alben/workspace/Datasets/LOCIE_Data_Listic/condition
 raw_data_dir_val =   "/home/alben/workspace/Datasets/LOCIE_Data_Listic/conditionned_data/Val"#"/home/alben/workspace/Datasets/LOCIE_Data_Listic/House2/"#{}"datasamples/fakedata/val"
 raw_data_filename_extension='*.csv'
 temporal_series_length=hparams['tsLengthIn']+hparams['tsLengthOut']
-nb_train_samples=206827/temporal_series_length#148663/temporal_series_length #manually adjust here the number of temporal items out of the temporal block size
+nb_train_samples=397000/temporal_series_length#148663/temporal_series_length #manually adjust here the number of temporal items out of the temporal block size
 nb_val_samples=66984/temporal_series_length#58352/temporal_series_length
 batch_size=hparams['batchSize']
 steps_per_epoch=nb_train_samples//batch_size
@@ -229,7 +229,7 @@ def get_input_pipeline(raw_data_files_folder, isTraining):
                 yesterday_isfree,
                 today_isfree,
                 tomorrow_isfree
-                ), ts_all[hparams['tsLengthIn']:,:] #try here to predict all features future 
+                ), ts_all[hparams['tsLengthIn']:,:] #try here to predict all features future #alternative, focus on a single feature : tf.slice(ts_all, begin=[hparams['tsLengthIn'], 0], size=[hparams['tsLengthOut'],1])
         print("sample content", stack)
         print('### per_sample_process_function END')
         return stack
