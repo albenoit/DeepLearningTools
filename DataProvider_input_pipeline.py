@@ -961,10 +961,12 @@ def FileListProcessor_csv_time_series(files,
                                       batch_size,
                                       epochs,
                                       temporal_series_length,
+                                      windowing_shift,
                                       na_value_string='N/A',
                                       labels_cols_nb=1,
                                       per_sample_preprocess_fn=None,
-                                      selected_cols=None):
+                                      selected_cols=None,
+                                      shuffle=False):
 
     def decode_csv(line):
       features = tf.io.decode_csv(line, record_defaults=record_defaults_values, field_delim=csv_field_delim, na_value=na_value_string, select_cols=selected_cols)
@@ -977,9 +979,24 @@ def FileListProcessor_csv_time_series(files,
     #create a dataset from the list of files to process
     files_dataset=tf.data.Dataset.list_files(files).repeat(epochs)
     #a thread processes each file and each one is read by line blocks of length 'temporal_series_length'
+    
+    '''no windowing aproach
     dataset = files_dataset.flat_map(lambda file: (tf.data.TextLineDataset(file).skip(1).batch(temporal_series_length, drop_remainder=True)))
-    #map the de
+    '''
+    datasets = files_dataset.flat_map(lambda file: (tf.data.TextLineDataset(file).skip(1).window(size=temporal_series_length, shift=windowing_shift, drop_remainder=True)))
+
+
+    def sub_to_batch(sub):
+      return sub.batch(temporal_series_length, drop_remainder=True)
+
+    dataset = datasets.flat_map(sub_to_batch)
+
+    # decode csv file
     dataset = dataset.map(decode_csv, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+
+    if shuffle:
+      dataset=dataset.shuffle(batch_size*10)
+      
     return dataset.batch(batch_size, drop_remainder=True).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
 def FileListProcessor_image_classification(sourceFolder, file_extension,
