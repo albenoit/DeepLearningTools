@@ -7,7 +7,7 @@ an interesting lecture : https://machinelearningmastery.com/how-to-develop-lstm-
 .
 FULL PROCESS USE EXAMPLE:
 1. TRAIN/VAL : start a train/val session using command (a singularity container with an optimized version of Tensorflow is used here):
-singularity run --nv /home/alben/install/nvidia/tf2_addons.sif experiments_manager.py --usersettings=private/mysettings_embeddings_timeseries.py
+singularity run --nv /home/alben/install/nvidia/tf2_addons.sif experiments_manager.py --usersettings=examples/timeseries/mysettings_timeseries_forecasting.py
 
 2. SERVE MODEL : start a tensorflow model server on the produced eperiment models using command (the -psi command permits to start tensorflow model server installed in a singularity container):
 python3 start_model_serving.py --model_dir=/home/alben/workspace/listic-deeptool/experiments/timeseries/LOCIE_trials_depth3_smoothedParamsTrue_nbEpoch100_bottleneckSizelearningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize64_2020-11-14--17\:05\:00/ -psi /home/alben/install/containers/tf_server.cpu.sif
@@ -46,7 +46,7 @@ hparams={'depth':3,
          'tsLengthIn':128,   #TWEAKABLE
          'tsLengthOut':10,   #TWEAKABLE
          'nbChannels': 11,
-         'batchSize':64
+         'batchSize':10
          }
 
 ''''set the list of GPUs involved in the process. HOWTO:
@@ -67,7 +67,8 @@ useXLA=True
 use_profiling=True
 
 # define here the used model under variable 'model'
-model_file='private/model_ts_TCN.py'
+model_file='examples/timeseries/model_ts_TCN.py'
+# CAN SWITCH TO/COMPARE WITH : model_file='examples/timeseries/model_ts_AE.py'
 
 # activate weight moving averaging over itarations (Polyak-Ruppert)
 weights_moving_averages=hparams['smoothedParams']
@@ -82,12 +83,14 @@ nbEpoch=hparams['nbEpoch']
 early_stopping_patience=10
 
 #set here paths to your data used for train, val
-raw_data_dir_train = "/home/alben/workspace/Datasets/LOCIE_Data_Listic/conditionned_data/Train"#"/home/alben/workspace/Datasets/LOCIE_Data_Listic/House2/"#{}"datasamples/fakedata/train"
-raw_data_dir_val =   "/home/alben/workspace/Datasets/LOCIE_Data_Listic/conditionned_data/Val"#"/home/alben/workspace/Datasets/LOCIE_Data_Listic/House2/"#{}"datasamples/fakedata/val"
+raw_data_dir_train = "datasamples/timeseries"
+raw_data_dir_val =   "datasamples/timeseries" # WARNING, IN THIS DEMO TRAIN AND VAL DATA ARE THE SAME, DATASET MUST BE DISTINCT FOR REAL EXPERIMENTS
 raw_data_filename_extension='*.csv'
 temporal_series_length=hparams['tsLengthIn']+hparams['tsLengthOut']
-nb_train_samples=397000/temporal_series_length#148663/temporal_series_length #manually adjust here the number of temporal items out of the temporal block size
-nb_val_samples=66984/temporal_series_length#58352/temporal_series_length
+ts_windowing_shift_ratio=10
+ts_windowing_shift=temporal_series_length//ts_windowing_shift_ratio
+nb_train_samples=(ts_windowing_shift_ratio*2000)//temporal_series_length#the 2 sample CSV files represent 2000 points
+nb_val_samples=(ts_windowing_shift_ratio*2000)//temporal_series_length#the 2 sample CSV files represent 2000 points
 batch_size=hparams['batchSize']
 steps_per_epoch=nb_train_samples//batch_size
 validation_steps=nb_val_samples//batch_size
@@ -200,6 +203,12 @@ def get_input_pipeline(raw_data_files_folder, isTraining):
         return single_period_data_block_raw[], single_period_data_block_raw#(single_period_data_block_raw, timestamps_start_stop)
     """
     def per_sample_process_function(single_period_data_block_raw, timestamps):
+        ''' this custom function is intended to post process each sample independantly.
+        Here, it separates it does multiple stuff:
+        1) it separates input data and expected outcome (labels)
+        2) normalizes the data with respect to the precomputed feature means and deviations measured on the train dataset
+        3) it transforms oversampled metadata into simple scalars 
+        '''
         print('### per_sample_process_function START')
         print('single_period_data_block', single_period_data_block_raw)
         single_period_data_block_raw=tf.transpose(single_period_data_block_raw)
@@ -240,6 +249,7 @@ def get_input_pipeline(raw_data_files_folder, isTraining):
                                                 batch_size=batch_size,
                                                 epochs=nbEpoch,
                                                 temporal_series_length=temporal_series_length,#i.e.hparams['tsLengthIn']+hparams['tsLengthOut']
+                                                windowing_shift=ts_windowing_shift,
                                                 na_value_string=na_value_string,
                                                 labels_cols_nb=labels_cols_nb,
                                                 per_sample_preprocess_fn=per_sample_process_function,
