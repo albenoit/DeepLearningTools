@@ -100,17 +100,23 @@ dataset = DataProvider_input_pipeline.FileListProcessor_csv_time_series(files=ra
 print('dataset', dataset)
 
 import matplotlib.pyplot as plt
-
+import numpy as np
+x_past=np.linspace(start=0, stop=hparams['tsLengthIn'], num=hparams['tsLengthIn'], endpoint=False)
+x_future=np.linspace(start=hparams['tsLengthIn'], stop=hparams['tsLengthIn']+hparams['tsLengthOut'], num=hparams['tsLengthOut'], endpoint=False)
 for step, batch in enumerate(dataset):
     print("New batch, step=",step)
     #print(batch)
     #print(len(batch))
     ts=batch[0][0].numpy()[0]
+    ts_future=batch[1].numpy()[0]
+    print('ts_future',ts_future)
+    print('ts_future.shape',ts_future.shape)
     worked_yesterday=batch[0][1].numpy()
     worked_today=batch[0][2].numpy()
     worked_tomorrow=batch[0][3].numpy()
     #print((worked_yesterday, worked_today, worked_tomorrow))
     plt.cla()
-    plt.plot(ts)
-    plt.pause(0.1)
+    plt.plot(x_past,ts)
+    plt.plot(x_future,ts_future)
+    plt.pause(1)
 print('Pipeline finished with ', step, 'iterations')
