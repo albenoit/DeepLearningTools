@@ -12,6 +12,8 @@ This framework can be driven by higher level tools such as [hyperopt](https://hy
 
 A quick presentation of the system is available [here](https://docs.google.com/presentation/d/1tFetD27PK9kt29rdwwZ6QKLYNDyJkHoCLT8GHweve_8/edit?usp=sharing), details are given below.
 
+This work has been facilitated by intensive experiments conducted on the JeanZay French supercomputer (Grant 2020-AD011011418) (http://www.idris.fr/jean-zay/)
+
 ## Main ideas put together:
 
 * Training a model defined with tf.keras to manage training, validation and export in a easy and systematic way (no more forget your favorite methodology, callbacks from one experiment to the other).
