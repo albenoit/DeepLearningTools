@@ -56,11 +56,12 @@ As a reminder, here are the functions prototypes:
 
 -define a model to be trained and served in a specific file and follow this prototype:
 --report model name in the settings file using variable name model_file or thecify a premade estimator using variable name premade_estimator
---def model( data, #the input data tensor
-            hparams,  #external parameters that may be used to setup the model (number of classes and so depending on the task)
+--def model( usersettings) #receives the external parameters that may be used to setup the model (number of classes and so depending on the task)
             mode), #mode set to switch between train, validate and inference mode
             wrt tf.estimator.tf.estimator.ModeKeys values
-          => the model must return a dictionary of output tensors
+          => the returns a tf.keras.Model
+          NOTE : custom models with specific loss can be used, tutorial here  https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit
+          
 -def data_preprocess(features, model_placement)
 -def postprocessing_before_export_code(code)
 -def postprocessing_before_export_predictions(predictions)
@@ -80,15 +81,7 @@ iterations is reached and if any StopIteration exception is sent by the client
 -OPTIONNAL: add the dictionnary named 'hparams' in this settings file to carry those specific hyperparameters to the model
 and to complete the session name folder to facilitate experiments tracking and comparison
 
-Some examples of such functions are put in the README.md and in the versionned mysettings_xxx.py demos
-
-This demo relies on Tensorflow 1.14 and above and makes use of Estimators
-Look at https://github.com/GoogleCloudPlatform/cloudml-samples/blob/master/census/tensorflowcore/trainer/model.py
-Look at some general guidelines on Tenforflow here https://github.com/vahidk/EffectiveTensorflow
-Look at the related webpages : http://python.usyiyi.cn/documents/effective-tf/index.html
-Tensorflow trained graphs can be optimized for inference, some tutorials such as the following may help: https://dato.ml/tensorflow-mobile-graph-optimization/
-
-Glossary : https://developers.google.com/machine-learning/glossary/#custom_estimator
+Some examples of such functions are put in the README.md and in the versionned examples folder
 """
 
 #script imports
@@ -105,11 +98,18 @@ import copy
 import configparser
 
 try:
-    import tensorflow_addons as tfa
+  import tensorflow_addons as tfa
 except:
-    print('WARNING, tensorflow_addons could not be loaded, this may generate errors but should not impact model serving')
+  print('WARNING, tensorflow_addons could not be loaded, this may generate errors for model optimization but should not impact model serving')
 
-from tensorflow.keras.mixed_precision import experimental as mixed_precision
+federated_learning_available=False
+try:
+  import flwr as fl
+  federated_learning_available=True
+except:
+  print('WARNING, Flower (féderated learning lib) could not be loaded, this may generate errors for model optimization but should not impact model serving')
+
+from tensorflow.keras import mixed_precision
 
 #constants
 SETTINGSFILE_COPY_NAME='experiment_settings.py'
@@ -132,12 +132,14 @@ parser.add_argument("-s","--start_server", action='store_true',
 parser.add_argument("-psi","--singularity_tf_server_container_path", default='',
                     help="start the tensorflow server on a singularity container to run predictions")
 parser.add_argument("-u","--usersettings",
-                    help="filename of the settings file that defies an experiment")
+                    help="filename of the settings file that defines an experiment")
 parser.add_argument("-r","--restart_interrupted", action='store_true',
                     help="Set to restart an interrupted session, model_dir option should be set")
 parser.add_argument("-g","--debug_server_addresses", action='store_true',
                     default="127.0.0.1:2333",
                     help="Set here the IP:port to specify where to reach the tensorflow debugger")
+parser.add_argument("-pid","--procID", default=None,
+                    help="Specifiy here an ID to identify the process (useful for federated training sessions)")
 parser.add_argument("-c","--commands", action='store_true',
                     help="show command examples")
 
@@ -188,6 +190,8 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
     print('Exporting model...')
     current = logs.get(self.monitor)
     if current==self.best:
+      print('Saving complete keras model thus enabling fitting restart as well as model load and predict')
+      self.model.save(self.settings.sessionFolder+'/checkpoints/model_epoch{version}'.format(version=epoch))
       print('EXPORTING A NEW MODEL VERSION FOR SERVING')
       print('Exporting model at epoch {}.'.format(epoch))
       exported_module=usersettings.get_served_module(self.model, self.settings.model_name)
@@ -195,12 +199,31 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
         raise ValueError('Experiment settings file MUST have \'served_model\' function with @tf.function decoration.')
       output_path='{folder}/{version}'.format(folder=self.settings.model_export_filename, version=epoch)
       signatures={self.settings.model_name:exported_module.served_model}
-      tf.saved_model.save(
-        exported_module,
-        output_path,
-        signatures=signatures,
-        options=None
-        )
+      try:
+        print('Exporting serving model relying on tf.saved_model.save')
+        tf.saved_model.save(
+          exported_module,
+          output_path,
+          signatures=signatures,
+          options=None
+          )
+        print('Export OK')
+      except Exception as e:
+        print('Failed to export serving model relying on method:', e)
+      #new keras approach
+      try:
+        print('Exporting serving model relying on tf.keras.models.save_model')
+        tf.keras.models.save_model(
+                                exported_module,
+                                filepath='{folder}v2/{version}'.format(folder=self.settings.model_export_filename, version=epoch),
+                                overwrite=True,
+                                include_optimizer=False,
+                                save_format=None,
+                                signatures=signatures,
+                                options=None,
+                                )
+      except Exception as e:
+        print('Failed to export serving model relying on method:',e)
       '''export to TensorRT, WIP
        refer to https://www.tensorflow.org/api_docs/python/tf/experimental/tensorrt/Converter
        and
@@ -267,14 +290,19 @@ def check_GPU_available(usersettings):
   if len(usersettings.used_gpu_IDs)>0:
     device_name = tf.test.gpu_device_name()
     print('Found GPU at: {}'.format(device_name))
+    
+    gpus = tf.config.list_physical_devices('GPU')
+
     #-> first check availability
-    if not tf.test.is_gpu_available():
+    if len(gpus) ==0 and len(usersettings.used_gpu_IDs):
+      print('Could not find any GPU, trying to reload driver...')
       #-> first try to wake it up
       os.system("nvidia-modprobe -u -c=0")
-      if not tf.test.is_gpu_available():
-          raise SystemError('No GPU device found')
+      gpus = tf.config.list_physical_devices('GPU')
+      if len(gpus) ==0 and len(usersettings.used_gpu_IDs):
+        print('No GPU found')
+        raise SystemError('Required GPU(s) not found')
 
-    gpus = tf.config.list_physical_devices('GPU')
     print('Found GPU devices:', gpus)
     if gpus:
       # Restrict TensorFlow to only use the first GPU
@@ -283,6 +311,14 @@ def check_GPU_available(usersettings):
       try:
         tf.config.set_visible_devices(visible_devices, 'GPU')
         logical_gpus = tf.config.list_logical_devices('GPU')
+
+        for gpuID in range(len(gpus)):
+          print('Found GPU:', gpuID)
+          #tf.config.experimental.set_memory_growth(gpus[gpuID], True)
+          if tf.test.gpu_device_name() != '/device:GPU:0':
+            print('WARNING: GPU device not found.')
+          else:
+            print('SUCCESS: Found GPU: {}'.format(tf.test.gpu_device_name()))
         #for gpuID in range(len(gpus)):
         #    tf.config.experimental.set_memory_growth(gpus[gpuID], True)
         print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
@@ -382,39 +418,51 @@ def run_experiment(usersettings):
       if usersettings.enable_mixed_precision:
         # use AMP
         print('Using Automatic Mixed Precision along the optimization process')
-        policy = mixed_precision.Policy('mixed_float16')
-        mixed_precision.set_policy(policy)
+        print('### HINT : to make sure Tensor cores are used, and obtain faster processing, ensure that your kernels are multiples of 8 !')
+        mixed_precision.set_global_policy('mixed_float16')
         #optimizer = tf.train.experimental.enable_mixed_precision_graph_rewrite(optimizer)
 
       print('Compiling model...')
+      exp_loss_weights=None
+      if hasattr(usersettings, 'get_loss_weights'):
+        exp_loss_weights=usersettings.get_loss_weights()
       model.compile(optimizer=optimizer,
                     loss=loss,# you can use a different loss on each output by passing a dictionary or a list of losses
+                    loss_weights=exp_loss_weights,
                     metrics=metrics) #can specify per output metrics : metrics={'output_a': 'accuracy', 'output_b': ['accuracy', 'mse']}
       try:
-          print('Saving the model at init state...')
-          model.save(usersettings.sessionFolder+'/checkpoints')
-          print('save done')
+        init_model_name=usersettings.sessionFolder+'/checkpoints/model_epoch0'
+        print('******************************************')
+        print('Saving the model at init state in ',init_model_name, 'issues at this point should warn you before moving to long training sessions...')
+        model.save(init_model_name)
+        print('initial model saving done')
+        print('******************************************')
+        
       except Exception as e:
           raise ValueError('Could not serialize the model, did all model elements defined in the model prior model.compile are serialisable and have their get_config(self) method ? Error message=',e)
   else:#recovering from checkpoint
     print('**** Restoring from checkpoint...')
-    model = load_model(usersettings.sessionFolder+'/checkpoints')
+    available_models=os.listdir(usersettings.sessionFolder+'/checkpoints')
+    print('All available model=', available_models)
+    loaded_model=usersettings.sessionFolder+'/checkpoints/'+available_models[-1]
+    print('loading ',loaded_model)
+    model = tf.keras.models.load_model(loaded_model)
 
   # generate the model description
   #-> as an image in the session folder
   model_name_str=usersettings.model_name
   try:
-    from tensorflow.keras.layers import Layer
+    '''from tensorflow.keras.layers import Layer
     model._layers = [
         layer for layer in model._layers if isinstance(layer, Layer)
-    ]
+    ]'''
     plot_model(model,
                to_file=usersettings.sessionFolder+'/'+model_name_str+'.png',
                show_shapes=True)
     input('Graph drawn, written here', usersettings.sessionFolder+'/'+model_name_str+'.png')
   except Exception as e:
     print('Could not plot model, error:',e)
-
+  
   #-> as a printed log and write the network summary to file in the session folder
   with open(usersettings.sessionFolder+'/'+model_name_str+'.txt','w') as fh:
     # Pass the file handle in as a lambda function to make it callable
@@ -436,6 +484,8 @@ def run_experiment(usersettings):
   # prepare all standard callbacks
   all_callbacks=[]
 
+  #add the history callback
+  all_callbacks.append(tf.keras.callbacks.History())
   # -> terminate on NaN loss values
   all_callbacks.append(tf.keras.callbacks.TerminateOnNaN())
   # -> apply early stopping
@@ -492,8 +542,10 @@ def run_experiment(usersettings):
                                                       write_images=False,#True,
                                                       update_freq='epoch',
                                                       profile_batch=profile_batch,
-                                                      embeddings_freq=0,
-                                                      embeddings_metadata='metadata.tsv'#embeddings_layer_names,
+                                                      embeddings_freq=10,
+                                                      #embeddings_metadata='metadata.tsv',
+                                                      #embeddings_layer_names=list(embeddings_layer_names.keys()),#'embedding',
+                                                      #embeddings_data='stuff'
                                                       ))
   #-> add the hyperparameters callback for experimetns comparison
   all_callbacks.append(hp.KerasCallback(log_dir, usersettings.hparams))
@@ -535,34 +587,89 @@ def run_experiment(usersettings):
     print('==> Last training iteration was {lastIt} => setting current epoch to {epoch} '.format(lastIt=model.optimizer.iterations,
                                                                                              epoch=epoch_start_index))
   '''
-  print('Now training...')
   #-> train with (in memory) input data pipelines
-  history = model.fit(
-          x=train_data,
-          y=None,#train_data,
-          batch_size=None,#usersettings.batch_size, #bath size must be specified
-          epochs=usersettings.nbEpoch,
-          verbose=True,
-          callbacks=all_callbacks,
-          validation_split=0.0,
-          validation_data=val_data,# val_ref),
-          shuffle=True,
-          class_weight=None,
-          sample_weight=None,
-          initial_epoch=epoch_start_index,
-          steps_per_epoch=train_iterations_per_epoch,
-          validation_steps=val_iterations_per_epoch,
-          validation_freq=1,
-          max_queue_size=workers*100,
-          workers=workers,
-          use_multiprocessing=use_multiprocessing,
-      )
+  print()
+  if usersettings.federated_learning is False or federated_learning_available is False:
+    print('Now starting a classical training session...')
+    history = model.fit(
+            x=train_data,
+            y=None,#train_data,
+            batch_size=None,#usersettings.batch_size, #bath size must be specified
+            epochs=usersettings.nbEpoch,
+            verbose=True,
+            callbacks=all_callbacks,
+            validation_split=0.0,
+            validation_data=val_data,# val_ref),
+            shuffle=True,
+            class_weight=None,
+            sample_weight=None,
+            initial_epoch=epoch_start_index,
+            steps_per_epoch=train_iterations_per_epoch,
+            validation_steps=val_iterations_per_epoch,
+            validation_freq=1,
+            max_queue_size=workers*100,
+            workers=workers,
+            use_multiprocessing=use_multiprocessing,
+        )
+  else:
+    print('Now starting a federated training session...')
+    # Define Flower client
+    class FlClient(fl.client.NumPyClient):
+      def __init__(self):
+        self.history=None
+        self.round=0
+      def get_parameters(self):
+        return model.get_weights()
 
-  #else:
-  #  raise ValueError('Input data pipeline not supported, should be a tf.data.Dataset or tf.data.generator object')
+      def fit(self, parameters, config):
+        #set updated weights
+        model.set_weights(parameters)
+        # avoiding to reuse callbacks : only affect them on the first round
+        self.round+=1
+        if self.round==1:
+          callbacks=all_callbacks
+        else:
+          callbacks=None
+        #training for one epoch
+        history=model.fit(
+            x=train_data,
+            y=None,#train_data,
+            batch_size=None,#usersettings.batch_size, #bath size must be specified
+            epochs=1,
+            verbose=True,
+            callbacks=callbacks,
+            validation_split=0.0,
+            validation_data=val_data,
+            shuffle=True,
+            class_weight=None,
+            sample_weight=None,
+            initial_epoch=self.round-1,
+            steps_per_epoch=train_iterations_per_epoch,
+            validation_steps=val_iterations_per_epoch,
+            validation_freq=1,
+            max_queue_size=workers*100,
+            workers=workers,
+            use_multiprocessing=use_multiprocessing,
+        )
+        if len(history.history)>0:
+          self.history=history
+          self.history_keys=history.history.keys()
+        print('round, history=', self.round, history.history)
+        return model.get_weights(), train_iterations_per_epoch*usersettings.batch_size, {}
 
-  # The returned "history" object holds a record
-  # of the loss values and metric values during training
+      def evaluate(self, parameters, config):
+        print('Evaluating model...')
+        model.set_weights(parameters)
+        losses = model.evaluate(val_data, steps=val_iterations_per_epoch, callbacks=all_callbacks)
+        loss_dict={'val_'+key:val for key, val in zip(self.history_keys, losses)}
+        print('losses:',loss_dict)
+        
+        return losses[0], val_iterations_per_epoch*usersettings.batch_size, loss_dict
+      
+    # Start Flower client
+    federated_learner=FlClient()
+    fl.client.start_numpy_client(server_address=usersettings.federated_learning_server_address, client=federated_learner)
+    history=federated_learner.history
   print('\nhistory dict:', history.history)
 
   print('Training session end, loss={loss} '.format(loss=history.history['loss'][-1]))
@@ -571,16 +678,6 @@ def run_experiment(usersettings):
     final_result={'loss':history.history['loss'][-1]}
   return final_result, usersettings.model_export_filename
 
-def train_one_step(model, optimizer, x, y):
-  with tf.GradientTape() as tape:
-    logits = model(x)
-    loss = compute_loss(y, logits)
-
-  grads = tape.gradient(loss, model.trainable_variables)
-  optimizer.apply_gradients(zip(grads, model.trainable_variables))
-
-  compute_accuracy(y, logits)
-  return loss
 
 ###########################################################
 ## INFERENCE SECTION : talking to a tensorflow-server
@@ -794,12 +891,12 @@ def get_served_model_info(one_model_path, expected_model_name):
     raise ValueError('Target model {target} name NOT found in the command answer'.format(target=expected_model_name))
 
 # Run script ##############################################
-def run(train_config_script=None, external_hparams=None):
+def run(train_config_script=None, external_hparams={}):
   ''' the main script function that can receive hyperparameters as a dictionnary to run an experiment
   can start training, model serving or model client requesting depending on the FLAGS values:
   -> if FLAGS.start_server is True : starts a server that hosts the target model
   -> if FLAGS.predict is TRUE : starts a client that will send requests to a model threw gRPC
-  -> else, strat a training session relying on a sesstings file provided by train_config_script or FLAGS.usersettings
+  -> else, start a training session relying on a sesttings file provided by train_config_script or FLAGS.usersettings
     --> in this mode, function returns a dictionnary of that summarizes the last model states at the end of the training
     --> if calling with non empty train_config_script and with non empty external_hparams,
         then external_hparams will update hyperparameters already specified in the train_config_script script
@@ -897,10 +994,24 @@ def run(train_config_script=None, external_hparams=None):
       settings_file=FLAGS.usersettings
       """ updating default values if running function from an upper level """
 
-      if train_config_script!=None:
-        print('Non command line mode : training from setup file {file} with the following external hyperparameters {params}'.format(file=train_config_script, params=external_hparams))
-        settings_file=tools.experiments_settings_surgery.insert_additionnal_hparams(train_config_script, external_hparams)
+      # manage eventual external custom settings and hyperparameters
+      custom_settings=False
+      if train_config_script is not None:
+        print('--> Training from setup file {file} with the following external hyperparameters {params}'.format(file=train_config_script, params=external_hparams))
+        settings_file=train_config_script
+        custom_settings=True
+      if FLAGS.procID is not None:
+        external_hparams['procID']=FLAGS.procID
+      if len(external_hparams)>0:
+        custom_settings=True
+        
+      if custom_settings:
+        print('Some custom settings have been specified : training from setup file {file} with the following external hyperparameters {params}'.format(file=train_config_script, params=external_hparams))
+        settings_file=tools.experiments_settings_surgery.insert_additionnal_hparams(settings_file, external_hparams)
         print('-> created a temporary experiments settings file : '+settings_file)
+
+
+
       #loading the experiment setup script
       usersettings, sessionFolder = loadExperimentsSettings(settings_file,
                                                                         restart_from_sessionFolder=FLAGS.model_dir,
