@@ -406,3 +406,31 @@ def track_gradients(loss):
       if trainable_nb_values>1:
           tf.summary.histogram(grad.op.name, grad)
   return tvars, raw_grads, gradient_norm
+
+def make_circle_cloud_dataset(samples_number):
+    ''' create a circle dataset with unit average radius and gaussain noise dispersion
+    # use/test example : 
+    import helpers.model as model
+    import matplotlib.pyplot as plt 
+    dataset = model.make_circle_cloud_dataset(1000).numpy()
+
+    plt.scatter(dataset[:,0],dataset[:,1])
+    plt.show()
+
+    Args:
+        samples_number : the number of points to generate
+    Returns:
+        the (x,y) coordinates of the sampled points
+    '''
+    sampled_angles=tf.random.uniform(shape=[samples_number,1], minval=0, maxval=2*np.pi)
+    x = tf.math.cos(sampled_angles)
+    y = tf.math.sin(sampled_angles)
+    #make a samples*2 matrix
+    circle_samples=tf.concat([x,y], axis=-1)
+    print('circle_samples',circle_samples)
+    #add noise
+    circle_samples+=tf.random.normal(shape=[samples_number,2], stddev=.01)
+    return circle_samples
+
+
+

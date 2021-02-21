@@ -26,6 +26,7 @@ This work has been facilitated by intensive experiments conducted on the JeanZay
 * Restart training after failure made easy.
 * Reproducible experiments with random_seeds
 * Activate various optimization options such as XLA, mixed precision and multi GPU processing
+* Federated Learning (FedML), relying on the [Flower library](https://flower.dev/), few changes to switch from you classical training model to the federated version
 * *Have a look at the examples folder to start from typical ML problem examples.*
 
 ## Approach:

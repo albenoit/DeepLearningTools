@@ -45,7 +45,7 @@ def start_model_serving(flags):
   print('Reading config file : ', config_file)
   #load server config
   if os.path.exists(config_file) == False:
-    raise ValueError("COnfig file does not exist")
+    raise ValueError("Config file does not exist")
   config=configparser.ConfigParser()
   config.read(config_file, encoding='utf8')
   print(config.keys())
