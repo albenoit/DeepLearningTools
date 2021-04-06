@@ -995,7 +995,7 @@ def FileListProcessor_csv_time_series(files,
     dataset = dataset.map(decode_csv, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
     if shuffle:
-      dataset=dataset.shuffle(batch_size*10)
+      dataset=dataset.shuffle(batch_size*100)
       
     return dataset.batch(batch_size, drop_remainder=True).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
@@ -1004,7 +1004,6 @@ def FileListProcessor_image_classification(sourceFolder, file_extension,
                                            image_reader_flags=-1,
                                            shuffle_batches=True,
                                            batch_size=1,
-                                           device="/cpu:0",
                                            debug=False):
   '''
     Loads a set of images from a folder with associated labels for image classification
@@ -1021,17 +1020,12 @@ def FileListProcessor_image_classification(sourceFolder, file_extension,
   ds = tf.data.Dataset.list_files(os.path.join(sourceFolder,file_extension))
   ds = ds.map(map_func=load_image)
 
-  dataset = (tf.data.TextLineDataset(files)  # Read text file
-             .skip(1)  # Skip header row
-             .map(decode_csv, num_parallel_calls=4)  # Decode each line in a multi thread mode (asynchronous reading)
-             .cache() # Warning: Caches entire dataset, can cause out of memory
-             .repeat(1)    # Repeats dataset only one time (one epoch) thus allowing to automatically switch between train and eval steps
-             )
+
 
   if shuffle_batches is True:
-      dataset=dataset.shuffle(buffer_size=5*batch_size)
+      dataset=dataset.shuffle(batch_size*100)
 
-  dataset=dataset.batch(batch_size).prefetch(5*batch_size)  # Make sure you always have 1 batch ready to serve
+  dataset=dataset.batch(batch_size).prefetch(size=tf.data.experimental.AUTOTUNE)  # Make sure you always have 1 batch ready to serve
 
 
   return dataset

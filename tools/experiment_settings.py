@@ -79,7 +79,7 @@ class ExperimentSettings(object):
     # learning rate management
     self.early_stopping_patience=self.assertPositive_above_zero('early_stopping_patience', 'the number of epoch without val_loss decrease to wait for before stopping training')
     self.get_learningRate=self.has('get_learningRate', 'the training speed factor, returns a float or a tf.keras.optimizers.schedules object')
-
+    self.monitored_loss_name=self.hasOrDefault('monitored_loss_name', 'val_loss')
     #input data parameters
     self.raw_data_dir_val=self.has('raw_data_dir_val', 'path to the validation dataset')
     self.raw_data_dir_train=self.has('raw_data_dir_train', 'path to the training dataset')

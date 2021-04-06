@@ -28,13 +28,13 @@ session_name='my_test'
 ''' define here some hyperparameters to adjust the experiment
 ===> Note that this dictionnary will complete the session name
 '''
-hparams={'hiddenNeurons':5,#set the number of neurons per hidden layers
+hparams={'hiddenNeurons':500,#set the number of neurons per hidden layers
          'predictSmoothParams':True, #set True to activate parameters moving averages use for prediction
          'learningRate':0.001,
          'nbEpoch':5000,
          'addNoise':True,
-         'anomalyAtX':-3, #-3 #set a float value instead of None to impose an abnormal value
-         'prodID':0, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
+         'anomalyAtX':-4, #-3 #set a float value instead of None to impose an abnormal value
+         'procID':0, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
          }
 
 ''''set the list of GPUs involved in the process. HOWTO:
@@ -73,11 +73,11 @@ early_stopping_patience=10
 raw_data_dir_train = ''
 raw_data_dir_val = ''
 raw_data_filename_extension=''
-nb_train_samples=100000 #manually adjust here the number of temporal items out of the temporal block size
-nb_val_samples=10000
-steps_per_epoch=100
+nb_train_samples=100 #manually adjust here the number of temporal items out of the temporal block size
+nb_val_samples=1000
+steps_per_epoch=10
 validation_steps=0
-batch_size=200
+batch_size=10
 reference_labels=['values']
 
 ########## MODEL SERVING/PRODUCTION PARAMETERS SECTION ################
@@ -88,6 +88,9 @@ wait_for_server_ready_int_secs=5
 serving_client_timeout_int_secs=1#timeout limit when a client requests a served model
 serve_on_gpu=True #uncomment to activate model serving on GPU instead of CPU
 served_input_names=['input']
+served_head_names=['prediction']
+
+########## LOCAL PARAMETERS (ONLY USED BELOW) SECTION ######
 served_head_names=['prediction']
 
 ########## LOCAL PARAMETERS (ONLY USED BELOW) SECTION ################

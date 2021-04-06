@@ -106,8 +106,8 @@ federated_learning_available=False
 try:
   import flwr as fl
   federated_learning_available=True
-except:
-  print('WARNING, Flower (féderated learning lib) could not be loaded, this may generate errors for model optimization but should not impact model serving')
+except ModuleNotFoundError as e :
+  print('WARNING, Flower lib no present, this may impact distributed learning if required. Error=',e)
 
 from tensorflow.keras import mixed_precision
 
@@ -150,7 +150,7 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
            filepath,
            settings,
            monitor='val_loss',
-           verbose=0,
+           verbose=1,
            save_best_only=False,
            save_weights_only=False,
            mode='auto',
@@ -170,7 +170,7 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
 
   def on_epoch_end(self, epoch, logs=None):
     #call parent function
-    print('Saving checkpoint...')
+    print('on_epoch_end, saving checkpoint...')
     super(MyCustomModelSaverExporterCallback, self).on_epoch_end(epoch, logs)
 
     if self.save_freq == 'epoch':
@@ -385,11 +385,13 @@ def run_experiment(usersettings):
     val_data = usersettings.get_input_pipeline(raw_data_files_folder=usersettings.raw_data_dir_val,
                                                        isTraining=False)
   try:
-    print('Train data=',type(train_data))
-    print('Training data samples cardinality=',tf.data.experimental.cardinality(train_data))
-    print('Validation data samples cardinality=',tf.data.experimental.cardinality(val_data))
+    train_iterations_per_epoch=train_data.n//usersettings.batch_size
+    val_iterations_per_epoch=val_data.n//usersettings.batch_size
   except Exception as e:
-    print('Could not evaluate dataset cardinality', e)
+    print('Could not estimate dataset sizes from input data pipeline, relying on settings nb_train_samples and nb_val_samples.')
+    train_iterations_per_epoch=usersettings.nb_train_samples//usersettings.batch_size
+    val_iterations_per_epoch=usersettings.nb_val_samples//usersettings.batch_size
+
   #####################################
   #create the model from the user defined model file
   # -> (script targeted by usersettings.model_file)
@@ -491,11 +493,11 @@ def run_experiment(usersettings):
   # -> apply early stopping
   early_stopping_patience=usersettings.early_stopping_patience if hasattr(usersettings, 'early_stopping_patience') else 5
   all_callbacks.append(tf.keras.callbacks.EarlyStopping(
-                            monitor='val_loss',
+                            monitor=usersettings.monitored_loss_name,
                             patience=early_stopping_patience
                           )
                         )
-  all_callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1,
+  all_callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(monitor=usersettings.monitored_loss_name, factor=0.1,
                               patience=(early_stopping_patience*2)//3, min_lr=0.000001, verbose=True)
                         )
 
@@ -503,7 +505,7 @@ def run_experiment(usersettings):
   all_callbacks.append(MyCustomModelSaverExporterCallback(#tf.keras.callbacks.ModelCheckpoint(
                                             usersettings.sessionFolder+'/checkpoints/',
                                             usersettings,
-                                            monitor='val_loss',
+                                            monitor=usersettings.monitored_loss_name,
                                             verbose=1,
                                             save_best_only=True,
                                             save_weights_only=False,
@@ -566,14 +568,6 @@ def run_experiment(usersettings):
     print('* multiprocessing workers=',workers)
   history = None
 
-  try:
-    train_iterations_per_epoch=train_data.n//usersettings.batch_size
-    val_iterations_per_epoch=val_data.n//usersettings.batch_size
-  except Exception as e:
-    print('Could not estimate dataset sizes from input data pipeline, relying on settings nb_train_samples and nb_val_samples.')
-    train_iterations_per_epoch=usersettings.nb_train_samples//usersettings.batch_size
-    val_iterations_per_epoch=usersettings.nb_val_samples//usersettings.batch_size
-
   #manage epoch index in case of fitting interruption/restart
   epoch_start_index=0
 
@@ -618,6 +612,7 @@ def run_experiment(usersettings):
       def __init__(self):
         self.history=None
         self.round=0
+        self.last_val_loss=np.inf
       def get_parameters(self):
         return model.get_weights()
 
@@ -635,7 +630,7 @@ def run_experiment(usersettings):
             x=train_data,
             y=None,#train_data,
             batch_size=None,#usersettings.batch_size, #bath size must be specified
-            epochs=1,
+            epochs=1*(1+self.round),
             verbose=True,
             callbacks=callbacks,
             validation_split=0.0,
@@ -643,10 +638,10 @@ def run_experiment(usersettings):
             shuffle=True,
             class_weight=None,
             sample_weight=None,
-            initial_epoch=self.round-1,
+            initial_epoch=1*(self.round-1),
             steps_per_epoch=train_iterations_per_epoch,
             validation_steps=val_iterations_per_epoch,
-            validation_freq=1,
+            validation_freq=1,#[i for i in range(usersettings.nbEpoch)],
             max_queue_size=workers*100,
             workers=workers,
             use_multiprocessing=use_multiprocessing,
@@ -654,17 +649,18 @@ def run_experiment(usersettings):
         if len(history.history)>0:
           self.history=history
           self.history_keys=history.history.keys()
+          self.last_val_loss=self.history.history[usersettings.monitored_loss_name][-1]
         print('round, history=', self.round, history.history)
         return model.get_weights(), train_iterations_per_epoch*usersettings.batch_size, {}
 
       def evaluate(self, parameters, config):
         print('Evaluating model...')
-        model.set_weights(parameters)
-        losses = model.evaluate(val_data, steps=val_iterations_per_epoch, callbacks=all_callbacks)
-        loss_dict={'val_'+key:val for key, val in zip(self.history_keys, losses)}
-        print('losses:',loss_dict)
+        #model.set_weights(parameters)
+        #losses = model.evaluate(val_data, steps=val_iterations_per_epoch, callbacks=all_callbacks)
+        #loss_dict={'val_'+key:val for key, val in zip(self.history_keys, losses)}
+        #print('losses:',loss_dict)
         
-        return losses[0], val_iterations_per_epoch*usersettings.batch_size, loss_dict
+        return self.last_val_loss, val_iterations_per_epoch*usersettings.batch_size, {}#self.history.history#loss_dict
       
     # Start Flower client
     federated_learner=FlClient()
