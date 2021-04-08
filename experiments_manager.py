@@ -172,7 +172,9 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
     #call parent function
     print('on_epoch_end, saving checkpoint...')
     super(MyCustomModelSaverExporterCallback, self).on_epoch_end(epoch, logs)
-
+    if logs is None:
+      print('WARNING, no logs dict is provided to ModelCheckpoint.on_epoch_end, checkpointing on best epoch will not work')
+    
     if self.save_freq == 'epoch':
       try:
         if False:#self.model._in_multi_worker_mode():
@@ -211,7 +213,7 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
       except Exception as e:
         print('Failed to export serving model relying on method:', e)
       #new keras approach
-      try:
+      '''try:
         print('Exporting serving model relying on tf.keras.models.save_model')
         tf.keras.models.save_model(
                                 exported_module,
@@ -224,7 +226,7 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
                                 )
       except Exception as e:
         print('Failed to export serving model relying on method:',e)
-      '''export to TensorRT, WIP
+      export to TensorRT, WIP
        refer to https://www.tensorflow.org/api_docs/python/tf/experimental/tensorrt/Converter
        and
        https://docs.nvidia.com/deeplearning/frameworks/tf-trt-user-guide/index.html
@@ -487,22 +489,43 @@ def run_experiment(usersettings):
   all_callbacks=[]
 
   #add the history callback
-  all_callbacks.append(tf.keras.callbacks.History())
+  class CustomHistory(tf.keras.callbacks.History):
+    """Callback that records events into a `History` object.
+    This callback is automatically applied to
+    every Keras model. The `History` object
+    gets returned by the `fit` method of models.
+    """
+
+    def __init__(self):
+      super(CustomHistory, self).__init__()
+      self.history = {}
+      self.epoch = [] #moved from on_train_begin
+
+    def on_train_begin(self, logs=None):
+      print('******** HISTORY starting a training session...')
+    
+    def on_epoch_end(self, epoch, logs=None):
+      print('******** HISTORY on_epoch_end...')
+
+      super(CustomHistory, self).on_epoch_end(epoch, logs)
+
+  history_callback=CustomHistory()#tf.keras.callbacks.History()
+  all_callbacks.append(history_callback)
   # -> terminate on NaN loss values
   all_callbacks.append(tf.keras.callbacks.TerminateOnNaN())
   # -> apply early stopping
   early_stopping_patience=usersettings.early_stopping_patience if hasattr(usersettings, 'early_stopping_patience') else 5
-  all_callbacks.append(tf.keras.callbacks.EarlyStopping(
+  earlystopping_callback=tf.keras.callbacks.EarlyStopping(
                             monitor=usersettings.monitored_loss_name,
                             patience=early_stopping_patience
                           )
-                        )
-  all_callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(monitor=usersettings.monitored_loss_name, factor=0.1,
+  all_callbacks.append(earlystopping_callback)
+  reduceLROnPlateau_callback=tf.keras.callbacks.ReduceLROnPlateau(monitor=usersettings.monitored_loss_name, factor=0.1,
                               patience=(early_stopping_patience*2)//3, min_lr=0.000001, verbose=True)
-                        )
+  all_callbacks.append(reduceLROnPlateau_callback)
 
   #-> checkpoint each epoch
-  all_callbacks.append(MyCustomModelSaverExporterCallback(#tf.keras.callbacks.ModelCheckpoint(
+  checkpoint_callback=MyCustomModelSaverExporterCallback(#tf.keras.callbacks.ModelCheckpoint(
                                             usersettings.sessionFolder+'/checkpoints/',
                                             usersettings,
                                             monitor=usersettings.monitored_loss_name,
@@ -511,7 +534,7 @@ def run_experiment(usersettings):
                                             save_weights_only=False,
                                             mode='auto',
                                             save_freq='epoch')
-                          )
+  all_callbacks.append(checkpoint_callback)
 
   if usersettings.debug:
     #TODO to be tested
@@ -613,10 +636,12 @@ def run_experiment(usersettings):
         self.history=None
         self.round=0
         self.last_val_loss=np.inf
+
       def get_parameters(self):
         return model.get_weights()
 
       def fit(self, parameters, config):
+        print('#################### FlClient.fit new round', self.round)
         #set updated weights
         model.set_weights(parameters)
         # avoiding to reuse callbacks : only affect them on the first round
@@ -630,37 +655,52 @@ def run_experiment(usersettings):
             x=train_data,
             y=None,#train_data,
             batch_size=None,#usersettings.batch_size, #bath size must be specified
-            epochs=1*(1+self.round),
-            verbose=True,
+            epochs=1*(self.round+1),
+            verbose=1,
             callbacks=callbacks,
             validation_split=0.0,
-            validation_data=val_data,
+            validation_data=val_data, #=> done at the evaluate method level
             shuffle=True,
             class_weight=None,
             sample_weight=None,
-            initial_epoch=1*(self.round-1),
+            initial_epoch=1*(self.round),
             steps_per_epoch=train_iterations_per_epoch,
             validation_steps=val_iterations_per_epoch,
-            validation_freq=1,#[i for i in range(usersettings.nbEpoch)],
+            validation_freq=1,
             max_queue_size=workers*100,
             workers=workers,
             use_multiprocessing=use_multiprocessing,
         )
+        print('FlClient.fit round result, history=', self.round,history.history)
+        logs_last_epoch={ key:history.history[key][-1] for key in history.history.keys()}
+        print('==> last history=', logs_last_epoch)
+        checkpoint_callback.on_epoch_end(self.round, logs_last_epoch)
+        earlystopping_callback.on_epoch_end(self.round, logs_last_epoch)
+        history_callback.on_epoch_end(self.round, logs_last_epoch)
+        #reduceLROnPlateau_callback.on_epoch_end(self.round, logs_last_epoch)
+
         if len(history.history)>0:
           self.history=history
-          self.history_keys=history.history.keys()
-          self.last_val_loss=self.history.history[usersettings.monitored_loss_name][-1]
-        print('round, history=', self.round, history.history)
-        return model.get_weights(), train_iterations_per_epoch*usersettings.batch_size, {}
+        return model.get_weights(), train_iterations_per_epoch*usersettings.batch_size, logs_last_epoch#{}
 
       def evaluate(self, parameters, config):
-        print('Evaluating model...')
-        #model.set_weights(parameters)
-        #losses = model.evaluate(val_data, steps=val_iterations_per_epoch, callbacks=all_callbacks)
-        #loss_dict={'val_'+key:val for key, val in zip(self.history_keys, losses)}
-        #print('losses:',loss_dict)
-        
-        return self.last_val_loss, val_iterations_per_epoch*usersettings.batch_size, {}#self.history.history#loss_dict
+        print('Evaluating model from received parameters...')
+        model.set_weights(parameters)
+        losses = model.evaluate(x=val_data,
+                                y=None,
+                                batch_size=None,
+                                verbose=1,
+                                sample_weight=None,
+                                steps=val_iterations_per_epoch,
+                                callbacks=all_callbacks,
+                                max_queue_size=10,
+                                workers=workers,
+                                use_multiprocessing=False,
+                                return_dict=True
+                                )
+        print('FlClient.evaluate losses:',losses)
+
+        return losses[usersettings.monitored_loss_name[4:]], val_iterations_per_epoch*usersettings.batch_size, losses#self.history.history#loss_dict
       
     # Start Flower client
     federated_learner=FlClient()
@@ -669,6 +709,7 @@ def run_experiment(usersettings):
   print('\nhistory dict:', history.history)
 
   print('Training session end, loss={loss} '.format(loss=history.history['loss'][-1]))
+  print('Have a look at the experiments details saved in folder ', usersettings.sessionFolder)
   final_result=None
   if final_result is None:
     final_result={'loss':history.history['loss'][-1]}
