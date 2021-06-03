@@ -1,7 +1,8 @@
 BootStrap: docker
-From: docker://tensorflow/tensorflow:2.4.1-gpu-jupyter
+From: tensorflow/tensorflow:2.5.0-gpu-jupyter
 
 %post
+    export DEBIAN_FRONTEND=noninteractive
     apt-get update
     apt-get install -y ipython3
     apt-get install -y python3-gdal
@@ -16,16 +17,17 @@ From: docker://tensorflow/tensorflow:2.4.1-gpu-jupyter
     python3 -m pip install kafka-python
     python3 -m pip install msgpack msgpack-numpy
     python3 -m pip install sklearn
-    #python3 -m pip install shap
+    python3 -m pip install shap
     python3 -m pip install hyperopt
     python3 -m pip install statsmodels
     python3 -m pip install opencv-python>=4.1.0 opencv-contrib-python
     python3 -m pip install rasterio
     python3 -m pip install seaborn
     python3 -m pip install pydot pydot-ng
-    python3 -m pip install tensorflow-datasets tensorflow-addons==0.12.1 #tensorflow-federated==0.18.0
+    python3 -m pip install tensorflow-datasets tensorflow-addons==0.13.0 #tensorflow-federated==0.18.0
     python3 -m pip install -q git+https://github.com/tensorflow/examples.git
-    python3 -m pip install tensorflow-io==0.17.0 tensorflow-probability==0.12.1
+    python3 -m pip install tensorflow-io==0.18.0 tensorflow-probability==0.13.0-rc0
+    python3 -m pip install tensorflow-serving-api-gpu==2.4.1
     python3 -m pip install flwr
     #python3 -m pip install tfx==0.25.0
     python3 -m pip install Pillow
@@ -45,4 +47,4 @@ From: docker://tensorflow/tensorflow:2.4.1-gpu-jupyter
     * running python scripts : cd DeepLearningTools && singularity run tf_nv_addons_py3.sif experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py
 
 %labels
-    Author Alexandre Benoit, LISTIC Lab, August 2019
+    Author Alexandre Benoit, LISTIC Lab, june 2021

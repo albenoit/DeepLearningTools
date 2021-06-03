@@ -37,7 +37,7 @@ This work has been facilitated by intensive experiments conducted on the JeanZay
 * You run the experiment and regularly look at the Tensorboard to monitor indicators, weight distributions, model output embedding, etc.
 * You finally run the model relying on the Tensorflow serving API.
 
-# Machine Setup (validated with tensorflow 2.2)
+# Machine Setup (validated with tensorflow 2.4+)
 
 Python package installation can be managed relying on Anaconda or pip package managers. You can install the required packages manually, as shown below. However, the most convenient way is to consider containers in order to keep your system as is (safe and stable) and install all the required packages (maybe in different versions) apart without conflicts. In addition, the same built container can be deployed on laptops, desktops and servers (in clouds) by simply copy/paste of the built container on the target machine. Keep your time avoiding multiple installation procedures, libraries conflict management and all this time-wasting stuff !
 More information on the interest of Singularity :
