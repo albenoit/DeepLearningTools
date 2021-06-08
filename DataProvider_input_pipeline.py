@@ -359,7 +359,7 @@ def convert_semanticMap_contourMap(crops):
 	'''
 
     #Border Sobel operator
-    sobel_x = tf.constant([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], tf.float32)
+    sobel_x = tf.constant([[-1., 0., 1.], [-2., 0., 2.], [-1., 0., 1.]], tf.float32)
     sobel_x_filter = tf.reshape(sobel_x, [3, 3, 1,1])
     sobel_y_filter = tf.transpose(sobel_x_filter, [1, 0, 2,3])
 
@@ -367,9 +367,9 @@ def convert_semanticMap_contourMap(crops):
     image_resized = tf.expand_dims(crops, -1)
 
     crops_float=tf.cast(image_resized, tf.float32)
-
+    print('processed crops:', crops_float)
     filtered_x = tf.nn.conv2d(crops_float, sobel_x_filter,
-                          strides=[1, 1, 1,1], padding='VALID')
+                          strides=[1, 1, 1, 1], padding='VALID')
     filtered_y = tf.nn.conv2d(crops_float, sobel_y_filter,
                           strides=[1, 1, 1, 1], padding='VALID')
 
@@ -966,7 +966,26 @@ def FileListProcessor_csv_time_series(files,
                                       labels_cols_nb=1,
                                       per_sample_preprocess_fn=None,
                                       selected_cols=None,
-                                      shuffle=False):
+                                      shuffle=False,
+                                      post_proc_filter=None):
+    '''
+    A standard data pipeline dedicated to time series stored in collections of csv files
+
+    Args:
+      files: a python list of filenames
+      csv_field_delim: the column separator
+      record_defaults_values: a python list of default values to be used when csv columns are empty (ex for a 2 columns float table: [[0.0], 0.0]])
+      batch_size: number of samples to be considered in a data batch
+      epochs: the number of epoch the dataset should be read
+      temporal_series_length: the number of successive lines to be read as a sequence of timesteps for a single sample 
+      windowing_shift: the minimal temporal window/number of time steps that separate two overlapping samples 
+      na_value_string='N/A': the string used in the csv file that indicated nan values
+      labels_cols_nb=1 : the number of FIRST columns that represent labels (may be string dates or so)
+      per_sample_preprocess_fn=None: if some specific sample level processing should be performed, privide here the function that does this (def mypost_proc(Tensor sample) returns Tensor)
+      selected_cols=None: the python list of indexes of data columns of interest 
+      shuffle=False: set True to activate samples shuffling (best for training)
+      post_proc_filter=None: if some specific sample filtering should be performed, specify here a dedicated function (def mypost_proc(Tensor sample) returns Binary Tensor)
+    '''
 
     def decode_csv(line):
       features = tf.io.decode_csv(line, record_defaults=record_defaults_values, field_delim=csv_field_delim, na_value=na_value_string, select_cols=selected_cols)
@@ -974,6 +993,7 @@ def FileListProcessor_csv_time_series(files,
       raw_data= tf.stack(features[labels_cols_nb:], axis=0)
       labels=tf.stack(labels, axis=0)
       if per_sample_preprocess_fn is not None:
+          #tf.print('CSV DECODE', raw_data, labels)
           return per_sample_preprocess_fn(raw_data, labels)
       return raw_data, labels
     #create a dataset from the list of files to process
@@ -993,6 +1013,10 @@ def FileListProcessor_csv_time_series(files,
 
     # decode csv file
     dataset = dataset.map(decode_csv, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+
+    # apply filter if provided
+    if post_proc_filter is not None:
+      dataset=dataset.filter(post_proc_filter)  
 
     if shuffle:
       dataset=dataset.shuffle(batch_size*100)
