@@ -68,7 +68,7 @@ random_seed=42
 # stop condition, taking into account if val_loss does not decrease for early_stopping_patience epoch
 nbEpoch=hparams['nbEpoch']
 early_stopping_patience=10
-monitored_loss_name='val_mean_squared_error'
+monitored_loss_name='mean_squared_error'
 #set here paths to your data used for train, val
 raw_data_dir_train = ''
 raw_data_dir_val = ''
