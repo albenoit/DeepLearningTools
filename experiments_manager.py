@@ -387,6 +387,8 @@ def run_experiment(usersettings):
     val_data = usersettings.get_input_pipeline(raw_data_files_folder=usersettings.raw_data_dir_val,
                                                        isTraining=False)
   try:
+    print('Train dataset size=', train_data.cardinality().numpy())
+    print('Validation dataset size=', val_data.cardinality().numpy())
     train_iterations_per_epoch=train_data.n//usersettings.batch_size
     val_iterations_per_epoch=val_data.n//usersettings.batch_size
   except Exception as e:
@@ -561,7 +563,7 @@ def run_experiment(usersettings):
   print('Model outputs:',embeddings_layer_names)
   #-> set tensorboard logging
   #FIXME: https://github.com/tensorflow/tensorboard/issues/2471
-  all_callbacks.append(tf.keras.callbacks.TensorBoard(log_dir,
+  tensorboard_callback=tf.keras.callbacks.TensorBoard(log_dir,
                                                       histogram_freq=1,
                                                       write_graph=True,
                                                       write_images=False,#True,
@@ -571,8 +573,9 @@ def run_experiment(usersettings):
                                                       #embeddings_metadata='metadata.tsv',
                                                       #embeddings_layer_names=list(embeddings_layer_names.keys()),#'embedding',
                                                       #embeddings_data='stuff'
-                                                      ))
-  #-> add the hyperparameters callback for experimetns comparison
+                                                      )
+  all_callbacks.append(tensorboard_callback)
+  #-> add the hyperparameters callback for experiments comparison
   all_callbacks.append(hp.KerasCallback(log_dir, usersettings.hparams))
 
   #-> export saved_model (for serving) each epoch
@@ -636,7 +639,7 @@ def run_experiment(usersettings):
         self.history=None
         self.round=0
         self.last_val_loss=np.inf
-
+        self.tensorboard_callback=tensorboard_callback
       def get_parameters(self):
         return model.get_weights()
 
@@ -644,12 +647,24 @@ def run_experiment(usersettings):
         print('#################### FlClient.fit new round', self.round)
         #set updated weights
         model.set_weights(parameters)
-        # avoiding to reuse callbacks : only affect them on the first round
-        self.round+=1
-        if self.round==1:
+
+        #tensorboard_callback.on_train_begin(self.round)
+        if self.round==0:
           callbacks=all_callbacks
         else:
-          callbacks=None
+          #FIXME workaround to force tensorboard to display data tracking along rounds/epochs
+          self.tensorboard_callback=tf.keras.callbacks.TensorBoard(log_dir,
+                                                      histogram_freq=1,
+                                                      write_graph=True,
+                                                      write_images=False,#True,
+                                                      update_freq='epoch',
+                                                      profile_batch=profile_batch,
+                                                      embeddings_freq=10,
+                                                      #embeddings_metadata='metadata.tsv',
+                                                      #embeddings_layer_names=list(embeddings_layer_names.keys()),#'embedding',
+                                                      #embeddings_data='stuff'
+                                                      )
+          callbacks=self.tensorboard_callback
         #training for one epoch
         history=model.fit(
             x=train_data,
@@ -676,11 +691,15 @@ def run_experiment(usersettings):
         print('==> last history=', logs_last_epoch)
         checkpoint_callback.on_epoch_end(self.round, logs_last_epoch)
         earlystopping_callback.on_epoch_end(self.round, logs_last_epoch)
-        history_callback.on_epoch_end(self.round, logs_last_epoch)
+        #history_callback.on_epoch_end(self.round, logs_last_epoch)
+        self.tensorboard_callback.on_train_end(logs_last_epoch) #FIXME workaround to force tensorboard to display data tracking along rounds/epochs
         #reduceLROnPlateau_callback.on_epoch_end(self.round, logs_last_epoch)
 
         if len(history.history)>0:
           self.history=history
+        # avoiding to reuse callbacks : only affect them on the first round
+        self.round+=1
+
         return model.get_weights(), train_iterations_per_epoch*usersettings.batch_size, logs_last_epoch#{}
 
       def evaluate(self, parameters, config):
@@ -700,7 +719,7 @@ def run_experiment(usersettings):
                                 )
         print('FlClient.evaluate losses:',losses)
 
-        return losses[usersettings.monitored_loss_name[4:]], val_iterations_per_epoch*usersettings.batch_size, losses#self.history.history#loss_dict
+        return losses[usersettings.monitored_loss_name], val_iterations_per_epoch*usersettings.batch_size, losses#self.history.history#loss_dict
       
     # Start Flower client
     federated_learner=FlClient()
