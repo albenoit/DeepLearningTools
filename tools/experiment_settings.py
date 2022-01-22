@@ -68,8 +68,6 @@ class ExperimentSettings(object):
     self.class_weight=[]
     self.sample_weight=[]
     self.initial_epoch=0
-    self.steps_per_epoch=self.has('steps_per_epoch', 'integer value that, ONLY IF ABOVE 0 specifies after how many training steps one must apply to cover an entire training dataset epoch')
-    self.validation_steps=self.has('validation_steps', 'integer value that, ONLY IF ABOVE 0 specifies after how many validation steps to apply')
     self.validation_freq=1
     self.max_queue_size=10
     self.workers=1
@@ -84,7 +82,7 @@ class ExperimentSettings(object):
     self.raw_data_dir_val=self.has('raw_data_dir_val', 'path to the validation dataset')
     self.raw_data_dir_train=self.has('raw_data_dir_train', 'path to the training dataset')
     self.raw_data_filename_extension=self.assertType('raw_data_filename_extension', str, 'extension of the dataset files')
-
+    self.consume_data_from_kafka=self.hasOrDefault('enable_federated_learning', False)
     #GPU IDs allocation
     self.used_gpu_IDs=self.assertType('used_gpu_IDs', list, 'a list of GPU ids to use for the experiment')
     self.distribution_strategy=self.hasOrDefault('distribution_strategy', 'MirroredStrategy')
@@ -93,7 +91,8 @@ class ExperimentSettings(object):
     #check train and validation dataset parameters
     self.nb_train_samples=self.assertPositive_above_equal_zero('nb_train_samples', 'the number of samples used for training')
     self.nb_val_samples=self.assertPositive_above_equal_zero('nb_val_samples', 'the number of samples used for validation')
-
+    self.kafka_bootstrap_servers=self.hasOrDefault('kafka_bootstrap_servers', ['localhost:9092'])
+    self.consume_data_from_kafka=self.hasOrDefault('consume_data_from_kafka', False)
     #input pipelines
     self.get_input_pipeline=self.has('get_input_pipeline', 'the train and validation input data pipelines function params=[batch_size, raw_data_files_folder, shuffle_batches], must return an input function as described here : https://www.tensorflow.org/programmers_guide/datasets')
 

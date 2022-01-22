@@ -5,7 +5,6 @@ def reload_external_hparams_from_file(sessionFolder):
   hparams_addons=None
   #then try to load optionnal external hyperparameters in the session folder
   print("sessionFolder",sessionFolder)
-  print(settingsFile_addons_saveName)
   filename_optionnal_hparams=os.path.join(sessionFolder, settingsFile_addons_saveName)
   print('**Looking for additionnal hyperparameters in optionnal file '+filename_optionnal_hparams)
   if os.path.exists(filename_optionnal_hparams):
@@ -21,7 +20,9 @@ def insert_additionnal_hparams(settings_file, hparams):
     return settings_file
   # read the original experiments settings file in READ mode
   original_settings_file=open(settings_file,"r")
+  print('reading file', original_settings_file)
   updated_settings_data=original_settings_file.readlines() #returns the LIST of lines
+
   original_settings_file.close()
   #Here, we prepend the string we want to on first line
   additionnal_hparams="#IN THE NEXT FEW FOLLOWING LINES SOME ADDITIONNAL HYPERPARAMETERS HAVE BEEN AUTOMATICALY INSERTED\n"+'hparams_addons='+str(hparams)+'\n'
@@ -60,7 +61,7 @@ def insert_additionnal_hparams(settings_file, hparams):
 
     return found_hparams_dict, line_after_hparams_dict
 
-  hparams_line_insert=get_next_line_after_last_python_future_line(updated_settings_data)
+  hparams_line_insert=0#get_next_line_after_last_python_future_line(updated_settings_data)
   has_hparams, hand_written_hparam_line=find_line_after_initial_hparams_dict(updated_settings_data[hparams_line_insert:])
   hparams_line_insert+=hand_written_hparam_line
   if has_hparams:
