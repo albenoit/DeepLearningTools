@@ -180,7 +180,7 @@ def get_total_loss(model):#inputs, model_outputs_dict, labels, weights_loss):
 -1. a common function for train and validation modes
 -2. a specific one for the serving model_extra_update_ops
 '''
-def get_input_pipeline(raw_data_files_folder, isTraining):
+def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     ''' define an input pipeline able to load temporal series from a set of
     CSV files and a batch size specified as inputs
     TODO, look at the doc here : https://www.tensorflow.org/programmers_guide/datasets

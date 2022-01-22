@@ -73,7 +73,7 @@ nb_train_samples=10000 #manually adjust here the number of temporal items out of
 nb_val_samples=10000
 steps_per_epoch=100
 validation_steps=0
-batch_size=200
+batch_size=100
 reference_labels=['values']
 
 ########## MODEL SERVING/PRODUCTION PARAMETERS SECTION ################
@@ -158,7 +158,7 @@ def get_total_loss(model):#inputs, model_outputs_dict, labels, weights_loss):
 -1. a common function for train and validation modes
 -2. a specific one for the serving model_extra_update_ops
 '''
-def get_input_pipeline(raw_data_files_folder, isTraining):
+def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     ''' define an input pipeline a basic example here, define random x values
     associated to y=f(x) values to regress
     TODO, look at the doc here : https://www.tensorflow.org/programmers_guide/datasets
@@ -174,7 +174,7 @@ def get_input_pipeline(raw_data_files_folder, isTraining):
         yield (sampled_x, sampled_y)
 
     #if isTraining:
-    aggregator = tf.data.experimental.StatsAggregator()
+    #aggregator = tf.data.experimental.StatsAggregator()
 
 
     dataset_generator = tf.data.Dataset.from_generator(
@@ -184,9 +184,9 @@ def get_input_pipeline(raw_data_files_folder, isTraining):
             )
 
     # Apply `StatsOptions` to associate `dataset` with `aggregator`.
-    options = tf.data.Options()
-    options.experimental_stats.aggregator = aggregator
-    dataset_generator = dataset_generator.with_options(options)
+    #options = tf.data.Options()
+    #options.experimental_stats.aggregator = aggregator
+    #dataset_generator = dataset_generator.with_options(options)
     #aggregator.get_summary()
     return dataset_generator.prefetch(1)
 

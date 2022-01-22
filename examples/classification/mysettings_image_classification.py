@@ -75,7 +75,7 @@ raw_data_dir_val = ''
 raw_data_filename_extension=''
 nb_train_samples=2000 #manually adjust here the number of temporal items out of the temporal block size
 nb_val_samples=1000
-batch_size=128
+batch_size=32
 steps_per_epoch=nb_train_samples//batch_size
 validation_steps=nb_val_samples//batch_size
 reference_labels=['category']
@@ -143,7 +143,7 @@ def get_total_loss(model):
 -1. a common function for train and validation modes
 -2. a specific one for the serving model_extra_update_ops
 '''
-def get_input_pipeline(raw_data_files_folder, isTraining):
+def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     ''' define an input pipeline a basic example here:
     -> load a standard dataset with tuples (image, label)
     TODO, look at the doc here : https://www.tensorflow.org/programmers_guide/datasets

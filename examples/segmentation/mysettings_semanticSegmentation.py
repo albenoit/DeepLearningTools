@@ -79,17 +79,11 @@ early_stopping_patience=10
 
 #set here paths to your data used for train, val
 #=> download tensorflow dataset for demo purpose
-try:
-  import tensorflow_datasets as tfds
-  dataset, info = tfds.load('oxford_iiit_pet:3.0.0', with_info=True)
-  print('Dataset info :', info)
-  nb_train_images=info.splits['train'].num_examples#len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train_, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
-  nb_val_images=info.splits['test'].num_examples#len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val_, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
-except :
-  print('WARING : Could not load tensorflow_datasets module required for train and validation processes')
-  print('--> NOTE THAT THIS WILL NOT IMPACT MODEL SERVING')
-  nb_train_images=1
-  nb_val_images=1
+import tensorflow_datasets as tfds
+dataset, info = tfds.load('oxford_iiit_pet:3.2.0', with_info=True)
+print('Dataset info :', info)
+nb_train_images=info.splits['train'].num_examples#len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train_, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
+nb_val_images=info.splits['test'].num_examples#len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_val_, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
 
 raw_data_dir_train_ = ""#"/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
 reference_data_dir_train_ = ""#"/home/alben/workspace/Datasets/CityScapes/gtFine_trainvaltest/gtFine/train/"
@@ -174,7 +168,7 @@ def get_total_loss(model):
 '''
 Define here the input pipelines : a common function for train and validation modes
 '''
-def get_input_pipeline(raw_data_files_folder, isTraining):
+def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
   ''' define an input pipeline a basic example here:
   -> load a standard dataset with tuples (image, label)
   TODO, look at the doc here : https://www.tensorflow.org/programmers_guide/datasets
