@@ -118,32 +118,6 @@ WEIGHTS_MOVING_AVERAGE_DECAY=0.998
 # Set default flags for the output directories
 #manage input commands
 import argparse
-parser = argparse.ArgumentParser(description='demo_semantic_segmentation')
-parser.add_argument("-m","--model_dir", default=None,
-                    help="Output directory for model and training stats.")
-parser.add_argument("-d","--debug", action='store_true',
-                    help="set to activate debug mode")
-parser.add_argument("-p","--predict", action='store_true',
-                    help="Switch to prediction mode")
-parser.add_argument("-l","--predict_stream", default=0, type=int,
-                    help="set the number of successive predictions, infinite loop if <0")
-parser.add_argument("-s","--start_server", action='store_true',
-                    help="start the tensorflow server on the machine to run predictions")
-parser.add_argument("-psi","--singularity_tf_server_container_path", default='',
-                    help="start the tensorflow server on a singularity container to run predictions")
-parser.add_argument("-u","--usersettings",
-                    help="filename of the settings file that defines an experiment")
-parser.add_argument("-r","--restart_interrupted", action='store_true',
-                    help="Set to restart an interrupted session, model_dir option should be set")
-parser.add_argument("-g","--debug_server_addresses", action='store_true',
-                    default="127.0.0.1:2333",
-                    help="Set here the IP:port to specify where to reach the tensorflow debugger")
-parser.add_argument("-pid","--procID", default=None,
-                    help="Specifiy here an ID to identify the process (useful for federated training sessions)")
-parser.add_argument("-c","--commands", action='store_true',
-                    help="show command examples")
-
-FLAGS = parser.parse_args()
 
 class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
   def __init__(self,
@@ -333,7 +307,7 @@ def check_GPU_available(usersettings):
     print('No GPU required for this experiment (usersettings.used_gpu_IDs is empty)')
   return gpu_workers_nb
 
-def loadModel_def_file(sessionFolder):
+def loadModel_def_file(sessionFolder, usersettings):
   ''' basic method to load the model targeted by usersettings.model_file
   Args: sessionFolder, the path to the model file
   Returns: a keras model
@@ -383,9 +357,30 @@ def run_experiment(usersettings):
   # define the input pipepelines (train/val)
   with tf.name_scope('Input_pipeline'):
     train_data =usersettings.get_input_pipeline(raw_data_files_folder=usersettings.raw_data_dir_train,
-                                                       isTraining=True)
+                                                      isTraining=True, batch_size=usersettings.batch_size,
+                                                      nbEpoch=usersettings.nbEpoch)
     val_data = usersettings.get_input_pipeline(raw_data_files_folder=usersettings.raw_data_dir_val,
-                                                       isTraining=False)
+                                                      isTraining=False, batch_size=usersettings.batch_size,
+                                                      nbEpoch=usersettings.nbEpoch)
+    print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++train_data', train_data)
+    #data_it=train_data.as_numpy_iterator()
+    #print("ELEMENTS", list(data_it))
+    # if reading from a kafka log queue:
+    if usersettings.consume_data_from_kafka: 
+      import helpers.tensor_msg_io
+      import helpers.kafka_io
+      print("Original dataset specs:\n->", train_data.element_spec)
+      train_val_dataset_features=helpers.tensor_msg_io.get_label_data_features_from_dataset(train_data)
+      log_queue_name=usersettings.session_name
+      if 'procID' in usersettings.hparams.keys():
+        log_queue_name+=str(usersettings.hparams['procID'])
+      kafka_reader_train=helpers.kafka_io.KafkaIO(topic_name=log_queue_name+'train', bootstrap_servers=usersettings.kafka_bootstrap_servers, element_spec=train_data.element_spec)
+      kafka_reader_val=helpers.kafka_io.KafkaIO(topic_name=log_queue_name+'val', bootstrap_servers=usersettings.kafka_bootstrap_servers, element_spec=val_data.element_spec)
+      train_data=kafka_reader_train.kafka_dataset_consumer_tf_custom(train_val_dataset_features, batch_size=usersettings.batch_size, shuffle=True)
+      val_data=kafka_reader_val.kafka_dataset_consumer_tf_custom(train_val_dataset_features, batch_size=usersettings.batch_size, shuffle=False)
+      print('------------------------------------------------------------train_data', train_data)
+      print("KAFKA dataset specs:\n->", train_data.element_spec)
+      print('Kafka connectors ready !')
   try:
     print('Train dataset size=', train_data.cardinality().numpy())
     print('Validation dataset size=', val_data.cardinality().numpy())
@@ -412,7 +407,7 @@ def run_experiment(usersettings):
 
     with model_scope:
       #load model
-      model=loadModel_def_file(usersettings.sessionFolder)(usersettings)
+      model=loadModel_def_file(usersettings.sessionFolder, usersettings)(usersettings)
       #setup training
       learning_rate=usersettings.get_learningRate()
       loss=usersettings.get_total_loss(model)
@@ -437,7 +432,7 @@ def run_experiment(usersettings):
                     loss_weights=exp_loss_weights,
                     metrics=metrics) #can specify per output metrics : metrics={'output_a': 'accuracy', 'output_b': ['accuracy', 'mse']}
       try:
-        init_model_name=usersettings.sessionFolder+'/checkpoints/model_epoch0'
+        init_model_name=usersettings.sessionFolder+'/checkpoints/model_init'
         print('******************************************')
         print('Saving the model at init state in ',init_model_name, 'issues at this point should warn you before moving to long training sessions...')
         model.save(init_model_name)
@@ -538,9 +533,13 @@ def run_experiment(usersettings):
                                             save_freq='epoch')
   all_callbacks.append(checkpoint_callback)
 
+  #-> classical logging on Tensorboard (scalars, hostorams, and so on)
+  log_dir=usersettings.sessionFolder+"/logs/"# + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+
   if usersettings.debug:
     #TODO to be tested
     print('TODO: check this for tf2 migration...')
+    tf.debugging.experimental.enable_dump_debug_info(log_dir, tensor_debug_mode="FULL_HEALTH", circular_buffer_size=-1)
     #tf_debug.TensorBoardDebugWrapperSession(tf.Session(), usersettings.debug_server_addresses) #"[[_host]]:[[_port]]")
     '''all_callbacks.append(tf_debug.TensorBoardDebugHook(usersettings.debug_server_addresses,
                                           send_traceback_and_source_code=True,
@@ -551,12 +550,16 @@ def run_experiment(usersettings):
   #complete generic callbacks by user defined ones
   all_callbacks+=usersettings.addon_callbacks(model, train_data, val_data)
 
-  #-> classical logging on Tensorboard (scalars, hostorams, and so on)
-  log_dir=usersettings.sessionFolder+"/logs/"# + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
   #-> activate profiling if required
   profile_batch =0
   if usersettings.use_profiling is True:
-    profile_batch = 3
+    print('train_iterations_per_epoch', train_iterations_per_epoch)
+    t_start=max(1,train_iterations_per_epoch//2-30)
+    t_stop=t_start+30
+    if t_stop>train_iterations_per_epoch:
+      t_stop=train_iterations_per_epoch-1
+      print('too few iterations to perform a reliable profiling')
+    profile_batch = '{t1},{t2}'.format(t1=t_start, t2=t_stop)
     print('Profiling is applied, for more details and log analysis, check : https://www.tensorflow.org/tensorboard/tensorboard_profiling_keras')
   # -> set embeddings to be logged
   embeddings_layer_names={output.name:output.name+'.tsv' for output in model.outputs}
@@ -566,14 +569,14 @@ def run_experiment(usersettings):
   tensorboard_callback=tf.keras.callbacks.TensorBoard(log_dir,
                                                       histogram_freq=1,
                                                       write_graph=True,
-                                                      write_images=False,#True,
                                                       update_freq='epoch',
-                                                      profile_batch=profile_batch,
+                                                      profile_batch='100,120',
                                                       embeddings_freq=10,
+                                                      )
                                                       #embeddings_metadata='metadata.tsv',
                                                       #embeddings_layer_names=list(embeddings_layer_names.keys()),#'embedding',
                                                       #embeddings_data='stuff'
-                                                      )
+                                                      #)
   all_callbacks.append(tensorboard_callback)
   #-> add the hyperparameters callback for experiments comparison
   all_callbacks.append(hp.KerasCallback(log_dir, usersettings.hparams))
@@ -608,7 +611,8 @@ def run_experiment(usersettings):
                                                                                              epoch=epoch_start_index))
   '''
   #-> train with (in memory) input data pipelines
-  print()
+  if train_data==val_data:
+    raise ValueError('train_data and val_data are the same, please fix this error')
   if usersettings.federated_learning is False or federated_learning_available is False:
     print('Now starting a classical training session...')
     history = model.fit(
@@ -793,14 +797,14 @@ def _create_rpc_callback(client, debug):
       print(exception)
     else:
       try:
-          if FLAGS.debug:
+          if debug:
               print(result_future.result())
           client.decodeResponse(result_future.result())
       except Exception as e:
           raise ValueError('Exception encountered on client callback : '.format(error=e))
   return _callback
 
-def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs, concurrency, num_tests):
+def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs, concurrency, num_tests, debug):
   """Tests PredictionService with concurrent requests.
   Args:
     experiment_settings: the experiment settings loaded from function loadExperimentsSettings
@@ -834,7 +838,7 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
   channel = grpc.insecure_channel(server, options=grpc_options)
   stub = prediction_service_pb2_grpc.PredictionServiceStub(channel)
   #allocate a clientIO instance defined for the experiment
-  client_io=experiment_settings.Client_IO(clientIO_InitSpecs, FLAGS.debug)
+  client_io=experiment_settings.Client_IO(clientIO_InitSpecs, debug)
   notDone=True
   predictionIdx=0
   while notDone:
@@ -844,7 +848,7 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
         sample=client_io.getInputData(predictionIdx)
         if not(isinstance(sample, dict)):
           raise ValueError('Expecting a dictionnary of values that will further be converted to proto buffers. Dictionnary keys must correspond to the usersettings.served_input_names strings list')
-        if FLAGS.debug:
+        if debug:
             print('Input data is ready, data=',sample)
             print('Time to prepare collect data request:',round(time.time() - start_time, 2))
             start_time=time.time()
@@ -855,7 +859,7 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
           feature=sample[inputname]
           feature_proto=tf.make_tensor_proto(feature, shape=feature.shape)
           request.inputs[inputname].CopyFrom(feature_proto)
-        if FLAGS.debug:
+        if debug:
           print('Time to prepare request:',round(time.time() - start_time, 2))
       except StopIteration:
         print('End of the process detection, running the ClientIO::finalize method')
@@ -866,19 +870,19 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
       if hasattr(experiment_settings, 'client_async'):
         result_future = stub.Predict.future(request, experiment_settings.serving_client_timeout_int_secs)  # 5 seconds
         result_future.add_done_callback(
-            _create_rpc_callback(client_io, FLAGS.debug))
+            _create_rpc_callback(client_io, debug))
 
       else:
         #synchronous approach... that may provide more details on AbortionError
-        if FLAGS.debug:
+        if debug:
           start_time=time.time()
         answer=stub.Predict(request, experiment_settings.serving_client_timeout_int_secs)
-        if FLAGS.debug:
+        if debug:
           print('Time to send request/decode response:',round(time.time() - start_time, 2))
           start_time=time.time()
 
         client_io.decodeResponse(answer)
-        if FLAGS.debug:
+        if debug:
           print('Time to decode response:',round(time.time() - start_time, 2))
 
       if num_tests>=0:
@@ -947,7 +951,7 @@ def get_served_model_info(one_model_path, expected_model_name):
     raise ValueError('Target model {target} name NOT found in the command answer'.format(target=expected_model_name))
 
 # Run script ##############################################
-def run(train_config_script=None, external_hparams={}):
+def run(FLAGS, train_config_script=None, external_hparams={}):
   ''' the main script function that can receive hyperparameters as a dictionnary to run an experiment
   can start training, model serving or model client requesting depending on the FLAGS values:
   -> if FLAGS.start_server is True : starts a server that hosts the target model
@@ -1026,12 +1030,14 @@ def run(train_config_script=None, external_hparams={}):
       os.chdir(predictions_dir)
       print('Current working directory = '+os.getcwd())
       print('In case of GRPC errors, check codes at https://developers.google.com/maps-booking/reference/grpc-api/status_codes')
-      do_inference(experiment_settings=usersettings, host=usersettings.tensorflow_server_address,
+      do_inference(
+                  experiment_settings=usersettings, host=usersettings.tensorflow_server_address,
                   port=usersettings.tensorflow_server_port,
                   model_name=usersettings.model_name,
                   clientIO_InitSpecs={},
                   concurrency=0,
-                  num_tests=FLAGS.predict_stream)
+                  num_tests=FLAGS.predict_stream,
+                  debug=FLAGS.debug)
 
   elif FLAGS.commands is True :
       print('Here are some command examples')
@@ -1058,6 +1064,8 @@ def run(train_config_script=None, external_hparams={}):
         custom_settings=True
       if FLAGS.procID is not None:
         external_hparams['procID']=FLAGS.procID
+      if FLAGS.distributed is True:
+        external_hparams['distributed']=True
       if len(external_hparams)>0:
         custom_settings=True
         
@@ -1125,4 +1133,34 @@ def run(train_config_script=None, external_hparams={}):
   return experiments_output
 
 if __name__ == "__main__":
-    run()
+  parser = argparse.ArgumentParser(description='Deep learning experiments manager')
+  parser.add_argument("-m","--model_dir", default=None,
+                      help="Output directory for model and training stats.")
+  parser.add_argument("-d","--debug", action='store_true',
+                      help="set to activate debug mode")
+  parser.add_argument("-p","--predict", action='store_true',
+                      help="Switch to prediction mode")
+  parser.add_argument("-l","--predict_stream", default=0, type=int,
+                      help="set the number of successive predictions, infinite loop if <0")
+  parser.add_argument("-s","--start_server", action='store_true',
+                      help="start the tensorflow server on the machine to run predictions")
+  parser.add_argument("-psi","--singularity_tf_server_container_path", default='',
+                      help="start the tensorflow server on a singularity container to run predictions")
+  parser.add_argument("-u","--usersettings",
+                      help="filename of the settings file that defines an experiment")
+  parser.add_argument("-r","--restart_interrupted", action='store_true',
+                      help="Set to restart an interrupted session, model_dir option should be set")
+  parser.add_argument("-g","--debug_server_addresses", action='store_true',
+                      default="127.0.0.1:2333",
+                      help="Set here the IP:port to specify where to reach the tensorflow debugger")
+  parser.add_argument("-pid","--procID", default=None,
+                      help="Specifiy here an ID to identify the process (useful for federated training sessions)")
+  parser.add_argument("-dist","--distributed", action='store_true',
+                      help="activate this option to make use of sidtributed computing (approach depends on the expereiments settings specifications")
+
+  parser.add_argument("-c","--commands", action='store_true',
+                      help="show command examples")
+
+  FLAGS = parser.parse_args()
+
+  run(FLAGS)
