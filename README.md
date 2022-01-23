@@ -8,7 +8,7 @@ This framework can be driven by higher level tools such as [hyperopt](https://hy
 
 @brief : the main script 'experiments_manager.py'  enables training, validating and serving Tensorflow2.x models with python3
 
-@author : Alexandre Benoit, LISTIC lab, FRANCE
+@author : Alexandre Benoit, Professor at LISTIC lab, FRANCE
 
 A quick presentation of the system is available [here](https://docs.google.com/presentation/d/1tFetD27PK9kt29rdwwZ6QKLYNDyJkHoCLT8GHweve_8/edit?usp=sharing), details are given below.
 
@@ -27,6 +27,7 @@ This work has been facilitated by intensive experiments conducted on the JeanZay
 * Reproducible experiments with random_seeds
 * Activate various optimization options such as XLA, mixed precision and multi GPU processing
 * Federated Learning (FedML), relying on the [Flower library](https://flower.dev/), few changes to switch from you classical training model to the federated version
+* Kafka data pipeline management: user can produce data to a kafka pipeline and the model optimization can be fed by kafka pipelines !
 * *Have a look at the examples folder to start from typical ML problem examples.*
 
 ## Approach:
@@ -37,22 +38,22 @@ This work has been facilitated by intensive experiments conducted on the JeanZay
 * You run the experiment and regularly look at the Tensorboard to monitor indicators, weight distributions, model output embedding, etc.
 * You finally run the model relying on the Tensorflow serving API.
 
-# Machine Setup (validated with tensorflow 2.4+)
+# Machine Setup (validated with tensorflow 2.5+)
 
 Python package installation can be managed relying on Anaconda or pip package managers. You can install the required packages manually, as shown below. However, the most convenient way is to consider containers in order to keep your system as is (safe and stable) and install all the required packages (maybe in different versions) apart without conflicts. In addition, the same built container can be deployed on laptops, desktops and servers (in clouds) by simply copy/paste of the built container on the target machine. Keep your time avoiding multiple installation procedures, libraries conflict management and all this time-wasting stuff !
 More information on the interest of Singularity :
 *  a brief summary : https://www.nextplatform.com/2017/04/10/singularity-containers-hpc-reproducibility-mobility/
 *  talks about Singularity : https://sylabs.io/videos
 
-## Container based installation using Singularity (https://sylabs.io/), recommended:
+## Container based installation using Singularity (https://sylabs.io/), RECOMMENED:
 Have a try with containers to get an off-the-shelf system ready to run on NVIDIA GPUs !
 Singularity will build containers from (official) Tensorflow docker images. Choose between your preferred image from the Tensorflow docker hub https://hub.docker.com/r/tensorflow/tensorflow/tags/ or from NVIDIA NGC https://www.nvidia.com/en-us/gpu-cloud/containers/ .
 
 I consider here Singularity instead of Docker for some reason such as use simplicity, reduced image size, HPC deployment capability, checkout there : https://sylabs.io/ . However an equivalent container design can be done using Docker!
-## Notes on singularity:
-### install singularity (as root) :
+### Notes on singularity:
+#### install singularity (as root) :
   * debian installation : https://wiki.debian.org/singularity
-### build the image with GPU (as root):
+#### build the image with GPU (as root):
   * build a custom image with the provided *install/tf2_addons.def* file that includes all python packages to build the container :
   * the install/tf_server.def file is also provided to build a tensorflow model server container.
 ```
@@ -64,7 +65,7 @@ singularity build tf_server.sif install/tf_server.def               #container f
   * run the framework, for example on the curve fitting example: `cd /DeepLearningTools/` followed by `python experiments_manager.py --usersettings examples/regression/mysettings_curve_fitting.py`
   * if the gpu is not found (error such as `libcuda reported version is: Invalid argument: expected %d.%d, %d.%d.%d, or %d.%d.%d.%d form for driver version; got "1"`, sometimes, NVIDIA module should be reloaded after a suspend period. Recover it using command `nvidia-modprobe -u -c=0`
 
-## Manual installation using Anaconda and pip (WARNING, package list is no more updated, have a look at the container definition *.def files to see the updated required packages list)
+## Manual installation using Anaconda and pip (NOT RECOMMENDED, NOT MAINTAINED, package list is no more updated, have a look at the container definition *.def files to see the updated required packages list)
 ### anaconda installation (local account installation, non root installation, recommended):
 1. download and install the appropriate anaconda version from here: https://www.anaconda.com/distribution/
 2. create a specific environment to limit interactions with the system installation:
@@ -144,11 +145,11 @@ moved to a separated settings script such as 'examples/regression/mysettings_cur
 
 # KNOWN ISSUES :
 
-*  Scripts is now only dedicated to Tensorflow 2. Last Tensorflow 1.14 support is tagged v1 in the repository and has been much simplified after the tf2 migration.
-*  Migration to Tensorflow 2 is still on the way, some stuff needs to be recovered : training restart after interruption, embeddings projection display on Tensorboard, work in progress, contributions are welcome !
+* Scripts is now only dedicated to Tensorflow 2. Last Tensorflow 1.14 support is tagged v1 in the repository and has been much simplified after the tf2 migration.
+* This framework is intended to help design, optimise and deploy Tensorflow based models with some systematic strategy that stabilizes the workflow and user experience. However, this is build for research and is subject to changes and updates are impacted by the maintainer activities.
 
 # TODO :
 
-To adapt to new case studies, just update the mysettingsxxx.py file and adjust I/O functions.
+To adapt to new case studies, just update the closest example (examples folder) experiment file mysettingsxxx.py and adjust I/O functions.
 For any experiment, the availability of all the required fields in the settings file is checked by the tools/experiments_settings.py script. Exceptions are raised on errors, have a look in this file to ensure you prepared everything right and compare your settings file to the provided examples.
-In addition and as a reminder, here are the functions prototypes:
+

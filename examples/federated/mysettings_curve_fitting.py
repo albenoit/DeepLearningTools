@@ -5,14 +5,18 @@
 
 FULL PROCESS USE EXAMPLE:
 1. TRAIN/VAL : start a train/val session using command (a singularity container with an optimized version of Tensorflow is used here):
-singularity run --nv /home/alben/install/nvidia/tf2_addons.sif experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py
+-> start model parameter server :
+singularity run /home/alben/install/containers/tf2_addons.2.5.0.sif examples/federated/start_server.py 
+
+-> start multiple learning clients
+singularity run --nv /home/alben/install/nvidia/tf2_addons.sif experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py --procID=1
+singularity run --nv /home/alben/install/nvidia/tf2_addons.sif experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py --procID=-1
 
 2. SERVE MODEL : start a tensorflow model server on the produced eperiment models using command (the -psi command permits to start tensorflow model server installed in a singularity container):
-python3 experiments_manager.py --start_server --model_dir=/home/alben/workspace/DeepLearningRessources/trunk/TensorFlow/listic-deeptool/experiments/examples/curve_fitting/my_test_hiddenNeurons50_predictSmoothParamsTrue_learningRate0.1_nbEpoch5000_addNoiseTrue_anomalyAtX-3_2020-02-08--06\:51\:21/ -psi /home/alben/install/nvidia/tf_server.sif
+python3 start_model_serving.py --model_dir /home/alben/workspace/listic-deeptool/experiments/examples/federated/my_test_hiddenNeurons50_predictSmoothParamsTrue_learningRate0.001_nbEpoch5000_addNoiseTrue_anomalyAtX-4_procID-1_2021-06-13--16\:43\:22/ -psi /home/alben/install/containers/tf_server.cpu.sif
 
 3. REQUEST MODEL : start a client that sends continuous requests to the server
-python3 experiments_manager.py --predict_stream=-1 -m=experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2019-12-17--15:04:15
-
+singularity run --nv /home/alben/install/containers/tf2_addons.2.5.0.sif experiments_manager.py --predict_stream=-1 --model_dir /home/alben/workspace/listic-deeptool/experiments/examples/federated/my_test_hiddenNeurons50_predictSmoothParamsTrue_learningRate0.001_nbEpoch5000_addNoiseTrue_anomalyAtX-4_procID-1_2021-06-13--16\:43\:22/
 '''
 
 import tensorflow as tf
@@ -28,7 +32,10 @@ session_name='my_test'
 ''' define here some hyperparameters to adjust the experiment
 ===> Note that this dictionnary will complete the session name
 '''
-hparams={'hiddenNeurons':500,#set the number of neurons per hidden layers
+hparams={
+         'federated':'fedavg',#fedyogi',#set '' if not making use of federated learning or set the strategy name (lowercase)
+         'flClients':4,#minimum number of clients to allow for federated learning
+         'hiddenNeurons':5,#set the number of neurons per hidden layers
          'predictSmoothParams':True, #set True to activate parameters moving averages use for prediction
          'learningRate':0.001,
          'nbEpoch':5000,
@@ -53,8 +60,10 @@ useXLA=True
 #profile some training steps to check pipeline processing time bottlenecks (from Tensorboard)
 use_profiling=True
 
-#activate federated learning
-enable_federated_learning=True
+#activate federated learning if required
+enable_federated_learning=False
+if len(hparams['federated'])>0:
+  enable_federated_learning=True
 
 # define here the used model under variable 'model'
 model_file='examples/regression/model_curve_fitting.py'
@@ -63,7 +72,7 @@ model_file='examples/regression/model_curve_fitting.py'
 weights_moving_averages=False
 
 # random seed used to init weights, etc. Use an integer value to make experiments reproducible
-random_seed=42
+random_seed=41
 
 # stop condition, taking into account if val_loss does not decrease for early_stopping_patience epoch
 nbEpoch=hparams['nbEpoch']
@@ -73,10 +82,10 @@ monitored_loss_name='mean_squared_error'
 raw_data_dir_train = ''
 raw_data_dir_val = ''
 raw_data_filename_extension=''
-nb_train_samples=100 #manually adjust here the number of temporal items out of the temporal block size
-nb_val_samples=100
-steps_per_epoch=10
-validation_steps=10
+nb_train_samples=1000 #manually adjust here the number of temporal items out of the temporal block size
+nb_val_samples=1000
+steps_per_epoch=100
+validation_steps=100
 batch_size=10
 reference_labels=['values']
 
@@ -95,7 +104,7 @@ served_head_names=['prediction']
 
 ########## LOCAL PARAMETERS (ONLY USED BELOW) SECTION ################
 def target_curve(x):
-    y=x**2
+    y=(x**2)/10.
 
     #ugly area, x can be a scalar (when function called from generator) or a numpy array
     if 'anomalyAtX' in hparams:
@@ -107,7 +116,7 @@ def target_curve(x):
 
     if hparams['addNoise'] is True:
         sigma=1.0
-        noise=np.random.normal(loc=0.0, scale=1.0, size=x.shape).astype(np.float32)
+        noise=np.random.normal(loc=0.0, scale=0.1, size=x.shape).astype(np.float32)
         y+=noise
     return y
 
@@ -145,7 +154,7 @@ def get_optimizer(model, loss, learning_rate):
 
 def get_metrics(model, loss):
   return {
-          'dense_1': tf.keras.metrics.mean_squared_error,
+          'dense_1': tf.keras.metrics.MSE,
           }
 
 def get_total_loss(model):#inputs, model_outputs_dict, labels, weights_loss):
@@ -158,14 +167,14 @@ def get_total_loss(model):#inputs, model_outputs_dict, labels, weights_loss):
         useful default options such as early stopping
     '''
 
-    reconstruction_loss='mean_squared_error'
+    reconstruction_loss=tf.keras.losses.MSE
     return reconstruction_loss
 
 '''Define here the input pipelines :
 -1. a common function for train and validation modes
 -2. a specific one for the serving model_extra_update_ops
 '''
-def get_input_pipeline(raw_data_files_folder, isTraining):
+def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     ''' define an input pipeline a basic example here, define random x values
     associated to y=f(x) values to regress
     TODO, look at the doc here : https://www.tensorflow.org/programmers_guide/datasets
@@ -173,29 +182,22 @@ def get_input_pipeline(raw_data_files_folder, isTraining):
     @param isTraining : a boolean that activates batch shuffling
     '''
     import itertools
-    sampling_interval_min=int(hparams['procID'])
+    sampling_interval_min=-int(hparams['procID'])
     sampling_interval_max=int(hparams['procID'])+1
     def gen():
 
       for i in itertools.count(1):
-        sampled_x = tf.round(10.0*tf.random.uniform(shape=[1], minval=sampling_interval_min, maxval=sampling_interval_max))/10.
+        sampled_x = tf.random.uniform(shape=[1], minval=sampling_interval_min, maxval=sampling_interval_max)
         sampled_y=tf.expand_dims(tf.numpy_function(target_curve,sampled_x, tf.float32),0)
         yield (sampled_x, sampled_y)
 
-    #if isTraining:
-    aggregator = tf.data.experimental.StatsAggregator()
-
-
+    
     dataset_generator = tf.data.Dataset.from_generator(
             gen,
             output_types= (tf.int64, tf.int64),
             output_shapes= (tf.TensorShape([None]), tf.TensorShape([None]))
             )
 
-    # Apply `StatsOptions` to associate `dataset` with `aggregator`.
-    options = tf.data.Options()
-    options.experimental_stats.aggregator = aggregator
-    dataset_generator = dataset_generator.with_options(options)
     #aggregator.get_summary()
     return dataset_generator.prefetch(1)
 
@@ -257,7 +259,7 @@ class Client_IO:
            the data sample with shape and type complying with the server input
         '''
         #here, only random numbers
-        self.x=np.random.uniform(low=-5, high=5, size=[batch_size,1]).astype(np.float32)
+        self.x=np.reshape(np.linspace(start=-5., stop=5., num=50).astype(np.float32), [-1,1])
         self.target=target_curve(self.x)
         if self.debugMode is True:
             print('Generating input features (random values) of shape '+str(self.target.shape))

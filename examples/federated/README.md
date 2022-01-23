@@ -8,15 +8,23 @@ Example based on curve regression demo (very similar to examples/regression demo
 
 # How to launch demo
 ## First start the centralized parameter server:
-singularity run /home/alben/install/containers/tf2_addons.2.4.1.jupyter.fl.sif examples/federated/start_server.py
+rely on the start_federated_server.py placed at the root folder to satrt the server:
+
+### train from scrath:
+singularity run /path/to/singularity/container/tf2_addons.sif start_federated_server.py --usersettings examples/federated/mysettings_curve_fitting.py 
+
+### train from a pretrained model (meta-learning):
+-> if you need to start server with a pretrained model, add the -w 'path/to/previous/experiment' command, for instance:
+
+ singularity run  /path/to/singularity/container/tf2_addons.sif start_federated_server.py  --usersettings examples/federated/mysettings_curve_fitting.py -w experiments/examples/curve_fitting/my_test_hiddenNeurons50_predictSmoothParamsTrue_learningRate0.1_nbEpoch5000_addNoiseTrue_anomalyAtX-3_procID0_2022-01-21--21\:30\:03/
 
 ## Second start different learning clients
 In this example, we rely on the same settings script but specify a process id (--procID x). This procID is used in the settings file to adjust the input data pipeline, each client has a different input data setup
 
+ singularity run  /path/to/singularity/container/tf2_addons.sif experiments_manager.py --usersettings examples/federated/mysettings_curve_fitting.py --procID 1
 
-singularity run /home/alben/install/containers/tf2_addons.2.4.1.jupyter.fl.sif experiments_manager.py --usersettings examples/federated/mysettings_curve_fitting.py --procID 1
+ singularity run  /path/to/singularity/container/tf2_addons.sif experiments_manager.py --usersettings examples/federated/mysettings_curve_fitting.py --procID 2
 
-singularity run /home/alben/install/containers/tf2_addons.2.4.1.jupyter.fl.sif experiments_manager.py --usersettings examples/federated/mysettings_curve_fitting.py --procID 2
+ singularity run  /path/to/singularity/container/tf2_addons.sif experiments_manager.py --usersettings examples/federated/mysettings_curve_fitting.py --procID 3
 
-singularity run /home/alben/install/containers/tf2_addons.2.4.1.jupyter.fl.sif experiments_manager.py --usersettings examples/federated/mysettings_curve_fitting.py --procID 3
 
