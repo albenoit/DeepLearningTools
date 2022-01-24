@@ -270,7 +270,7 @@ def imread_from_gdal(filename, debug_mode=False):
 
   return img_array
 
-def imread_from_opencv(filename, cv_imreadMode=-1, debug_mode=False):
+def imread_from_opencv(filename, cv_imreadMode):
   ''' read an image using OpenCV
       image is loaded as is. In case of a 3 channels image, BGR to RGB conversion
       is applied
@@ -283,18 +283,22 @@ def imread_from_opencv(filename, cv_imreadMode=-1, debug_mode=False):
   '''
   #get a valid filename string
   filename_str=the_ugly_string_manager(filename)
+  #print("cv_imreadMode type is int", isinstance(cv_imreadMode, int))
+  if not(isinstance(cv_imreadMode, int)):
+    cv_imreadMode=cv_imreadMode.numpy()
   image=cv2.imread(filename_str, cv_imreadMode)
   if image is None:
       raise ValueError('Could no read file {file}, exists={exists}'.format(file=filename_str,
                                                                            exists=os.path.exists(str(filename))
                                                                            )
                         )
-  if debug_mode == True:
+  '''if debug_mode == True:
       print('Image shape='+str(image.shape))
       if len(image.shape)>2:
           print('Image first layer min={minVal}, max={maxVal} (omitting nan values)'.format(minVal=np.nanmin(image[:,:,0]), maxVal=np.nanmax(image[:,:,0])))
       else:
           print('Image first layer min={minVal}, max={maxVal} (omitting nan values)'.format(minVal=np.nanmin(image), maxVal=np.nanmax(image)))
+  '''
   if len(image.shape)==3: ##reorder channels, from the loaded opencv BGR to tensorflow RGB use
     if image.shape[2]==3:
         return cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
@@ -820,7 +824,7 @@ class FileListProcessor_Semantic_Segmentation:
         elif self.use_alternative_imread == 'rasterio':
           raw0=imread_from_rasterio(filelist_raw_data[0], True)
         else:
-          raw0=imread_from_opencv(filelist_raw_data[0],opencv_read_flags, True)
+          raw0=imread_from_opencv(filelist_raw_data[0],opencv_read_flags)
         print('Read first raw image {filepath} of shape {shape}'.format(filepath=filelist_raw_data[0], shape=raw0.shape))
         self.single_image_raw_width = raw0.shape[0]
         self.single_image_raw_height = raw0.shape[1]
