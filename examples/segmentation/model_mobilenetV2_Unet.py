@@ -9,7 +9,7 @@ from tensorflow_examples.models.pix2pix import pix2pix
 def model(usersettings):
 
   patchSize=usersettings.hparams['patchSize']
-  output_channels=usersettings.hparams['outChannels']
+  output_channels=usersettings.hparams['nbClasses']
 
   base_model = tf.keras.applications.MobileNetV2(input_shape=[patchSize, patchSize, 3], include_top=False)
 

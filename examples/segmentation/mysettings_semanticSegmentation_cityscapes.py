@@ -25,8 +25,9 @@ hparams={'learningRate':0.001,
          'nbClasses':34,#set the number of classes in the considered dataset
          'smoothedParams':True,
          'nbEpoch':20,
-         'batchSize':32,
-         'outChannels':34,
+         'batchSize':2,
+         'inputChannels':3,
+         'nbClasses':34,
          'patchSize':224
         }
 
@@ -192,7 +193,7 @@ def get_metrics(model, loss):
         y_pred = tf.argmax(y_pred, axis=-1)
         return super(MeanIoU, self).update_state(y_true, y_pred, sample_weight)
 
-  return ['accuracy', MeanIoU(num_classes=hparams['outChannels'])]
+  return ['accuracy', MeanIoU(num_classes=hparams['nbClasses'])]
 
 def get_total_loss(model):
     '''a specific loss can be defined here or simply use a string that refers to a keras loss

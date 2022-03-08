@@ -35,7 +35,7 @@ hparams={'learningRate':0.001,
          'smoothedParams':True,
          'nbEpoch':20,
          'batchSize':4,
-         'outChannels':3,
+         'nbClasses':3,
          'patchSize':128,
         }
 
@@ -150,7 +150,7 @@ def get_metrics(model, loss):
         y_pred = tf.argmax(y_pred, axis=-1)
         return super(MeanIoU, self).update_state(y_true, y_pred, sample_weight)
 
-  return ['accuracy', MeanIoU(num_classes=hparams['outChannels'])]
+  return ['accuracy', MeanIoU(num_classes=hparams['nbClasses'])]
 
 def get_total_loss(model):
     '''a specific loss can be defined here or simply use a string that refers to a keras loss
