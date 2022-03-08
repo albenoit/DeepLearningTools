@@ -1,5 +1,5 @@
 BootStrap: docker
-From: tensorflow/tensorflow:2.5.0-gpu-jupyter
+From: tensorflow/tensorflow:2.8.0-gpu
 
 %post
     export DEBIAN_FRONTEND=noninteractive
@@ -14,9 +14,11 @@ From: tensorflow/tensorflow:2.5.0-gpu-jupyter
     apt-get install -y python3-pip
     python3 -m pip install -U tensorboard_plugin_profile
     python3 -m pip install redis
+    python3 -m pip install pandas-profiling great-expectations
     python3 -m pip install kafka-python
     python3 -m pip install msgpack msgpack-numpy
     python3 -m pip install sklearn
+    python3 -m pip install scikit-image
     python3 -m pip install shap
     python3 -m pip install hyperopt
     python3 -m pip install statsmodels
@@ -24,13 +26,17 @@ From: tensorflow/tensorflow:2.5.0-gpu-jupyter
     python3 -m pip install rasterio
     python3 -m pip install seaborn
     python3 -m pip install pydot pydot-ng
-    python3 -m pip install tensorflow-datasets tensorflow-addons==0.13.0 #tensorflow-federated==0.18.0
+    python3 -m pip install ipywidgets bqplot    
+    python3 -m pip install tensorflow-datasets tensorflow-addons==0.16.1 #tensorflow-federated==0.18.0
     python3 -m pip install -q git+https://github.com/tensorflow/examples.git
-    python3 -m pip install tensorflow-io==0.18.0 tensorflow-probability==0.13.0-rc0
-    python3 -m pip install tensorflow-serving-api-gpu==2.4.1
+    python3 -m pip install tensorflow-io==0.24.0 tensorflow-probability==0.16.0
+    python3 -m pip install tensorflow-serving-api-gpu==2.8.0
     python3 -m pip install flwr
     #python3 -m pip install tfx==0.25.0
     python3 -m pip install Pillow
+    python3 -m pip install POT
+    python3 -m pip install cdlib
+    
 
     python3 -m pip list
 
