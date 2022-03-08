@@ -151,7 +151,7 @@ class KafkaIO(object):
                                    servers=self.bootstrap_servers[0],
                                    offset=0,
                                    configuration=["conf.topic.auto.offset.reset=earliest"])
-    ds = ds.map(decode_kafka_custom_items, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    ds = ds.map(decode_kafka_custom_items, num_parallel_calls=tf.data.experimental.AUTOTUNE, deterministic=not(shuffle))
     if shuffle is True:
       shuffle_buffer_size=100*batch_size #default setup for minimal shuffling capability on the client side
       ds = ds.shuffle(buffer_size=shuffle_buffer_size)

@@ -37,7 +37,7 @@ def _tensor_feature(tensor):
   return tf.train.Feature(bytes_list=tf.train.BytesList(value=[serialized_nonscalar.numpy()]))
 
 # Create a dictionary with features that may be relevant.
-def serialize_image_float32_example(image_tensor, label_id=None):
+def serialize_image_float_example(image_tensor, label_id=None):
   
   feature = {
       'image_raw': _tensor_feature(image_tensor)#simpler and keeps dimensions info compared to _float_list_feature(image_tensor.numpy().flatten().tolist()),
@@ -78,7 +78,7 @@ def serialize_tensor_with_label(tensor, label):
   }
   return tf.train.Example(features=tf.train.Features(feature=feature)).SerializeToString()
    
-def decode_tensor_with_label_example(example_proto):
+def decode_tensor_with_label_example(example_proto, dtype=tf.float32):
   ''' decode a tf.train.Example, supposing its structure is known '''
   # Create a dictionary describing the expected features.
   data_feature_description = {
@@ -89,7 +89,7 @@ def decode_tensor_with_label_example(example_proto):
   features_dict = tf.io.parse_single_example(example_proto, data_feature_description)
   print('features_dict', features_dict)
   instance_label=features_dict['label']
-  instance_tensor=tf.io.parse_tensor(features_dict['values'], tf.float32)
+  instance_tensor=tf.io.parse_tensor(features_dict['values'], dtype)
 
   return instance_label, instance_tensor
 
@@ -173,14 +173,14 @@ if __name__ == "__main__":
 
   #encoding example 2 (tensor, label)
   
-  serialized_example_2 = serialize_tensor_with_label(tf.constant([0.1, 2.03]), b'goat')
+  serialized_example_2 = serialize_tensor_with_label(tf.constant([0.1, 2.03], dtype=tf.float16), b'goat')
   print('serialized example_2', serialized_example_2)
   #related decoding example
   example_proto=tf.constant(serialized_example_2)
   #example = tf.train.Example()
   #example.ParseFromString(serialized_example_2)
   print('unserialized example_2', example_proto)
-  decoded_example=decode_tensor_with_label_example(example_proto)
+  decoded_example=decode_tensor_with_label_example(example_proto, tf.float16)
   print('unserialized example_2', decoded_example)
   
 
