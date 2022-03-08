@@ -174,11 +174,13 @@ def multiclass_dice_loss_softmax(logits, labels, weight_class_sample_prob=False,
       Returns the average dice loss
     """
     y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
-    intersects = tf.reduce_sum(y_true * y_pred, axis=1)
-    denominators = tf.reduce_sum(y_true + y_pred, axis=1)
-    smooth=1.
-    dice_losses = 1.- 2. * (intersects+smooth) / (denominators+smooth)
-  
+    true_pos = tf.reduce_sum(    y_true * y_pred,     axis=1)
+    false_pos = tf.reduce_sum( (1-y_true) * y_pred,     axis=1)
+    false_neg = tf.reduce_sum(     y_true * (1-y_pred), axis=1)
+    smooth=tf.keras.backend.epsilon()
+    alpha=0.5
+    dice_losses = 1.0-(true_pos + smooth)/(true_pos + alpha*false_neg + (1-alpha)*false_pos + smooth)
+
     if weight_class_sample_prob:
       dice_losses*=get_per_sample_class_weights(y_true)
     if weight_class_global_prob:
@@ -187,6 +189,29 @@ def multiclass_dice_loss_softmax(logits, labels, weight_class_sample_prob=False,
       dice_losses*=train_class_weights_factor
     
     return tf.reduce_mean(dice_losses, name=name)
+
+
+def multiclass_lovasz_loss_softmax(logits, labels, weight_class_sample_prob=False, weight_class_global_prob=False, train_class_probs=None, name='loss'):
+  """ multiclass Jaccard loss measure, softmax is applied internally on the y_preds
+    Args: 
+        logits the predicted logits with shape [batchsize, ..., classes]
+        labels (integer values, will be one hot encoded internally [batchsize, ..., 1]
+        weight_class_sample_prob, set True to weight the loss with respect to sample true class probabilities
+        weight_class_global_prob, set True to weight the loss with respect to train dataset true class probabilities
+        train_class_probs, a numpy array of class weights
+    Returns the average jaccard loss
+    """
+  y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
+
+  errors=tf.math.abs(y_true-y_pred)
+  errors_sorted, perm = tf.math.top_k(errors, k=tf.shape(errors)[1], name="descending_sort_{}".format(c))
+
+  signs = 2. * y_true - 1. # target class present : value =1 vs not present, value=-1
+  print('signs, SHOULD BE FLOATS!',signs)
+  errors = (1. - logits * signs) # good preds with good margins, value<0 vs bad preds AND good preds with low margins, value>0 
+
+
+  return tf.reduce_mean(jaccard_losses, name=name)
 
 def multiclass_jaccard_loss_softmax(logits, labels, weight_class_sample_prob=False, weight_class_global_prob=False, train_class_probs=None, name='loss'):
     """ multiclass Jaccard loss measure, softmax is applied internally on the y_preds
@@ -230,11 +255,13 @@ def multiclass_tversky_loss_softmax(logits, labels, alpha=0.7, weight_class_samp
       Returns the average jaccard loss
     """
     y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
+    eps = tf.keras.backend.epsilon()
+    y_pred=tf.clip_by_value(y_pred, eps, 1.-eps)#avoid undefined values
 
     true_pos = tf.reduce_sum(    y_true * y_pred,     axis=1)
     false_pos = tf.reduce_sum( (1-y_true) * y_pred,     axis=1)
     false_neg = tf.reduce_sum(     y_true * (1-y_pred), axis=1)
-    smooth=1.
+    smooth=eps
     tversky_losses = 1.- (true_pos + smooth)/(true_pos + alpha*false_neg + (1-alpha)*false_pos + smooth)
     #tf.print('tversky_losses : tp', true_pos)
     #tf.print('tversky_losses : fp', false_pos)
@@ -321,6 +348,8 @@ class Regularizer_Spectral_Restricted_Isometry(tf.Module):
       l, regularization factor
       nb_filters, the number of output features
 
+
+    SRIPv2 variant here (TO BE TESTED): https://github.com/VITA-Group/Orthogonality-in-CNNs/blob/master/SVHN/train.py
     REMINDER : Other ideas with spectral norm : https://github.com/taki0112/Spectral_Normalization-Tensorflow
     '''
     self.l=l
@@ -338,13 +367,29 @@ class Regularizer_Spectral_Restricted_Isometry(tf.Module):
     Ident = tf.linalg.eye(weights_gram_matrix.get_shape().as_list()[0])
     Norm  = weights_gram_matrix - Ident
 
-    v1 = tf.math.multiply(Norm, self.v)
+    '''v1 = tf.math.multiply(Norm, self.v)
     norm1 = tf.reduce_sum(tf.math.square(v1))**0.5
 
     v2 = tf.math.divide(v1,norm1)
 
     v3 = tf.math.multiply(Norm,v2)
     loss= tf.reduce_sum(tf.math.square(v3))**0.5
+    #l2_reg = (torch.norm(v3,2))**2
+    
+    # V2 version (pytorch code):
+    u = normalize(w_tmp.new_empty(height).normal_(0, 1), dim=0, eps=1e-12)
+    v = normalize(torch.matmul(w_tmp.t(), u), dim=0, eps=1e-12)
+    u = normalize(torch.matmul(w_tmp, v), dim=0, eps=1e-12)
+    sigma = torch.dot(u, torch.matmul(w_tmp, v))
+    loss=(torch.norm(sigma,2))**2
+    '''
+    u=tf.math.l2_normalize(tf.random.normal(shape=(Norm.get_shape().as_list()[0],1), mean=0.0, stddev=1.0))
+    v=tf.math.l2_normalize(tf.linalg.matmul(a=Norm, b=u, transpose_a=True))
+    matmul_norm_v=tf.linalg.matmul(a=Norm, b=v, transpose_a=False)
+    u=tf.math.l2_normalize(matmul_norm_v)
+    sigma=tf.math.multiply(u, matmul_norm_v)
+    loss=tf.math.square(tf.linalg.norm(sigma, ord='euclidean'))
+
     return self.l*loss
 
   def get_config(self):
@@ -546,13 +591,36 @@ def swae_loss(code_list, target_z, batch_size, L=50):
   #theta=tf.Print(theta, [theta, target_z], message='theta, target_z')
 
   loss=0
-  for id, code in enumerate(tf.get_collection('codes')):
+  for id, code in code_list:#enumerate(tf.get_collection('codes')):
     W2Loss = slicedWasserteinLoss_single(code, target_z, theta, batch_size)
     tf.summary.scalar('w2loss_'+str(id), W2Loss)
     print('W2Loss='+str(W2Loss))
     loss+=W2Loss
   #loss=tf.Print(loss, [loss], message='SWAE')
   return loss
+
+
+
+#from https://github.com/apple/ml-cvpr2019-swd
+def discrepancy_slice_wasserstein(p1, p2):
+
+  def sort_rows(matrix, num_rows):
+    matrix_T = tf.transpose(matrix, [1, 0])
+    sorted_matrix_T = tf.nn.top_k(matrix_T, num_rows)[0]
+    return tf.transpose(sorted_matrix_T, [1, 0])
+
+  
+  s = tf.shape(p1)
+  if p1.get_shape().as_list()[1] > 1:
+      # For data more than one-dimensional, perform multiple random projection to 1-D
+      proj = tf.random.normal([tf.shape(p1)[1], 128])
+      proj *= tf.math.rsqrt(tf.math.reduce_sum(tf.math.square(proj), 0, keepdims=True))
+      p1 = tf.linalg.matmul(p1, proj)
+      p2 = tf.linalg.matmul(p2, proj)
+  p1 = sort_rows(p1, s[0])
+  p2 = sort_rows(p2, s[0])
+  wdist = tf.math.reduce_mean(tf.math.square(p1 - p2))
+  return tf.math.reduce_mean(wdist)
 
 
 class UncorrelatedFeaturesConstraint (tf.keras.constraints.Constraint):

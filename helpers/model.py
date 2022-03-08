@@ -4,6 +4,7 @@ import numpy as np
 from tensorflow.keras import layers
 from tensorflow.python.layers.core import Dense
 import helpers.loss
+import os
 
 class ReplicatedOrthogonalInitialize(tf.keras.initializers.Orthogonal):
   
@@ -80,12 +81,13 @@ class SubpixelConv2D(tf.Module):
                 )
     self.lr_conv_channels=self.input_dims[3]*(self.factor**2)
 
+    #kernel_regul=tf.keras.regularizers.L2(0.001)
     kernel_regul=helpers.loss.Regularizer_L1L2Ortho( l1=0.0,
                                                      l2=0.0,
-                                                     ortho=0.001,
+                                                     ortho=0.0001,
                                                      ortho_type='srip',
                                                      nb_filters=self.lr_conv_channels)
-      
+     
     #conv=None
     #if mode == '2D':
     self.lr_conv=tf.keras.layers.Conv2D(
@@ -240,7 +242,7 @@ def atrous_Spatial_pyramid_pooling(input_features, outing_nb_features=256, rates
     return aspp_features
 
 #CONCRETE DROPOUT from Yarin Gal & al : https://arxiv.org/abs/1705.07832
-class ConcreteDropout(layers.Wrapper):
+class ConcreteDropout(tf.keras.layers.Wrapper):
     """This wrapper allows to learn the dropout probability
         for any given input layer.
     ```python
@@ -358,11 +360,8 @@ class ConcreteDropout(layers.Wrapper):
             x /= retain_prob
         return x
 
-    def call(self, inputs, training=None):
-        #if training:
+    def call(self, inputs):
         return self.layer.call(self.concrete_dropout(inputs))
-        #else:
-        #    return self.layer.call(inputs)
 
 
 def concrete_dropout(inputs, layer,
@@ -434,3 +433,7 @@ def make_circle_cloud_dataset(samples_number):
 
 
 
+def load_model(path, custom_objects=None):
+    assert os.path.exists(path)
+    model = tf.keras.models.load_model(path, custom_objects)
+    return model
