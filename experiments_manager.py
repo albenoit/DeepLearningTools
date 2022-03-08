@@ -343,6 +343,7 @@ def run_experiment(usersettings):
   tf.keras.backend.clear_session() # We need to clear the session to enable JIT in the middle of the program.
   tf.random.set_seed(usersettings.random_seed)
 
+  os.environ['TF_GPU_THREAD_MODE']='gpu_private'
   #(de)activate XLA graph optimization
   tf.config.optimizer.set_jit(usersettings.useXLA)
   if usersettings.useXLA:
@@ -391,6 +392,14 @@ def run_experiment(usersettings):
     train_iterations_per_epoch=usersettings.nb_train_samples//usersettings.batch_size
     val_iterations_per_epoch=usersettings.nb_val_samples//usersettings.batch_size
 
+      
+  if usersettings.enable_mixed_precision:
+    # use AMP
+    print('Using Automatic Mixed Precision along the optimization process')
+    print('### HINT : to make sure Tensor cores are used, and obtain faster processing, ensure that your kernels are multiples of 8 !')
+    policy = mixed_precision.Policy('mixed_float16')
+    mixed_precision.set_global_policy(policy)
+
   #####################################
   #create the model from the user defined model file
   # -> (script targeted by usersettings.model_file)
@@ -415,13 +424,6 @@ def run_experiment(usersettings):
       if usersettings.weights_moving_averages:
         optimizer=tfa.optimizers.MovingAverage(optimizer, average_decay=0.9999, name='weights_ema')
       metrics=usersettings.get_metrics(model, loss)
-      
-      if usersettings.enable_mixed_precision:
-        # use AMP
-        print('Using Automatic Mixed Precision along the optimization process')
-        print('### HINT : to make sure Tensor cores are used, and obtain faster processing, ensure that your kernels are multiples of 8 !')
-        mixed_precision.set_global_policy('mixed_float16')
-        #optimizer = tf.train.experimental.enable_mixed_precision_graph_rewrite(optimizer)
 
       print('Compiling model...')
       exp_loss_weights=None
@@ -431,6 +433,21 @@ def run_experiment(usersettings):
                     loss=loss,# you can use a different loss on each output by passing a dictionary or a list of losses
                     loss_weights=exp_loss_weights,
                     metrics=metrics) #can specify per output metrics : metrics={'output_a': 'accuracy', 'output_b': ['accuracy', 'mse']}
+      
+      if usersettings.enable_mixed_precision:
+        #check if mixed precision compatibility are satisfied: https://docs.nvidia.com/deeplearning/performance/index.html
+        if usersettings.batch_size%64!=0:
+          print('Suboptimal batch size (should be a multiple of 64 to get efficient tiling and reduced overhead') 
+        for i,layer in enumerate(model.layers[1:]):
+          #print(i,'layer.input_shape[-1], layer.input_shape[-1]', (layer.input_shape[-1], layer.output_shape[-1]))
+          try:
+            if ((layer.input_shape[-1])%8 != 0) or ((layer.output_shape[-1])%8 != 0):
+              print('Layer not tensorcore compliant:',i,layer.name,layer.input_shape)
+              print(i,layer.name,layer.output_shape)
+          except:
+            print('Did not check layer:')
+            print(i,'layer.input_shape[-1], layer.input_shape[-1]', (layer.input_shape[-1], layer.output_shape[-1])) 
+      
       try:
         init_model_name=usersettings.sessionFolder+'/checkpoints/model_init'
         print('******************************************')
