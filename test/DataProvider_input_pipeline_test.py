@@ -17,16 +17,16 @@ os.chdir(sessionFolder)
 '''first focus on a set of folders with raw ad reference data,
 here all data parameters are hard written since all data is supposed to be versionned
 '''
-#raw_data_dir_train = "../../datasamples/semantic_segmentation/raw_data/"
-#reference_data_dir_train = "../../datasamples/semantic_segmentation/labels/"
-raw_data_dir_train ="/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
-reference_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/gtFine_trainvaltest/gtFine/train/"
+raw_data_dir_train = "../../datasamples/semantic_segmentation/raw_data/"
+reference_data_dir_train = "../../datasamples/semantic_segmentation/labels/"
+#raw_data_dir_train ="/home/alben/workspace/Datasets/CityScapes/leftImg8bit_trainvaltest/leftImg8bit/train/"
+#reference_data_dir_train = "/home/alben/workspace/Datasets/CityScapes/gtFine_trainvaltest/gtFine/train/"
 nb_classes=34
 patchSize=256
 patchesPerImage=1000
 allow_display=True
 process_labels_histogram=False
-nan_management='zeros'
+nan_management=None#'zeros'
 
 parser = argparse.ArgumentParser(description='DataProvider_input_pipeline_test')
 parser.add_argument('--avoid-display', dest='avoid_display', action='store_true',
@@ -65,11 +65,6 @@ dataset_references_files=DataProvider_input_pipeline.extractFilenames(reference_
 ###############################
 #prepare dataset input pipeline
 isTraining=not(processCommands.mode_test)
-def apply_pixel_transforms(isTraining):
-  if isTraining:
-      return 0.5
-  else:
-      return None
 
 data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation(dataset_raw_files, dataset_references_files,
           nbEpoch=1,
@@ -80,20 +75,23 @@ data_provider=DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentatio
           num_reader_threads=10,#4 threads on training, 1 on testing
           apply_random_flip_left_right=isTraining,
           apply_random_flip_up_down=False,
-          apply_random_brightness=apply_pixel_transforms(isTraining),
-          apply_random_saturation=apply_pixel_transforms(isTraining),
-          apply_whitening=True,
+          apply_random_brightness=0.3 if isTraining else None,
+          apply_random_saturation=0.7 if isTraining else None,
+          apply_random_contrast=0.5 if isTraining else None,
+          apply_whitening=False,
           batch_size=1,
-          use_alternative_imread='opencv',
+          use_alternative_imread=None,#'opencv',
           balance_classes_distribution=isTraining,
           classes_entropy_threshold=0.6,
           opencv_read_flags=cv2.IMREAD_UNCHANGED,
           field_of_view=field_of_view,
           manage_nan_values=nan_management,
           additionnal_filters=None,
+          dtype=tf.uint8,
+          seed=np.random.random_integers(low=0, high=100, size=(1)),
           crops_postprocess=None)
 
-
+print('Dataset output specs=', data_provider.dataset.element_spec)
 ### semantic contours extraction
 @tf.function
 def get_semantic_contours(reference_crop):
@@ -104,6 +102,7 @@ def get_semantic_contours(reference_crop):
 
     print('input batch shape= '+str(reference_crop.get_shape().as_list()))
     formatted_reference_crop=tf.squeeze(tf.cast(reference_crop, tf.int32), -1)
+    print('input batch shape->call= '+str(formatted_reference_crop.get_shape().as_list()))
     contours = DataProvider_input_pipeline.convert_semanticMap_contourMap(formatted_reference_crop)
     return contours
 
@@ -115,7 +114,7 @@ def _bytes_feature(value):
     value = value.numpy() # BytesList won't unpack a string from an EagerTensor.
   return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
-def _float32_feature_list(value):
+def _float_feature_list(value):
   """Returns a float_list from a float / double."""
   return tf.train.Feature(float_list=tf.train.FloatList(value=value))
 
@@ -132,7 +131,7 @@ def image_example(image_tensor, label=None):
       'height': _int64_feature_scalar(image_shape[0]),
       'width': _int64_feature_scalar(image_shape[1]),
       'depth': _int64_feature_scalar(image_shape[2]),
-      'image_raw': _float32_feature_list(image_tensor.numpy().flatten().tolist()),
+      'image_raw': _float_feature_list(image_tensor.numpy().flatten().tolist()),
   }
   if label is not None:
     feature.update({'label': _int64_feature_scalar(label)})
@@ -168,9 +167,10 @@ def read_dataset_display():
   for step, batch in enumerate(data_provider.dataset):
     print('====== New step='+str(step))#, 'batch=',batch[0])
     sample=batch[0]
+    #print('sample tensor', sample)
     if processCommands.write_tfRecords:
       sample_proto=image_example(sample)
-      #print('Serialized sample:', sample_proto)
+      print('Serialized sample:', sample_proto)
       writer.write(sample_proto)
       writer.flush()
     reference =sample[:,:,3:].numpy()
@@ -181,14 +181,17 @@ def read_dataset_display():
       print('input_crop shape =', input_crop.shape)
       print('reference_crop shape =', reference.shape)
       print('contours_crop shape =', contours.shape)
+      
       sample_minVal=np.min(input_crop)
       sample_maxVal=np.max(input_crop)
-      print('Sample value range (min, max)=({minVal}, {maxVal})'.format(minVal=sample_minVal, maxVal=sample_maxVal))
-      input_crop_norm=(input_crop-sample_minVal)*255.0/(sample_maxVal-sample_minVal)
-      cv2.imshow('input crop', cv2.cvtColor(input_crop_norm.astype(np.uint8), cv2.COLOR_RGB2BGR))
+      print('Sample value range (min, max, delta)=({minVal}, {maxVal}, {delta})'.format(minVal=sample_minVal, maxVal=sample_maxVal, delta=sample_maxVal-sample_minVal))
+      crop_BGR=cv2.cvtColor(input_crop.astype(np.uint8), cv2.COLOR_RGB2BGR)
+      crop_BGR_expanded=(crop_BGR.astype(np.float32)-sample_minVal)*255./(sample_maxVal-sample_minVal)
+      cv2.imshow('input crop', crop_BGR)
+      cv2.imshow('input crop expanded', crop_BGR_expanded.astype(np.uint8))
       cv2.imshow('reference crop', reference.astype(np.uint8)*int(255/nb_classes))
       cv2.imshow('reference contours_disp', contours.astype(np.uint8)*255)
-      cv2.waitKey(1000)
+      cv2.waitKey(1000)   
 
   if processCommands.write_tfRecords:
     writer.close()
