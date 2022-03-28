@@ -1,5 +1,5 @@
 BootStrap: docker
-From: tensorflow/tensorflow:2.8.0-gpu
+From: tensorflow/tensorflow:2.8.0-gpu-jupyter
 
 %post
     export DEBIAN_FRONTEND=noninteractive
@@ -19,6 +19,7 @@ From: tensorflow/tensorflow:2.8.0-gpu
     python3 -m pip install msgpack msgpack-numpy
     python3 -m pip install sklearn
     python3 -m pip install scikit-image
+    python3 -m pip install numba==0.53.1
     python3 -m pip install shap
     python3 -m pip install hyperopt
     python3 -m pip install statsmodels
@@ -31,6 +32,8 @@ From: tensorflow/tensorflow:2.8.0-gpu
     python3 -m pip install -q git+https://github.com/tensorflow/examples.git
     python3 -m pip install tensorflow-io==0.24.0 tensorflow-probability==0.16.0
     python3 -m pip install tensorflow-serving-api-gpu==2.8.0
+    python3 -m pip install tensorflow-model-optimization==0.7.2
+    
     python3 -m pip install flwr
     #python3 -m pip install tfx==0.25.0
     python3 -m pip install Pillow
