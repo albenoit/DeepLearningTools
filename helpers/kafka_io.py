@@ -41,10 +41,11 @@ def error_callback(exc):
 # tensorflow message publish
 
 class KafkaIO(object):
-  def __init__(self, topic_name:str, bootstrap_servers=['localhost:9092'], flush_every=20, element_spec=None):
+  def __init__(self, topic_name:str, element_spec, bootstrap_servers=['localhost:9092'], flush_every=20):
     '''
       setup a kafka connexion to push Tensorflow data samples to
       topic_name:str, the log queue name to write to
+      element_spec: a tuple (data, label) of tf.Tensorspec (single tensor) or dictionnaries of tf.Tensorspec (multiple named tensors)
       bootstrap_servers, the list of kafka servers(default is default local)
       flush_every, an integer that specify the iteration period when data is flushed to kafka 
     '''
@@ -107,26 +108,35 @@ class KafkaIO(object):
         f.write(msg)
 
   def kafka_dataset_consumer_tf_basic(self, batch_size:int, shuffle:bool=False)->tfio.IODataset:
+    @tf.function
     def decode_kafka_item(item):
       '''
       specify here how to decode each item. Their basic structure being to be a pair item.key, item.message, each of them being simple tensors
       Here the type of each pair element should be taken into account carefully with respect to what was done at the encoding step
       '''
-      tf.print('message', item.message)
-      tensor = tensor_msg_io.decode_tensor_proto(item.message, dtype=tf.uint8)
-      label =  tensor_msg_io.decode_tensor_proto(item.key, dtype=tf.string)
-      tf.print('decoded tensor, label', tf.shape(tensor), tf.shape(label))
-      return (tensor, label)
+      #tf.print('message', item.message)
+      data = tensor_msg_io.decode_tensor_proto(item.message, dtype=self.element_spec[0].dtype)
+      label =  tensor_msg_io.decode_tensor_proto(item.key, dtype=self.element_spec[1].dtype)
+      #reshape to the expected shape
+      data = tf.reshape(data, self.element_spec[0].shape[1:])
+      label = tf.reshape(label, self.element_spec[1].shape[1:])
+      #tf.print('decoded tensor, label', tf.shape(data), tf.shape(label))
+      return (data, label)
 
-    ds = tfio.IODataset.from_kafka(self.topic_name, partition=0, servers=self.bootstrap_servers[0], offset=0)
+    ds = tfio.IODataset.from_kafka(self.topic_name,
+                                   partition=0,
+                                   servers=self.bootstrap_servers[0],
+                                   offset=0,
+                                   configuration=["conf.topic.auto.offset.reset=earliest"])
     if shuffle is True:
       shuffle_buffer_size=10*batch_size #default setup for minimal shuffling capability on the client side
       ds = ds.shuffle(buffer_size=shuffle_buffer_size)
-    ds = ds.map(decode_kafka_item)
+    ds = ds.map(decode_kafka_item, num_parallel_calls=tf.data.experimental.AUTOTUNE, deterministic=not(shuffle))
     ds = ds.batch(batch_size).prefetch(1)
     return ds
 
   def kafka_dataset_consumer_tf_custom(self, features, batch_size:int, shuffle:bool=False)->tfio.IODataset:
+    @tf.function
     def decode_kafka_custom_items(item):
       '''
       specify here how to decode each item. Their structure being to be a pair item.key, item.message BUT each can be a set of tensors
@@ -135,13 +145,12 @@ class KafkaIO(object):
       tensor = tensor_msg_io.decode_multitensor_proto(features[0], item.message)
       label =  tensor_msg_io.decode_multitensor_proto(features[1], item.key)
       #tf.print('!!!! decoded', tensor, label)#tensor=label
-      if self.element_spec is not None:
-        for id, col in enumerate([tensor, label]): #applying same stuff for bith data and label columns
-          for key in self.element_spec[id].keys():
-            #print('##################################################\n[-1]+list(self.element_spec[id][key].shape[1:])=',[-1]+list(self.element_spec[id][key].shape[1:]))
-            #tf.print('TO BE RESHAPED'+key, tf.shape(col[key]))
-            col[key]=tf.reshape(col[key], self.element_spec[id][key].shape[1:], name='sample_'+key)
-            #tf.print('RESHAPED'+key+'!!!', tf.shape(col[key]))
+      for id, col in enumerate([tensor, label]): #applying same stuff for bith data and label columns
+        for key in self.element_spec[id].keys():
+          #print('##################################################\n[-1]+list(self.element_spec[id][key].shape[1:])=',[-1]+list(self.element_spec[id][key].shape[1:]))
+          #tf.print('TO BE RESHAPED'+key, tf.shape(col[key]))
+          col[key]=tf.reshape(col[key], self.element_spec[id][key].shape[1:], name='sample_'+key)
+          #tf.print('RESHAPED'+key+'!!!', tf.shape(col[key]))
       #tf.print('!!!! RESHAPED', tensor, label)#tensor=label
       
       return (tensor, label)
@@ -179,17 +188,22 @@ if __name__ == "__main__":
 	#-> get demo images
 	kafka_topic='demo-pics'
 	from sklearn.datasets import load_sample_images
-	dataset = load_sample_images()     
+	dataset = load_sample_images()
 	#print('demo images', dataset.images)
-	images_tf=tf.constant(dataset.images, dtype=tf.uint8)
-	images_labels=tf.constant(dataset.filenames, dtype=tf.string)
+	images_tf_orig=tf.constant(dataset.images, dtype=tf.uint8)
+	images_labels_orig=tf.constant(dataset.filenames, dtype=tf.string)
+	print('original dataset shapes : ',images_tf_orig.shape)
+	images_tf=tf.expand_dims(images_tf_orig, 1)
+	images_labels=tf.expand_dims(images_labels_orig, 1)
+	print('EXPECTED dataset shapes : ',images_tf.shape)
 	print('images_tf', images_tf)
 	demo_dataset = zip(images_tf, images_labels) # -> keep the 'key,', 'value' order to comply with the API
 	#-> publish dataset to kafka
-	kafka_writer=KafkaIO(topic_name='demo_pics3')
+	datasample_spec=(tf.TensorSpec(shape=(1, 427, 640, 3), dtype=tf.uint8, name=None), tf.TensorSpec(shape=(), dtype=tf.string, name=None) )
+	kafka_writer=KafkaIO(topic_name='demo_pics', element_spec=datasample_spec)
 	kafka_writer.kafka_producer_tf(demo_dataset)
 	#->read and display dataset samples
-	kafka_reader=KafkaIO(topic_name='demo_pics3')
+	kafka_reader=KafkaIO(topic_name='demo_pics', element_spec=datasample_spec)
 	dataset_kclient=kafka_reader.kafka_dataset_consumer_tf_basic(batch_size=1)
 	
 	for id, sample in enumerate(dataset_kclient):
@@ -198,6 +212,16 @@ if __name__ == "__main__":
 
 	cv2.waitKey()
 
-
-
+	
+  # example of a custom pipeline test:
+	datasample_spec=(tf.TensorSpec(shape=(1, 512, 512, 3), dtype=tf.uint8, name=None), tf.TensorSpec((1, 357, 357,1), dtype=tf.uint8, name=None) )
+	kafka_reader_check=KafkaIO(topic_name='Cityscapes_hardnetmsegtrials0train', bootstrap_servers=['127.0.0.1:9092'] , element_spec=datasample_spec)#192.168.2.148:9092
+	dataset_kclient_check=kafka_reader_check.kafka_dataset_consumer_tf_basic(batch_size=1)
+	
+	for id, sample in enumerate(dataset_kclient_check):
+	  print('sample ', id, ': value, key shapes=', sample[0].shape, sample[1].shape)
+	  cv2.imshow('sample'+str(id), cv2.cvtColor(sample[0][0].numpy(), cv2.COLOR_RGB2BGR))
+	  cv2.imshow('label'+str(id), sample[1][0,:,:,0].numpy()*7)
+	  cv2.waitKey()
+	
 

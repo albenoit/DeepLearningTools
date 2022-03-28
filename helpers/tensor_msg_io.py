@@ -135,29 +135,35 @@ def decode_multitensor_proto(data_feature_descriptions, example_proto):
   '''
   return instance_tensor
 
-def get_label_data_features_from_dataset(dataset):
+def get_data_label_features_from_dataset(dataset):
   '''
   construct a dictionnary of feature description to decode serialized tensors
   '''  
-  def get_features_specs(dataset_col_specs):
+  def get_features_specs(dataset_col_specs, default_name):
     data_feature_descriptions={}
     feature_types={}
-    for keyID in dataset_col_specs.keys():
-      print('item', keyID, dataset_col_specs[keyID])
-      #data_feature_description
-      #name:tf.io.FixedLenFeature([], tf.string)
+    if isinstance(dataset_label_data_element_spec[0], tf.TensorSpec):
+      data_feature_descriptions[default_name] = tf.io.FixedLenFeature([], tf.string)
+      feature_types[default_name]=dataset_col_specs.dtype
+    else:
 
-      # Create a dictionary describing the expected features.
-      data_feature_descriptions[keyID] = tf.io.FixedLenFeature([], tf.string)
-      feature_types[keyID]=dataset_col_specs[keyID].dtype
+      for keyID in dataset_col_specs.keys():
+        print('item', keyID, dataset_col_specs[keyID])
+        #data_feature_description
+        #name:tf.io.FixedLenFeature([], tf.string)
+
+        # Create a dictionary describing the expected features.
+        data_feature_descriptions[keyID] = tf.io.FixedLenFeature([], tf.string)
+        feature_types[keyID]=dataset_col_specs[keyID].dtype
 
     return {'feature_specs':data_feature_descriptions, 'types':feature_types}
   dataset_label_data_element_spec=dataset.element_spec
-  label_specs=get_features_specs(dataset_label_data_element_spec[0])
-  data_specs=get_features_specs(dataset_label_data_element_spec[1])
+  print('Dataset Feature specs (data, labels)', dataset_label_data_element_spec)
+  data_specs=get_features_specs(dataset_label_data_element_spec[0], 'values')
+  label_specs=get_features_specs(dataset_label_data_element_spec[1], 'label')
   print('label_specs=', label_specs)
   print('data_specs=', data_specs)
-  return label_specs, data_specs
+  return data_specs, label_specs
   
 
 
