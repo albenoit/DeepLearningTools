@@ -1136,6 +1136,7 @@ def FileListProcessor_csv_time_series(files,
       post_proc_filter=None: if some specific sample filtering should be performed, specify here a dedicated function (def mypost_proc(Tensor sample) returns Binary Tensor)
     '''
 
+    @tf.function
     def decode_csv(line):
       features = tf.io.decode_csv(line, record_defaults=record_defaults_values, field_delim=csv_field_delim, na_value=na_value_string, select_cols=selected_cols)
       labels = features[:labels_cols_nb]
@@ -1161,7 +1162,7 @@ def FileListProcessor_csv_time_series(files,
     dataset = datasets.flat_map(sub_to_batch)
 
     # decode csv file
-    dataset = dataset.map(decode_csv, num_parallel_calls=tf.data.AUTOTUNE)
+    dataset = dataset.map(decode_csv, num_parallel_calls=tf.data.AUTOTUNE, deterministic=not(shuffle))
 
     # apply filter if provided
     if post_proc_filter is not None:
