@@ -72,6 +72,7 @@ class ExperimentSettings(object):
     self.max_queue_size=10
     self.workers=1
     self.use_multiprocessing=False
+    self.quantization_aware_training=self.hasOrDefault('quantization_aware_training', False)
     self.federated_learning=self.hasOrDefault('enable_federated_learning', False)
     self.federated_learning_server_address=self.hasOrDefault('federated_learning_server_address', "[::]:8080")
     # learning rate management
@@ -97,6 +98,7 @@ class ExperimentSettings(object):
     self.get_input_pipeline=self.has('get_input_pipeline', 'the train and validation input data pipelines function params=[batch_size, raw_data_files_folder, shuffle_batches], must return an input function as described here : https://www.tensorflow.org/programmers_guide/datasets')
 
     #tensorflow serving and client dialog
+    self.save_only_last_best_model=self.hasOrDefault('save_only_last_best_model', True, message='set True in order to only save the last best model in the exported model folder (keep disk space)')
     self.wait_for_server_ready_int_secs=self.assertPositive_above_zero('wait_for_server_ready_int_secs', 'the number of seconds to wait for a tensorflow service before timeout on first contact')
     self.serving_client_timeout_int_secs=self.assertPositive_above_zero('serving_client_timeout_int_secs', 'the number of seconds to wait for a tensorflow service before timeout for each request')
     self.served_head_names=self.assertType('served_head_names', list, 'a list string(s) providing the name(s) of the target output, relates to the get_served_module function behaviors')

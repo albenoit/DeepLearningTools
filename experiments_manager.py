@@ -96,11 +96,19 @@ import importlib
 import imp
 import copy
 import configparser
+from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
+from tensorflow.python.tools import optimize_for_inference_lib
 
 try:
   import tensorflow_addons as tfa
 except:
   print('WARNING, tensorflow_addons could not be loaded, this may generate errors for model optimization but should not impact model serving')
+
+try:
+  import tensorflow_model_optimization as tfmot
+except:
+  print('WARNING, tensorflow_model_optimization could not be loaded, this may generate errors for model optimization for instance if usersettings.tensorflow_model_optimization=True')
+
 
 federated_learning_available=False
 try:
@@ -161,32 +169,102 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
         print('Model exporting failed for some reason',e)
     print('Epoch checkpoint save and export processes done.')
 
-
   def _export_model(self, epoch, logs=None):
     print('Exporting model...')
     current = logs.get(self.monitor)
     if current==self.best:
       print('Saving complete keras model thus enabling fitting restart as well as model load and predict')
-      self.model.save(self.settings.sessionFolder+'/checkpoints/model_epoch{version}'.format(version=epoch))
+      checkpoint_folder=self.settings.sessionFolder+'/checkpoints/model_epoch{version}'.format(version=epoch)
+      self.model.save(checkpoint_folder)
       print('EXPORTING A NEW MODEL VERSION FOR SERVING')
       print('Exporting model at epoch {}.'.format(epoch))
       exported_module=usersettings.get_served_module(self.model, self.settings.model_name)
       if not(hasattr(exported_module, 'served_model')):
         raise ValueError('Experiment settings file MUST have \'served_model\' function with @tf.function decoration.')
-      output_path='{folder}/{version}'.format(folder=self.settings.model_export_filename, version=epoch)
-      signatures={self.settings.model_name:exported_module.served_model}
+      if self.settings.save_only_last_best_model:
+        output_path='{folder}/1'.format(folder=self.settings.model_export_filename)
+      else:
+        output_path='{folder}/{version}'.format(folder=self.settings.model_export_filename, version=epoch)
+      output_path_orig=output_path+'raw'
+      model_concrete_function=exported_module.served_model.get_concrete_function()
+      signatures={'serving_default':model_concrete_function, self.settings.model_name:model_concrete_function}
       try:
-        print('Exporting serving model relying on tf.saved_model.save')
+        module_graph= model_concrete_function
+        print(module_graph.pretty_printed_signature(verbose=True))
+        #module_graph[self.settings.model_name]=exported_module.served_model
+        print('Exporting RAW serving model relying on tf.saved_model.save')
         tf.saved_model.save(
           exported_module,
-          output_path,
+          output_path_orig,
           signatures=signatures,
           options=None
           )
-        print('Export OK')
+        print('Now exporting model for inference...')
+        
+        '''#preparing served module input(s and ouput(s)
+        model_inputs_nodes=[]
+        for input_tensor in module_graph.inputs:
+          #print('input', input_tensor)
+          if not('model/' in input_tensor.name):
+            model_inputs_nodes.append(input_tensor)
+        model_inputs=[ input_tensor.name.split(':')[0] for input_tensor in model_inputs_nodes]
+        model_inputs_dtypes=[ input_tensor.dtype.as_datatype_enum for input_tensor in model_inputs_nodes]
+        model_outputs=[ output_tensor.name.split(':')[0] for output_tensor in module_graph.outputs]
+        print('-> exported_module.inputs', model_inputs)
+        print('-> exported_module.model_inputs_dtypes', model_inputs_dtypes)
+        print('-> exported_module.outputs', model_outputs)
+        
+        print('Freezing model and optimizing for inference...')
+        #some gist : https://gist.github.com/FlorentGuinier/57edf0b644333278dd06c9851f480bc5
+        constantGraph = convert_variables_to_constants_v2(module_graph)
+        constant_graph_def = constantGraph.graph.as_graph_def()
+        optimized_graph = optimize_for_inference_lib.optimize_for_inference(
+                            input_graph_def=constant_graph_def,
+                            input_node_names=model_inputs,
+                            placeholder_type_enum=model_inputs_dtypes,
+                            output_node_names=model_outputs,
+                            toco_compatible=True,#if True, only runs optimizations that result in TOCO compatible graph operations
+                            )
+        
+        tf.io.write_graph(graph_or_graph_def=optimized_graph,
+                          logdir=  output_path,
+                          name= 'optimized_saved_model.pb',
+                          as_text=False)
+        '''
+        from tensorflow.python.compiler.tensorrt import trt_convert as trt
+        print(os.listdir(output_path_orig))
+        conversion_params = trt.DEFAULT_TRT_CONVERSION_PARAMS
+        if self.settings.enable_mixed_precision:
+          #TODO, refine precision conversion, see : https://colab.research.google.com/github/vinhngx/tensorrt/blob/vinhn-tf20-notebook/tftrt/examples/image-classification/TFv2-TF-TRT-inference-from-Keras-saved-model.ipynb?hl=en#scrollTo=qKSJ-oizkVQY
+          # and official doc https://docs.nvidia.com/deeplearning/frameworks/tf-trt-user-guide/index.html#tf-trt-api-20
+          conversion_params = conversion_params._replace(precision_mode="FP16")
+        print('Export for inference conversion_params:', conversion_params)
+        converter = trt.TrtGraphConverterV2(input_saved_model_dir=output_path_orig)
+        converter.convert()
+        converter.save(output_path)
+        print('Export for inference OK')
+        #activate tensorflow_model_optimization is required (if tensorflow_model_optimization is available)
+        if self.settings.quantization_aware_training:
+          print('Exporting to TFLite...')
+          try:
+            converter = tf.lite.TFLiteConverter.from_keras_model(exported_module)
+            converter.optimizations = [tf.lite.Optimize.DEFAULT]
+            quantized_tflite_model = converter.convert() 
+            # Save the optimized graph'test.pb'
+            tf.io.write_graph(graph_or_graph_def=quantized_tflite_model,
+                              logdir= output_path,
+                              name= 'saved_model.pb',
+                              as_text=False) 
+            
+            print('Export to TFLite OK')
+          except Exception as e:
+            print('Could not apply model quantization, relying on the original model')
+          print('Export to TFLite ended')
+          
       except Exception as e:
-        print('Failed to export serving model relying on method:', e)
-      #new keras approach
+        print('Failed to export serving model. Reported error message:', e)
+
+      #REMINDER, other keras approach
       '''try:
         print('Exporting serving model relying on tf.keras.models.save_model')
         tf.keras.models.save_model(
@@ -205,46 +283,7 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
        and
        https://docs.nvidia.com/deeplearning/frameworks/tf-trt-user-guide/index.html
       '''
-      try:
-        '''params=None
-        if True:#precision_mode is not None:
-          precision_mode='FP16'
-        #tensorflow doc/issue ConversionParams not found
-        params = tf.experimental.tensorrt.ConversionParams(
-                          precision_mode=precision_mode,
-        # Set this to a large enough number so it can cache all the engines.
-        maximum_cached_engines=16)
-        converter = tf.experimental.tensorrt.Converter(
-              input_saved_model_dir=output_path,
-              input_saved_model_signature_key=signatures,
-              conversion_params=params)
-    
       
-        
-        #NVIDIA doc: 
-        from tensorflow.python.compiler.tensorrt import trt_convert as trt
-        conversion_params = trt.DEFAULT_TRT_CONVERSION_PARAMS
-        print('conversion_params',conversion_params)
-        conversion_params = conversion_params._replace(
-        max_workspace_size_bytes=(1<<32))
-        conversion_params = conversion_params._replace(precision_mode="FP16")
-        conversion_params = conversion_params._replace(maximum_cached_engines=100)
-
-        print('creating converter')
-        converter = tf.experimental.tensorrt.Converter(#trt.TrtGraphConverterV2(
-          input_saved_model_dir=output_path,
-          input_saved_model_signature_key=signatures,
-          conversion_params=conversion_params)
-
-        print('converting')
-        converter.convert()
-        print('saving')
-        converter.save(output_path+'_trt')
-        print('Exported model to NVIDIA TensorRT')
-        '''
-      except Exception as e:
-        print('Failed to export to TensorRT but original saved model has been exported. Reported error:',e)
-
       print('Model export OK at epoch {}.'.format(epoch))
       older_versions=os.listdir(self.settings.model_export_filename)
       print('Available model versions:',older_versions)
@@ -371,14 +410,22 @@ def run_experiment(usersettings):
       import helpers.tensor_msg_io
       import helpers.kafka_io
       print("Original dataset specs:\n->", train_data.element_spec)
-      train_val_dataset_features=helpers.tensor_msg_io.get_label_data_features_from_dataset(train_data)
+      train_val_dataset_features=helpers.tensor_msg_io.get_data_label_features_from_dataset(train_data)
+      print("train_val_dataset_features:",train_val_dataset_features)
       log_queue_name=usersettings.session_name
       if 'procID' in usersettings.hparams.keys():
         log_queue_name+=str(usersettings.hparams['procID'])
       kafka_reader_train=helpers.kafka_io.KafkaIO(topic_name=log_queue_name+'train', bootstrap_servers=usersettings.kafka_bootstrap_servers, element_spec=train_data.element_spec)
       kafka_reader_val=helpers.kafka_io.KafkaIO(topic_name=log_queue_name+'val', bootstrap_servers=usersettings.kafka_bootstrap_servers, element_spec=val_data.element_spec)
-      train_data=kafka_reader_train.kafka_dataset_consumer_tf_custom(train_val_dataset_features, batch_size=usersettings.batch_size, shuffle=True)
-      val_data=kafka_reader_val.kafka_dataset_consumer_tf_custom(train_val_dataset_features, batch_size=usersettings.batch_size, shuffle=False)
+      #setup consumer depending on data and label types:
+      if isinstance(train_data.element_spec[0], dict):
+        train_data=kafka_reader_train.kafka_dataset_consumer_tf_custom(train_val_dataset_features, batch_size=usersettings.batch_size, shuffle=True)
+      else:
+        train_data=kafka_reader_train.kafka_dataset_consumer_tf_basic(batch_size=usersettings.batch_size, shuffle=True)
+      if isinstance(val_data.element_spec[1], dict):
+        val_data=kafka_reader_val.kafka_dataset_consumer_tf_custom(train_val_dataset_features, batch_size=usersettings.batch_size, shuffle=False)
+      else:
+        val_data=kafka_reader_train.kafka_dataset_consumer_tf_basic(batch_size=usersettings.batch_size, shuffle=False)
       print('------------------------------------------------------------train_data', train_data)
       print("KAFKA dataset specs:\n->", train_data.element_spec)
       print('Kafka connectors ready !')
@@ -571,8 +618,8 @@ def run_experiment(usersettings):
   profile_batch =0
   if usersettings.use_profiling is True:
     print('train_iterations_per_epoch', train_iterations_per_epoch)
-    t_start=max(1,train_iterations_per_epoch//2-30)
-    t_stop=t_start+30
+    t_start=int(max(1,train_iterations_per_epoch//2-30))
+    t_stop=int(t_start+30)
     if t_stop>train_iterations_per_epoch:
       t_stop=train_iterations_per_epoch-1
       print('too few iterations to perform a reliable profiling')
@@ -587,7 +634,7 @@ def run_experiment(usersettings):
                                                       histogram_freq=1,
                                                       write_graph=True,
                                                       update_freq='epoch',
-                                                      profile_batch='100,120',
+                                                      profile_batch=profile_batch,
                                                       embeddings_freq=10,
                                                       )
                                                       #embeddings_metadata='metadata.tsv',
@@ -627,6 +674,17 @@ def run_experiment(usersettings):
     print('==> Last training iteration was {lastIt} => setting current epoch to {epoch} '.format(lastIt=model.optimizer.iterations,
                                                                                              epoch=epoch_start_index))
   '''
+
+  #activate tensorflow_model_optimization is required (if tensorflow_model_optimization is available)
+  if usersettings.quantization_aware_training:
+    try:
+      model = tfmot.quantization.keras.quantize_model(model)
+      print('Model quantization aware training is being applied, here is quantized model summary')
+      print('Have a look at https://www.youtube.com/watch?v=2tnWHCxP8Bk')
+      model.summary()
+    except Exception as e:
+      print('Could not apply model quantization, relying on the original model')
+  
   #-> train with (in memory) input data pipelines
   if train_data==val_data:
     raise ValueError('train_data and val_data are the same, please fix this error')
@@ -879,7 +937,7 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
         if debug:
           print('Time to prepare request:',round(time.time() - start_time, 2))
       except StopIteration:
-        print('End of the process detection, running the ClientIO::finalize method')
+        print('End of the process detected, running the ClientIO::finalize method')
         notDone=True
         break
 
