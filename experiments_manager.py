@@ -94,6 +94,7 @@ import numpy as np
 import pandas as pd
 import importlib
 import imp
+import types
 import copy
 import configparser
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
@@ -513,6 +514,24 @@ def run_experiment(usersettings):
     print('loading ',loaded_model)
     model = tf.keras.models.load_model(loaded_model)
 
+  # logs and summaries management:
+  #-> classical logging on Tensorboard (scalars, historams, and so on)
+  log_dir=usersettings.sessionFolder+"/logs/"# + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+  #-> specify a summary writer (for more customisation capabilities)
+  file_writer = tf.summary.create_file_writer(log_dir)
+  file_writer.set_as_default()
+  
+  #add a method to track model weights changes on model.set_weights() calls
+  def track_weights_change(self, weights, round): # as for keras/keras/engine/base_layer.py
+    weights_change_norm=[tf.linalg.norm(self.get_weights()[i]-weights[i]) for i in range(len(weights))]
+    #print('gradient norm move tracking')
+    for i in range(len(weights)):
+      tf.summary.scalar('layer_weights_changes_l'+str(i),data=weights_change_norm[i], step=round)
+    tf.summary.scalar('layer_weights_changes_avg',data=np.mean(weights_change_norm), step=round)
+
+  # register a specific method to the model to record weights change gradient when manually specifying new weights
+  model.track_weights_change = types.MethodType( track_weights_change, model )
+  
   # generate the model description
   #-> as an image in the session folder
   model_name_str=usersettings.model_name
@@ -596,9 +615,6 @@ def run_experiment(usersettings):
                                             mode='auto',
                                             save_freq='epoch')
   all_callbacks.append(checkpoint_callback)
-
-  #-> classical logging on Tensorboard (scalars, hostorams, and so on)
-  log_dir=usersettings.sessionFolder+"/logs/"# + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
   if usersettings.debug:
     #TODO to be tested
@@ -725,8 +741,9 @@ def run_experiment(usersettings):
       def fit(self, parameters, config):
         print('#################### FlClient.fit new round', self.round)
         #set updated weights
+        if self.round>0:
+          model.track_weights_change(parameters, self.round)
         model.set_weights(parameters)
-
         #tensorboard_callback.on_train_begin(self.round)
         if self.round==0:
           callbacks=all_callbacks
@@ -773,7 +790,6 @@ def run_experiment(usersettings):
         #history_callback.on_epoch_end(self.round, logs_last_epoch)
         self.tensorboard_callback.on_train_end(logs_last_epoch) #FIXME workaround to force tensorboard to display data tracking along rounds/epochs
         #reduceLROnPlateau_callback.on_epoch_end(self.round, logs_last_epoch)
-
         if len(history.history)>0:
           self.history=history
         # avoiding to reuse callbacks : only affect them on the first round
