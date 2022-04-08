@@ -11,6 +11,8 @@ parser.add_argument("-u","--usersettings",
                     help="filename of the settings file that defines an experiment")
 parser.add_argument("-w","--pretrainedmodelcheckpointpath", default="",
                     help="path to a previous model checkpoint that provides pretrained model weights")
+parser.add_argument("-r","--num_rounds", default=100, type=int,
+                    help="set the maximum clients/server rounds number, defaults is 100")
 
 FLAGS = parser.parse_args()
 
@@ -89,6 +91,6 @@ elif strategy_name == 'qffedavg':
 else:
   raise ValueError('cannot recognize agregation strategy from the experiment settings file')
 
-fl.server.start_server(config={"num_rounds": 50}, strategy=strategy)
+fl.server.start_server(config={"num_rounds": FLAGS.num_rounds}, strategy=strategy)
 
 
