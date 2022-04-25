@@ -49,6 +49,9 @@ argparser.add_argument("-q","--overridequeue", default=log_queue_name,
                     help="specify the kafka log queue where to push the data")
 argparser.add_argument("-pid","--procID", default=None,
                     help="Specifiy here an ID to identify the process (useful for federated training sessions)")
+argparser.add_argument("-e","--epochs", default=1, type=int,
+                    help="customize the number of data epoch to be produced and stored, default is one epoch, more usually involoves more data augmentation")
+
 argparser.add_argument("-c","--check", action='store_true',
                     help="does not produce but simply reads an existing kafka dataset")
 
@@ -80,7 +83,7 @@ else:
 dataset =usersettings.get_input_pipeline(raw_data_files_folder=dataset_folder,
                                          isTraining=not(commands.isvalidationdata),
                                          batch_size=1,
-                                         nbEpoch=1)
+                                         nbEpoch=commands.epochs)
 
 # push data to the kafka server
 if commands.overridequeue == log_queue_name: # if queue name is not overwriten, create a queue nam relying on experiment name+procID when applicable
