@@ -99,6 +99,7 @@ import copy
 import configparser
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
 from tensorflow.python.tools import optimize_for_inference_lib
+from helpers import model_serving_tools
 
 try:
   import tensorflow_addons as tfa
@@ -202,36 +203,6 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
           )
         print('Now exporting model for inference...')
         
-        '''#preparing served module input(s and ouput(s)
-        model_inputs_nodes=[]
-        for input_tensor in module_graph.inputs:
-          #print('input', input_tensor)
-          if not('model/' in input_tensor.name):
-            model_inputs_nodes.append(input_tensor)
-        model_inputs=[ input_tensor.name.split(':')[0] for input_tensor in model_inputs_nodes]
-        model_inputs_dtypes=[ input_tensor.dtype.as_datatype_enum for input_tensor in model_inputs_nodes]
-        model_outputs=[ output_tensor.name.split(':')[0] for output_tensor in module_graph.outputs]
-        print('-> exported_module.inputs', model_inputs)
-        print('-> exported_module.model_inputs_dtypes', model_inputs_dtypes)
-        print('-> exported_module.outputs', model_outputs)
-        
-        print('Freezing model and optimizing for inference...')
-        #some gist : https://gist.github.com/FlorentGuinier/57edf0b644333278dd06c9851f480bc5
-        constantGraph = convert_variables_to_constants_v2(module_graph)
-        constant_graph_def = constantGraph.graph.as_graph_def()
-        optimized_graph = optimize_for_inference_lib.optimize_for_inference(
-                            input_graph_def=constant_graph_def,
-                            input_node_names=model_inputs,
-                            placeholder_type_enum=model_inputs_dtypes,
-                            output_node_names=model_outputs,
-                            toco_compatible=True,#if True, only runs optimizations that result in TOCO compatible graph operations
-                            )
-        
-        tf.io.write_graph(graph_or_graph_def=optimized_graph,
-                          logdir=  output_path,
-                          name= 'optimized_saved_model.pb',
-                          as_text=False)
-        '''
         from tensorflow.python.compiler.tensorrt import trt_convert as trt
         print(os.listdir(output_path_orig))
         conversion_params = trt.DEFAULT_TRT_CONVERSION_PARAMS
@@ -265,26 +236,6 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
       except Exception as e:
         print('Failed to export serving model. Reported error message:', e)
 
-      #REMINDER, other keras approach
-      '''try:
-        print('Exporting serving model relying on tf.keras.models.save_model')
-        tf.keras.models.save_model(
-                                exported_module,
-                                filepath='{folder}v2/{version}'.format(folder=self.settings.model_export_filename, version=epoch),
-                                overwrite=True,
-                                include_optimizer=False,
-                                save_format=None,
-                                signatures=signatures,
-                                options=None,
-                                )
-      except Exception as e:
-        print('Failed to export serving model relying on method:',e)
-      export to TensorRT, WIP
-       refer to https://www.tensorflow.org/api_docs/python/tf/experimental/tensorrt/Converter
-       and
-       https://docs.nvidia.com/deeplearning/frameworks/tf-trt-user-guide/index.html
-      '''
-      
       print('Model export OK at epoch {}.'.format(epoch))
       older_versions=os.listdir(self.settings.model_export_filename)
       print('Available model versions:',older_versions)
@@ -524,10 +475,13 @@ def run_experiment(usersettings):
   #add a method to track model weights changes on model.set_weights() calls
   def track_weights_change(self, weights, round): # as for keras/keras/engine/base_layer.py
     weights_change_norm=[tf.linalg.norm(self.get_weights()[i]-weights[i]) for i in range(len(weights))]
+    weights_change_norm_relative=[tf.cast(weights_change_norm[i], tf.float32)/tf.cast(tf.linalg.norm(self.get_weights()[i]), tf.float32) for i in range(len(weights))]
     #print('gradient norm move tracking')
     for i in range(len(weights)):
       tf.summary.scalar('layer_weights_changes_l'+str(i),data=weights_change_norm[i], step=round)
+      tf.summary.scalar('layer_weights_changes_l'+str(i)+'relative',data=weights_change_norm_relative[i], step=round)
     tf.summary.scalar('layer_weights_changes_avg',data=np.mean(weights_change_norm), step=round)
+    tf.summary.scalar('layer_weights_changes_avg_relative',data=np.mean(weights_change_norm_relative), step=round)
 
   # register a specific method to the model to record weights change gradient when manually specifying new weights
   model.track_weights_change = types.MethodType( track_weights_change, model )
@@ -834,67 +788,6 @@ def run_experiment(usersettings):
 ## INFERENCE SECTION : talking to a tensorflow-server
 #inspired from https://github.com/tensorflow/serving/blob/master/tensorflow_serving/example/mnist_client.py
 
-def WaitForServerReady(host, port):
-  #inspired from https://github.com/tensorflow/serving/blob/master/tensorflow_serving/model_servers/tensorflow_model_server_test.py
-  """Waits for a server on the localhost to become ready.
-  returns True if server is ready or False on timeout
-  Args:
-      host:tensorfow server address
-      port: port address of the PredictionService.
-  """
-  from grpc import implementations
-  from grpc.framework.interfaces.face import face
-  from tensorflow_serving.apis import predict_pb2
-  from tensorflow_serving.apis import prediction_service_pb2
-  for _ in range(0, usersettings.wait_for_server_ready_int_secs):
-    request = predict_pb2.PredictRequest()
-    request.model_spec.name = 'server_not_real_model_name'
-
-    try:
-      # Send empty request to missing model
-      print('Trying to reach tensorflow-server {srv} on port {port} for {delay} seconds'.format(srv=host,
-                                                             port=port,
-                                                             delay=usersettings.wait_for_server_ready_int_secs))
-      channel = implementations.insecure_channel(host, int(port))
-      stub = prediction_service_pb2.PredictionServiceStub(channel)
-      stub.Predict(request, 1)
-    except face.AbortionError as error:
-      # Missing model error will have details containing 'Servable'
-      if 'Servable' in error.details:
-        print('Server is ready')
-        return True
-      else:
-        print('Error:'+str(error.details))
-    return False
-    time.sleep(1)
-
-
-def _create_rpc_callback(client, debug):
-  """Creates RPC callback function.
-  Args:
-  Returns:
-    The callback function.
-  """
-  def _callback(result_future):
-    """Callback function.
-    Calculates the statistics for the prediction result.
-    Args:
-      result_future: Result future of the RPC.
-    """
-    print('Received response:'+str(result_future))
-    exception = result_future.exception()
-    if exception:
-      #result_counter.inc_error()
-      print(exception)
-    else:
-      try:
-          if debug:
-              print(result_future.result())
-          client.decodeResponse(result_future.result())
-      except Exception as e:
-          raise ValueError('Exception encountered on client callback : '.format(error=e))
-  return _callback
-
 def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs, concurrency, num_tests, debug):
   """Tests PredictionService with concurrent requests.
   Args:
@@ -910,24 +803,7 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
 
   Hint : have a look here to track api use updates : https://github.com/tensorflow/serving/blob/master/tensorflow_serving/example/mnist_client.py
   """
-  from tensorflow_serving.apis import predict_pb2 #for single head models
-  from tensorflow_serving.apis import inference_pb2 #for multi head models
-  from tensorflow_serving.apis import prediction_service_pb2_grpc
-  import grpc
-
-  print('Trying to interract with server:{srv} on port {port} for prediction...'.format(srv=host,
-                                                         port=port))
-  ''' test scripts may help : https://github.com/tensorflow/serving/blob/master/tensorflow_serving/model_servers/tensorflow_model_server_test.py
-  '''
-
-  server=host+':'+str(port)
-  # specify option to support messages larger than alloed by default
-  grpc_options=None
-  if usersettings.grpc_max_message_length !=0:
-    grpc_options = [('grpc.max_send_message_length', usersettings.grpc_max_message_length)]
-    grpc_options = [('grpc.max_receive_message_length', usersettings.grpc_max_message_length)]
-  channel = grpc.insecure_channel(server, options=grpc_options)
-  stub = prediction_service_pb2_grpc.PredictionServiceStub(channel)
+  stub=model_serving_tools.setup_model_server_connexion(host, port, experiment_settings.grpc_max_message_length)
   #allocate a clientIO instance defined for the experiment
   client_io=experiment_settings.Client_IO(clientIO_InitSpecs, debug)
   notDone=True
@@ -937,33 +813,22 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
         predictionIdx=predictionIdx+1
         start_time=time.time()
         sample=client_io.getInputData(predictionIdx)
-        if not(isinstance(sample, dict)):
-          raise ValueError('Expecting a dictionnary of values that will further be converted to proto buffers. Dictionnary keys must correspond to the usersettings.served_input_names strings list')
+        request = model_serving_tools.generate_single_request(sample, model_name, debug)
         if debug:
-            print('Input data is ready, data=',sample)
-            print('Time to prepare collect data request:',round(time.time() - start_time, 2))
-            start_time=time.time()
-        request = predict_pb2.PredictRequest()
-        request.model_spec.name = model_name
-        request.model_spec.signature_name = model_name#experiment_settings.served_head_names[0]
-        for inputname in usersettings.served_input_names:
-          feature=sample[inputname]
-          feature_proto=tf.make_tensor_proto(feature, shape=feature.shape)
-          request.inputs[inputname].CopyFrom(feature_proto)
-        if debug:
-          print('Time to prepare request:',round(time.time() - start_time, 2))
+          print('Input data is ready, data=',sample)
+          print('Time to prepare collect data request:',round(time.time() - start_time, 2))
       except StopIteration:
         print('End of the process detected, running the ClientIO::finalize method')
         notDone=True
         break
 
-      #asynchronous message reception, may hide some AbortionError details and only provide CancellationError(code=StatusCode.CANCELLED, details="Cancelled")
+      #asynchronous message request and answer reception, may hide some AbortionError details and only provide CancellationError(code=StatusCode.CANCELLED, details="Cancelled")
       if hasattr(experiment_settings, 'client_async'):
         result_future = stub.Predict.future(request, experiment_settings.serving_client_timeout_int_secs)  # 5 seconds
         result_future.add_done_callback(
-            _create_rpc_callback(client_io, debug))
+            model_serving_tools._create_rpc_callback(client_io, debug))
 
-      else:
+      else: #synchronous approach
         #synchronous approach... that may provide more details on AbortionError
         if debug:
           start_time=time.time()
@@ -1020,27 +885,6 @@ def loadExperimentsSettings(filename, restart_from_sessionFolder=None, isServing
     print('Considered usersettings.hparams=',str(usersettings.hparams))
     return usersettings, sessionFolder
 
-def get_served_model_info(one_model_path, expected_model_name):
-  ''' basic function that checks served model behaviors
-  Args:
-  one_model_path: the path to a servable model directory
-  expected_model_name: the model name that is expected to be found on the server
-  Returns:
-    Nothing for now
-  '''
-  import subprocess
-  #get the first subfolder of the served models directory
-  served_model_info_cmd='saved_model_cli show --dir {target_model} --tag_set serve --signature_def {model_name}'.format(target_model=one_model_path,
-                                                                                      model_name=expected_model_name)
-  print('Checking served model available signatures using command '+served_model_info_cmd)
-  cmd_result=subprocess.check_output(served_model_info_cmd.split())
-  print('Answer:')
-  print(cmd_result.decode())
-  if expected_model_name in cmd_result.decode():
-    print('Target model {target} name found in the command answer'.format(target=expected_model_name))
-  else:
-    raise ValueError('Target model {target} name NOT found in the command answer'.format(target=expected_model_name))
-
 # Run script ##############################################
 def run(FLAGS, train_config_script=None, external_hparams={}):
   ''' the main script function that can receive hyperparameters as a dictionnary to run an experiment
@@ -1089,7 +933,7 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
         except Exception as e:
           raise ValueError('Could not find servable model, error='+str(e.message))
 
-      get_served_model_info(one_model_path, usersettings.model_name)
+      model_serving_tools.get_served_model_info(one_model_path, usersettings.model_name)
       tensorflow_start_cmd=" --port={port} --model_name={model} --model_base_path={model_dir}".format(port=usersettings.tensorflow_server_port,
                                                                                           model=usersettings.model_name,
                                                                                           model_dir=model_folder)

@@ -9,6 +9,7 @@
 import os
 import argparse
 import configparser
+import helpers.model_serving_tools as srv_comm_tools
 
 def get_served_model_info(one_model_path, expected_model_name, singularity_tf_server_container_path):
   ''' basic function that checks served model behaviors
@@ -35,23 +36,11 @@ def get_served_model_info(one_model_path, expected_model_name, singularity_tf_se
 
 
 def start_model_serving(flags):
-  model_dir=flags.model_dir
-  config_filename='model_serving_setup.ini'
-  print('### START TENSORFLOW SERVER on experiment : ', model_dir, '###')
-
-  model_folder=os.path.join(model_dir,'exported_models')
-  print('Considering served model parent directory:'+model_folder)
-  config_file=os.path.join(model_dir, config_filename)
-  print('Reading config file : ', config_file)
-  #load server config
-  if os.path.exists(config_file) == False:
-    raise ValueError("Config file does not exist")
-  config=configparser.ConfigParser()
-  config.read(config_file, encoding='utf8')
-  print(config.keys())
-  print('CONFIG:', config)
+  # get trained model config
+  config=srv_comm_tools.get_model_server_cfg(flags.model_dir)
   print('model_name', config['SERVER']['model_name'])
   #look for a model in the directory
+  model_folder=os.path.join(flags.model_dir,'exported_models')
   one_model=next(os.walk(model_folder))[1][0]
   one_model_path=os.path.join(model_folder, one_model)
   if not(os.path.exists(one_model_path)):
@@ -59,7 +48,6 @@ def start_model_serving(flags):
   print('Found at least one servable model directory '+str(one_model_path))
   
   #check server
-  
   try:
     get_served_model_info(one_model_path, config['SERVER']['model_name'], flags.singularity_tf_server_container_path)
   except Exception as e:
