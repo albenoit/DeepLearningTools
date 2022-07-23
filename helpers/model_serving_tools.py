@@ -5,6 +5,7 @@ A. Benoit, LISTIC Lab, 2022
 import os
 import time
 import configparser
+import numpy as np
 try:
   import tensorflow as tf
   from tensorflow_serving.apis import predict_pb2 #for single head models
