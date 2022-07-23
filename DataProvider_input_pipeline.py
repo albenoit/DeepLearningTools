@@ -1,6 +1,9 @@
 '''
 @author : Alexandre Benoit, LISTIC lab, FRANCE (plus some colleagues and interns such as Louis Klein on spring 2017)
 @brief  : a set of tools to preprocess data and build up input data pipelines
+
+WARNING, these are advanced datapipelines
+=> simpler versions are shown as tutorials is examples/data_pipelines
 '''
 #### WARNING, you may have to remove one of the cv2 or gdal import depending on your machine compatibility
 try:
