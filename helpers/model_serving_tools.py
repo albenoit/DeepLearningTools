@@ -163,3 +163,21 @@ def _create_rpc_callback(client, debug):
           raise ValueError('Exception encountered on client callback : '.format(error=e))
   return _callback
 
+
+# fast protobuf answer to numpy array
+
+#@tf.function(jit_compile=True, experimental_relax_shapes=True)
+def deserialize_srv_answer_uint8(proto_single_output):
+  """ deserialize a protobuf output into a tensor
+  Args:
+    proto_single_output, a protobuf output supposed to be a serialized tensor of type tf.uint8
+  Returns the deserialized tensor
+  """
+  shape = tf.TensorShape(proto_single_output.tensor_shape)
+  output = tf.io.parse_tensor(tf.reshape(proto_single_output.string_val, shape), out_type=tf.uint8)
+  return output
+
+def deserialize_srv_answer_uint8_vfrombuffer(msg_buffer, shape):
+  #faster but less elegant
+  out = np.frombuffer(bytearray(msg_buffer.string_val[0]),dtype=np.uint8,count=-1,offset=27).reshape(shape)
+  return out
