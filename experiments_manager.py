@@ -438,14 +438,15 @@ def run_experiment(usersettings):
         if usersettings.batch_size%64!=0:
           print('Suboptimal batch size (should be a multiple of 64 to get efficient tiling and reduced overhead') 
         for i,layer in enumerate(model.layers[1:]):
-          #print(i,'layer.input_shape[-1], layer.input_shape[-1]', (layer.input_shape[-1], layer.output_shape[-1]))
+          print('=== layer', i, layer)
           try:
+            print(i,'layer.input_shape[-1], layer.input_shape[-1]', (layer.input_shape[-1], layer.output_shape[-1]))
             if ((layer.input_shape[-1])%8 != 0) or ((layer.output_shape[-1])%8 != 0):
               print('Layer not tensorcore compliant:',i,layer.name,layer.input_shape)
               print(i,layer.name,layer.output_shape)
           except:
-            print('Did not check layer:')
-            print(i,'layer.input_shape[-1], layer.input_shape[-1]', (layer.input_shape[-1], layer.output_shape[-1])) 
+            print('Could not check layer:')
+            print(i, layer) 
       
       try:
         init_model_name=usersettings.sessionFolder+'/checkpoints/model_init'
@@ -551,7 +552,8 @@ def run_experiment(usersettings):
   early_stopping_patience=usersettings.early_stopping_patience if hasattr(usersettings, 'early_stopping_patience') else 5
   earlystopping_callback=tf.keras.callbacks.EarlyStopping(
                             monitor=usersettings.monitored_loss_name,
-                            patience=early_stopping_patience
+                            patience=early_stopping_patience,
+                            restore_best_weights=True
                           )
   all_callbacks.append(earlystopping_callback)
   reduceLROnPlateau_callback=tf.keras.callbacks.ReduceLROnPlateau(monitor=usersettings.monitored_loss_name, factor=0.1,
@@ -809,9 +811,11 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
   notDone=True
   predictionIdx=0
   while notDone:
+      # 1. get data and prepare request
       try:
         predictionIdx=predictionIdx+1
         start_time=time.time()
+        #get an input data sample to be sent to the model
         sample=client_io.getInputData(predictionIdx)
         request = model_serving_tools.generate_single_request(sample, model_name, debug)
         if debug:
@@ -822,6 +826,7 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
         notDone=True
         break
 
+      # 2. send the request
       #asynchronous message request and answer reception, may hide some AbortionError details and only provide CancellationError(code=StatusCode.CANCELLED, details="Cancelled")
       if hasattr(experiment_settings, 'client_async'):
         result_future = stub.Predict.future(request, experiment_settings.serving_client_timeout_int_secs)  # 5 seconds
