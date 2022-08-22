@@ -1153,18 +1153,13 @@ def FileListProcessor_csv_time_series(files,
     files_dataset=tf.data.Dataset.list_files(files).repeat(epochs)
     #a thread processes each file and each one is read by line blocks of length 'temporal_series_length'
     
-    '''no windowing aproach
-    dataset = files_dataset.flat_map(lambda file: (tf.data.TextLineDataset(file).skip(1).batch(temporal_series_length, drop_remainder=True)))
-    '''
+    #read file lines in a sliding window fashion
     datasets = files_dataset.flat_map(lambda file: (tf.data.TextLineDataset(file).skip(1).window(size=temporal_series_length, shift=windowing_shift, drop_remainder=True)))
 
-
-    def sub_to_batch(sub):
-      return sub.batch(temporal_series_length, drop_remainder=True)
-
-    dataset = datasets.flat_map(sub_to_batch)
-
-    # decode csv file
+    #each window being a dataset, make them a single batch to recover a timeseries sample
+    dataset = datasets.flat_map(lambda x:x.batch(temporal_series_length, drop_remainder=True))
+		
+    # decode csv lines
     dataset = dataset.map(decode_csv, num_parallel_calls=tf.data.AUTOTUNE, deterministic=not(shuffle))
 
     # apply filter if provided
