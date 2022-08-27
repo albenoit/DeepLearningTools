@@ -1094,19 +1094,6 @@ def extract_feature_columns(data_dict, features_labels):
 
     return data_vectors
 
-def breakup(x, lookback_len):
-  ''' break a sequence into overlapping sub sequences
-  Arg:
-    x: the input sequence of size N steps of shape[batch_size]
-  Returns:
-    a stack of overlapping sub sequences
-  '''
-  #get the sequence length
-  N = tf.shape(x)[0]
-  windows = [tf.slice(x, [b], [lookback_len]) for b in six.moves.range(0, N-lookback_len)]
-  return tf.stack(windows)
-
-
 def FileListProcessor_csv_time_series(files,
                                       csv_field_delim,
                                       record_defaults_values,
@@ -1142,9 +1129,8 @@ def FileListProcessor_csv_time_series(files,
     @tf.function
     def decode_csv(line):
       features = tf.io.decode_csv(line, record_defaults=record_defaults_values, field_delim=csv_field_delim, na_value=na_value_string, select_cols=selected_cols)
-      labels = features[:labels_cols_nb]
+      labels = tf.stack(features[:labels_cols_nb], axis=0)
       raw_data= tf.stack(features[labels_cols_nb:], axis=0)
-      labels=tf.stack(labels, axis=0)
       if per_sample_preprocess_fn is not None:
           #tf.print('CSV DECODE', raw_data, labels)
           return per_sample_preprocess_fn(raw_data, labels)
