@@ -31,7 +31,7 @@ This work has been facilitated by intensive experiments conducted on the JeanZay
 * *Have a look at the examples folder to start from typical ML problem examples.*
 * **News** : 
   * Federated Learning compliant
-  * **XAI** (eXplainable Artificial Intelligence) compliant, checkout our semantic segmentation XAI in examples/xaie (ICPR-XAIE2022 paper).
+  * **XAI** (eXplainable Artificial Intelligence) compliant, checkout our semantic segmentation XAI in *examples/xaie* [ICPR-XAIE2022 paper](https://hal.archives-ouvertes.fr/hal-03719597).
 
 ## Approach:
 
