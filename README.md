@@ -29,6 +29,9 @@ This work has been facilitated by intensive experiments conducted on the JeanZay
 * Federated Learning (FedML), relying on the [Flower library](https://flower.dev/), few changes to switch from you classical training model to the federated version
 * Kafka data pipeline management: user can produce data to a kafka pipeline and the model optimization can be fed by kafka pipelines ! *Have a look at install/kafka/README.md* 
 * *Have a look at the examples folder to start from typical ML problem examples.*
+* **News** : 
+  * Federated Learning compliant
+  * **XAI** (eXplainable Artificial Intelligence) compliant, checkout our semantic segmentation XAI in examples/xaie (ICPR-XAIE2022 paper).
 
 ## Approach:
 
