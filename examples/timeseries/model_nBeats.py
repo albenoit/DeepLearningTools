@@ -18,17 +18,17 @@ def basis_func_trend(theta, ts_length, name):
 	  ts_lengh: the timeseries length
 	'''
 	# the trend polynomial degree is directly related to the dimensions of theta
-	polynomial_degree_minus1=theta.get_shape().as_list()[-1]
-	polynomial_degree = polynomial_degree_minus1-1
+	polynomial_degree_plus1=theta.get_shape().as_list()[-1]
+	polynomial_degree = polynomial_degree_plus1-1
 	print('trend basis_func_trend basis, degree=', polynomial_degree)
 	timesteps=np.arange(ts_length, dtype=np.float)/ts_length
-	powers=np.arange(polynomial_degree_minus1)
+	powers=np.arange(polynomial_degree_plus1)
 	T=np.array([timesteps**p for p in powers], dtype=np.float32)
 	
 	''' finally apply theta parameters as coefficients on the target polynom
 	this is actually a simple matrix product (T*theta) that can be done by a not trainable
 	dense neural layer  
-	...you may see some equivalent calculus with other codes that are equivalent:
+	...you may see some equivalent calculus with other codes such as:
 	einsum_np=np.einsum('bp,pt->bt', theta.numpy(), T.numpy())
 	dot_np=np.dot(theta.numpy(), T.numpy())
 	einsum_tf=tf.tensordot(theta, T, axes=1)
