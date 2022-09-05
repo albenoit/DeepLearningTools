@@ -73,7 +73,7 @@ fl.server.start_server(config={"num_rounds": 3}, strategy=strategy)
 
 #first create or load a default model (the initialization of the weights that will be distributed to each client)
 #get the init central model parameters to be distributed to each clients
-init_params=fl.common.weights_to_parameters(model.get_weights())
+init_params=fl.common.ndarrays_to_parameters(model.get_weights())
 
 #then apply the specified agregation strategy
 print('Experiment settings file reports federated learning strategy:', strategy_name)
@@ -91,6 +91,6 @@ elif strategy_name == 'qffedavg':
 else:
   raise ValueError('cannot recognize agregation strategy from the experiment settings file')
 
-fl.server.start_server(config={"num_rounds": FLAGS.num_rounds}, strategy=strategy)
+fl.server.start_server(config=fl.server.ServerConfig(num_rounds=FLAGS.num_rounds), strategy=strategy)
 
 
