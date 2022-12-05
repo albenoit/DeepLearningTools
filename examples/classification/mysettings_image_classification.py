@@ -19,7 +19,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import os
-import cv2 #for ClientIO only
 
 #-> set here your own working folder
 workingFolder='experiments/examples/cats_dogs_classification'
@@ -48,7 +47,7 @@ to check which gpu is free (very few used memory and GPU )
 '''
 used_gpu_IDs=[0]
 #activate XLA graph optimisation, if True, GPU AND CPU XLA is applied
-useXLA=True
+useXLA=False
 
 #profile some training steps to check pipeline processing time bottlenecks (from Tensorboard)
 use_profiling=True
@@ -227,6 +226,7 @@ class Client_IO:
                clientInitSpecs: a dictionnary to setup the client is necessary
                debugMode: set True if some debug messages should be displayed
         '''
+        import cv2 #for ClientIO only
 
         self.debugMode=debugMode
         if self.debugMode is True:

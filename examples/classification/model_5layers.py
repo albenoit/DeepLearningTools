@@ -4,7 +4,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
 
 def model(usersettings):
-  model = Sequential([
+  my_model = Sequential([
       Conv2D(16, 3, padding='same', activation='relu',
              input_shape=(usersettings.hparams['imgHeight'], usersettings.hparams['imgWidth'] ,3)),
       MaxPooling2D(),
@@ -19,4 +19,4 @@ def model(usersettings):
       Dense(1, activation='sigmoid')
   ])
 
-  return model
+  return my_model
