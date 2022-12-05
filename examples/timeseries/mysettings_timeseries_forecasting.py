@@ -3,19 +3,18 @@
 @brief : simple personnal file that defines experiment specific keys to be used with our programs
 
 Application : time series forecasting
-an interesting lecture : https://machinelearningmastery.com/how-to-develop-lstm-models-for-time-series-forecasting/
-.
 FULL PROCESS USE EXAMPLE:
 1. TRAIN/VAL : start a train/val session using command (a singularity container with an optimized version of Tensorflow is used here):
-singularity run --nv /home/alben/install/nvidia/tf2_addons.sif experiments_manager.py --usersettings=examples/timeseries/mysettings_timeseries_forecasting.py
+singularity run --nv /path/to/containers/tf2_addons.sif experiments_manager.py --usersettings=private/mysettings_embeddings_timeseries.py
+---> this will create an experiment folder with all model checkpoints and training parameters history, say: /path/to/experiments/examples/timeseries/TS_trials_depth3_nstacks1_nlayers2_nneurons32_smoothedParamsTrue_nbEpoch2_bottleneckSize2_learningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize10_2022-12-05--18:01:39
 
 2. SERVE MODEL : start a tensorflow model server on the produced eperiment models using command (the -psi command permits to start tensorflow model server installed in a singularity container):
-python3 start_model_serving.py --model_dir=/home/alben/workspace/listic-deeptool/experiments/timeseries/LOCIE_trials_depth3_smoothedParamsTrue_nbEpoch100_bottleneckSizelearningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize64_2020-11-14--17\:05\:00/ -psi /home/alben/install/containers/tf_server.cpu.sif
+python3 start_model_serving.py --model_dir=/path/to/experiments/examples/timeseries/TS_trials_depth3_nstacks1_nlayers2_nneurons32_smoothedParamsTrue_nbEpoch2_bottleneckSize2_learningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize10_2022-12-05--18:01:39 -psi /path/to/containers/tf_server.cpu.sif
 OR
-singularity run --nv /home/alben/install/containers/tf_server.cpu.sif --port=9000 --model_name=model_ts_AE --model_base_path=/home/alben/workspace/listic-deeptool/experiments/timeseries/LOCIE_trials_depth3_smoothedParamsTrue_nbEpoch100_bottleneckSize2_learningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize64_2020-11-14--17:05:00/exported_models
+singularity run --nv /path/to/containers/tf_server.cpu.sif --port=9000 --model_name=model_ts_AE --model_base_path=/path/to/experiments/examples/timeseries/TS_trials_depth3_nstacks1_nlayers2_nneurons32_smoothedParamsTrue_nbEpoch2_bottleneckSize2_learningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize10_2022-12-05--18:01:39/exported_models
 
 3. REQUEST MODEL : start a client that sends continuous requests to the server
-singularity run --nv /home/alben/install/containers/tf2_addons.2.2.0.sif experiments_manager.py --predict_stream=-1 --model_dir=experiments/timeseries/LOCIE_trials_depth3_smoothedParamsTrue_nbEpoch100_bottleneckSize2_learningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize64_2020-11-14--17:05:00/
+singularity run --nv /path/to/containers/tf2_addons.2.2.0.sif experiments_manager.py --predict_stream=-1 --model_dir experiments/examples/timeseries/TS_trials_depth3_nstacks1_nlayers2_nneurons32_smoothedParamsTrue_nbEpoch2_bottleneckSize2_learningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize10_2022-12-05--18:01:39
 '''
 
 #my imports
@@ -28,7 +27,7 @@ import numpy as np
 import os
 
 #-> set here your own working folder
-workingFolder='experiments/timeseries'
+workingFolder='experiments/examples/timeseries'
 
 #-> port number to be used when interracting with the tensorflow-server
 tensorflow_server_address='127.0.0.1'
@@ -36,9 +35,12 @@ tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
 serving_client_timeout_int_secs=20#timeout limit when a client requests a served model
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
-session_name='LOCIE_trials'
+session_name='TS_trials'
 
 hparams={'depth':3,
+         'nstacks':1,
+         'nlayers':2,
+         'nneurons':32,
          'smoothedParams':True,
          'nbEpoch':100,
          'bottleneckSize':2,#the size of the bottleneck output size for each of the encoders
@@ -313,7 +315,7 @@ class Client_IO:
         if self.debugMode is True:
             print('RPC Client ready to interract with the server')
 
-        filenames=glob.glob(os.path.join(raw_data_dir_val, '*.csv'))#os.getcwd(),'../../../../',raw_data_dir_val,'*.csv'))
+        filenames=glob.glob(os.path.join(os.getcwd(),'../../../../../',raw_data_dir_val,'*.csv'))
         print('attempting to find csv file from : '+str(filenames))
         assert len(filenames)>0, 'No files found, check your settings'
         if debugMode is True:
