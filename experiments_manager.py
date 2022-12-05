@@ -48,9 +48,9 @@ This script has some known problems, any suggestion is welcome:
 
 #TODO :
 
-To adapt to new use case, just duplicate the closest mysettingsxxx file and adjust the configuration.
-For any experiment, the availability of all the required fields in the settings file is checked by the experiments_settings_checker.py script.
-You can have a look there to ensure you prepared everything right.
+To adapt to new use case, just duplicate the closest mysettingsxxx file presented in the examples folder and adjust the configuration.
+For any experiment, the availability of all the required fields in the settings file is checked by the tools/experiments_settings.py script.
+You can have a look there to ensure you prepared everything right, some variables and functions must exist while some others are optionnal.
 
 As a reminder, here are the functions prototypes:
 
@@ -87,13 +87,13 @@ Some examples of such functions are put in the README.md and in the versionned e
 #script imports
 from tools.experiment_settings import ExperimentSettings
 import tools.experiments_settings_surgery
+from tools.command_line_parser import get_commands
 import os, shutil
 import datetime, time
 import tensorflow as tf
 import numpy as np
 import pandas as pd
 import importlib
-import imp
 import types
 import copy
 import configparser
@@ -124,10 +124,6 @@ from tensorflow.keras import mixed_precision
 #constants
 SETTINGSFILE_COPY_NAME='experiment_settings.py'
 WEIGHTS_MOVING_AVERAGE_DECAY=0.998
-
-# Set default flags for the output directories
-#manage input commands
-import argparse
 
 class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
   def __init__(self,
@@ -305,7 +301,9 @@ def loadModel_def_file(sessionFolder, usersettings):
   '''
   model_path=os.path.join(sessionFolder,os.path.basename(usersettings.model_file))
   try:
-    model_def=imp.load_source('model_def', model_path)#importlib.import_module("".join(model_path.split('.')[:-1]))#
+    spec=importlib.util.spec_from_file_location('model_def', model_path)
+    model_def = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(model_def)
   except Exception as e:
     raise ValueError('loadModel_def_file: Failed to load model file {model} from sessionFolder {sess}, error message={err}'.format(model=usersettings.model_file, sess=sessionFolder, err=e))
   model=model_def.model
@@ -583,6 +581,12 @@ def run_experiment(usersettings):
                       )
     '''
 
+  if callable(usersettings.custom_tensorboard_logs):
+    print('Adding custom Tensorboard logger ON EPOCH END. keep some time, have a look at existing tools in tools/custom_display_tensorboard.py')
+    with file_writer.as_default():
+      def custom_logger_fn(epoch, logs):
+        usersettings.custom_tensorboard_logs(model, epoch, logs)
+      all_callbacks.append(tf.keras.callbacks.LambdaCallback(on_epoch_end=custom_logger_fn))
   #complete generic callbacks by user defined ones
   all_callbacks+=usersettings.addon_callbacks(model, train_data, val_data)
 
@@ -907,7 +911,7 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
   usersettings=None#ensure to clear this object prior any new trial
   ''' main function that starts the experiment in the chosen mode '''
   scripts_WD=os.getcwd() #to locate the mysettings*.py file
-
+  print(FLAGS)
   if FLAGS.debug is True:
       print('Running in debug mode. Press Enter to continue...')
   if FLAGS.start_server is True :
@@ -1073,34 +1077,6 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
   return experiments_output
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='Deep learning experiments manager')
-  parser.add_argument("-m","--model_dir", default=None,
-                      help="Output directory for model and training stats.")
-  parser.add_argument("-d","--debug", action='store_true',
-                      help="set to activate debug mode")
-  parser.add_argument("-p","--predict", action='store_true',
-                      help="Switch to prediction mode")
-  parser.add_argument("-l","--predict_stream", default=0, type=int,
-                      help="set the number of successive predictions, infinite loop if <0")
-  parser.add_argument("-s","--start_server", action='store_true',
-                      help="start the tensorflow server on the machine to run predictions")
-  parser.add_argument("-psi","--singularity_tf_server_container_path", default='',
-                      help="start the tensorflow server on a singularity container to run predictions")
-  parser.add_argument("-u","--usersettings",
-                      help="filename of the settings file that defines an experiment")
-  parser.add_argument("-r","--restart_interrupted", action='store_true',
-                      help="Set to restart an interrupted session, model_dir option should be set")
-  parser.add_argument("-g","--debug_server_addresses", action='store_true',
-                      default="127.0.0.1:2333",
-                      help="Set here the IP:port to specify where to reach the tensorflow debugger")
-  parser.add_argument("-pid","--procID", default=None,
-                      help="Specifiy here an ID to identify the process (useful for federated training sessions)")
-  parser.add_argument("-dist","--distributed", action='store_true',
-                      help="activate this option to make use of sidtributed computing (approach depends on the expereiments settings specifications")
-
-  parser.add_argument("-c","--commands", action='store_true',
-                      help="show command examples")
-
-  FLAGS = parser.parse_args()
-
+  parser=get_commands()
+  FLAGS=parser.parse_args()
   run(FLAGS)
