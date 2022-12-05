@@ -3,36 +3,6 @@ TODO:move to unit testing with pytest
 '''
 
 import pytest
-experiment_setting_files_to_test=[
-                # basic scripts that do not require additionnal data (either already with the sources or downloaded automatically
-                #baby test, NO hyperparameters
-                {'script':'examples/regression/mysettings_curve_fitting.py', 'hparams':{}},
-                {'script':'examples/regression/mysettings_curve_fitting_concrete_dropout.py', 'hparams':{}},
-                #baby test, WITH hyperparameters
-                {'script':'examples/regression/mysettings_curve_fitting.py', 'hparams':{'nbEpoch':2}},
-                #scripts sensitive to tensorflow updates...
-                {'script':'examples/embedding/mysettings_1D_experiments.py', 'hparams':{'nbEpoch':2}},
-                {'script':'examples/generative/mysettings_began.py', 'hparams':{'nbEpoch':2}},
-                
-
-                #WARNING : the following depend on some specific data that have to be downloaded and targetted in the settings script:
-                #{'script':'examples/segmentation/mysettings_semanticSegmentation.py', 'hparams':{'nbEpoch':2}},
-                #FIXME:the premade estimator based model in examples/regression/mysettings_curve_fitting_premade_estimator.py impact on the following tests, possible cause : usersettings global variable in experiments_manager.py should be removed
-                #{'script':'examples/regression/mysettings_curve_fitting_premade_estimator.py', 'hparams':None},
-
-                {'script':'private/mysettings_cycle_constraints_trades_bayesian.py'},
-
-                {'script':'private/mysettings_heterogeneous_data_fusion.py', 'hparams':{}},
-                #{'script':'private/mysettings_embeddings_hyperspectral_images.py', 'hparams':{'nbEpoch':2}},
-                {'script':'private/mysettings_embeddings_mnist.py', 'hparams':{'nbEpoch':2}},
-                {'script':'private/mysettings_embeddings_multispectral_images.py', 'hparams':{'nbEpoch':2}},
-                #FIXME : this test works if run in the end but makes following tests fail. This shows that the global variable 'usersettings' in experiments_manager.py should be removed. This will be possible by refactoring code into Object Programming imposed by function model_fn that has a fixed number of parameters
-                {'script':'examples/regression/mysettings_curve_fitting_premade_estimator.py', 'hparams':{}}
-
-                ]
-
-
-# a basic object that reports some flags required by the experiments_manager script
 from tools.command_line_parser import get_default_args
 
 #basic function that just starts a demo script
