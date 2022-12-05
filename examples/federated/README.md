@@ -8,7 +8,7 @@ Example based on curve regression demo (very similar to examples/regression demo
 
 # How to launch demo
 ## First start the centralized parameter server:
-rely on the start_federated_server.py placed at the root folder to satrt the server:
+rely on the start_federated_server.py placed at the root folder to start the server:
 
 ### train from scrath:
 singularity run /path/to/singularity/container/tf2_addons.sif start_federated_server.py --usersettings examples/federated/mysettings_curve_fitting.py 
@@ -26,5 +26,4 @@ In this example, we rely on the same settings script but specify a process id (-
  singularity run  /path/to/singularity/container/tf2_addons.sif experiments_manager.py --usersettings examples/federated/mysettings_curve_fitting.py --procID 2
 
  singularity run  /path/to/singularity/container/tf2_addons.sif experiments_manager.py --usersettings examples/federated/mysettings_curve_fitting.py --procID 3
-
 
