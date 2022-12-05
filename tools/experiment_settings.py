@@ -96,7 +96,7 @@ class ExperimentSettings(object):
     self.consume_data_from_kafka=self.hasOrDefault('consume_data_from_kafka', False)
     #input pipelines
     self.get_input_pipeline=self.has('get_input_pipeline', 'the train and validation input data pipelines function params=[batch_size, raw_data_files_folder, shuffle_batches], must return an input function as described here : https://www.tensorflow.org/programmers_guide/datasets')
-
+    self.custom_tensorboard_logs=self.hasOrDefault('custom_tensorboard_logs', False, message='specify a function able to add some tf.summary.x (x could be image, etc.')
     #tensorflow serving and client dialog
     self.save_only_last_best_model=self.hasOrDefault('save_only_last_best_model', True, message='set True in order to only save the last best model in the exported model folder (keep disk space)')
     self.wait_for_server_ready_int_secs=self.assertPositive_above_zero('wait_for_server_ready_int_secs', 'the number of seconds to wait for a tensorflow service before timeout on first contact')
