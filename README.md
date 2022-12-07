@@ -43,7 +43,7 @@ This work has been facilitated by intensive experiments conducted on the JeanZay
 
 # Machine Setup (validated with tensorflow 2.6 and 2.8)
 
-Python package installation can be managed relying on Anaconda or pip package managers. You can install the required packages manually, as shown below. However, the most convenient way is to consider containers in order to keep your system as is (safe and stable) and install all the required packages (maybe in different versions) apart without conflicts. In addition, the same built container can be deployed on laptops, desktops and servers (in clouds) by simply copy/paste of the built container on the target machine. Keep your time avoiding multiple installation procedures, libraries conflict management and all this time-wasting stuff !
+Python package installation can be managed relying on Anaconda or pip package managers using the provided install/requirements.txt file (python3 -m pip install -r install/requirements.txt). You can then install the required packages manually, as shown below. However, the most convenient way is to consider containers in order to keep your system as is (safe and stable) and install all the required packages (maybe in different versions) apart without conflicts. In addition, the same built container can be deployed on laptops, desktops and servers (in clouds) by simply copy/paste of the built container on the target machine. Keep your time avoiding multiple installation procedures, libraries conflict management and all this time-wasting stuff !
 More information on the interest of Singularity :
 *  a brief summary : https://www.nextplatform.com/2017/04/10/singularity-containers-hpc-reproducibility-mobility/
 *  talks about Singularity : https://sylabs.io/videos
@@ -52,16 +52,18 @@ More information on the interest of Singularity :
 Have a try with containers to get an off-the-shelf system ready to run on NVIDIA GPUs !
 Singularity will build containers from (official) Tensorflow docker images. Choose between your preferred image from the Tensorflow docker hub https://hub.docker.com/r/tensorflow/tensorflow/tags/ or from NVIDIA NGC https://www.nvidia.com/en-us/gpu-cloud/containers/ .
 
-I consider here Singularity instead of Docker for some reason such as use simplicity, reduced image size, HPC deployment capability, checkout there : https://sylabs.io/ . However an equivalent container design can be done using Docker!
-### Notes on singularity:
-#### install singularity (as root) :
-  * debian installation : https://wiki.debian.org/singularity
+I consider here Singularity of the opensource fork Apptainer very close to Docker but generally more adopted for HPC. However an equivalent container design can be done using Docker!
+### Notes on Singularity/Apptainer:
+#### install (as root) :
+  * Singularity : https://sylabs.io/docs/
+  * Apptainer (opensourced fork) : https://apptainer.org/docs
 #### build the image with GPU (as root):
   * build a custom image with the provided *install/tf2_addons.def* file that includes all python packages to build the container :
   * the install/tf_server.def file is also provided to build a tensorflow model server container.
 ```
-singularity build tf2_addons.sif install/tf2_addons.def #container for model training and validation
-singularity build tf_server.sif install/tf_server.def               #container for model serving only
+cd install
+singularity build tf2_addons.sif tf2_addons.def #container for model training and validation
+singularity build tf_server.sif tf_server.def               #container for model serving only
 ```
 ### run the image (as standard user):
   * open a shell on this container, bind to your system folders of interest : `singularity shell --nv --bind /path/to/your/DeepLearningTools/:DeepLearningTools/ tf2_addons.sif`
