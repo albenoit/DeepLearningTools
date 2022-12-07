@@ -1,6 +1,9 @@
 BootStrap: docker
 From: tensorflow/tensorflow:2.9.1-gpu-jupyter
 
+%files
+    requirements.txt
+    
 %post
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
@@ -12,37 +15,9 @@ From: tensorflow/tensorflow:2.9.1-gpu-jupyter
     apt-get install -y build-essential cmake git pkg-config libjpeg8-dev libtiff5-dev  libavcodec-dev libavformat-dev libswscale-dev libv4l-dev  libgtk2.0-dev libatlas-base-dev gfortran
     apt-get install -y nvidia-modprobe libcupti-dev
     apt-get install -y python3-pip
-    python3 -m pip install pytest
-    python3 -m pip install -U tensorboard_plugin_profile
-    python3 -m pip install redis
-    python3 -m pip install pandas-profiling great-expectations
-    python3 -m pip install kafka-python
-    python3 -m pip install msgpack msgpack-numpy
-    python3 -m pip install numba==0.53.1
-    python3 -m pip install shap
-    python3 -m pip install sklearn
-    python3 -m pip install scikit-image
-    python3 -m pip install hyperopt
-    python3 -m pip install statsmodels
-    python3 -m pip install opencv-python>=4.1.0 opencv-contrib-python
-    python3 -m pip install rasterio
-    python3 -m pip install geopandas
-    python3 -m pip install shapely
-    python3 -m pip install seaborn
-    python3 -m pip install pydot pydot-ng
-    python3 -m pip install ipywidgets bqplot    
-    python3 -m pip install tensorflow-datasets tensorflow-addons==0.17.0 #tensorflow-federated==0.18.0
-    python3 -m pip install -q git+https://github.com/tensorflow/examples.git
-    python3 -m pip install tensorflow-io==0.26.0 tensorflow-probability==0.17.0
-    python3 -m pip install tensorflow-serving-api-gpu==2.9.0
-    python3 -m pip install tensorflow-model-optimization==0.7.2
-    
-    python3 -m pip install flwr
-    #python3 -m pip install tfx==0.25.0
-    python3 -m pip install Pillow
-    python3 -m pip install POT
-    python3 -m pip install cdlib
-    
+    apt-get install -y gstreamer1.0-opencv libopencv-contrib-dev
+
+    python3 -m pip install -r requirements.txt
 
     python3 -m pip list
 
