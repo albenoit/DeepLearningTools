@@ -201,7 +201,7 @@ tensorflow-addons==0.17.0
 tensorflow-datasets==4.6.0
 tensorflow-estimator==2.9.0
 tensorflow-examples @ git+https://github.com/tensorflow/examples.git@6ef6ad4e5bac1fce7a8dcd70be37f01d72d2dc1e
-tensorflow-gpu==2.9.2
+tensorflow-gpu==2.9.3
 tensorflow-io==0.26.0
 tensorflow-io-gcs-filesystem==0.26.0
 tensorflow-metadata==1.10.0
