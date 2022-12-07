@@ -66,7 +66,8 @@ def test_basic_1Dembedding():
   assert loss < 500
 
 if __name__ == "__main__":
-  print('Starting some test functions as demos, please consider running pytest')
+  print('Starting some test functions as demos, please consider running pytest like this :')
+  print(' pytest test_framework.py OR FROM A CONTAINER, apptainer exec path/to/tf2_addons.sif pytest test_framework.py')
   # manually choose a given test
   test_basic_regression_noHparams()
   test_basic_regression_epochHparams()
