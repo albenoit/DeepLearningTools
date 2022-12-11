@@ -6,7 +6,7 @@ python:
   
 # command to install dependencies
 before_install:
-  - sudo apt-get -y install libgdal-dev libgdal1h python3-gdal graphviz redis-server libopencv-contrib-dev
+  - sudo apt-get -y install libgdal-dev gdal-data gdal-bin rasterio python3-gdal graphviz redis-server libopencv-contrib-dev
 
 
 install:
