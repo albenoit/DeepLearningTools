@@ -5,6 +5,11 @@ python:
   - "3.7"
   
 # command to install dependencies
+before_install:
+  - sudo apt-get update
+  - sudo apt-get -y install gdal-bin graphviz redis-server libopencv-contrib-dev
+
+
 install:
   - pip install -r install/requirements.txt
 script:
