@@ -1,0 +1,11 @@
+dist: Focal
+
+language: python
+python:
+  - "3.7"
+  
+# command to install dependencies
+install:
+  - pip install -r install/requirements.txt
+script:
+  - pytest test_framework.py
