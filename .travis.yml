@@ -7,9 +7,10 @@ python:
 # command to install dependencies
 before_install:
   - sudo apt-get -y install libgdal-dev gdal-data gdal-bin rasterio python3-gdal graphviz redis-server libopencv-contrib-dev
+  - python -m pip install --upgrade pip
 
 
 install:
-  - pip install -r install/requirements.txt
+  - pip install -r install/requirements.txt --use-feature=2020-resolver
 script:
   - pytest test_framework.py
