@@ -8,7 +8,6 @@ From: tensorflow/tensorflow:2.9.1-gpu-jupyter
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
     apt-get install -y ipython3
-    apt-get install -y python3-pytest
     apt-get install -y python3-gdal
     apt-get install -y python3-tk
     apt-get install -y graphviz
@@ -32,7 +31,7 @@ From: tensorflow/tensorflow:2.9.1-gpu-jupyter
 
     * running as a shell : singularity shell --nv --bind /workspace/DeepLearningTools/:/DeepLearningTools/ tf2_addons.sif
 
-    * running python scripts : cd DeepLearningTools && singularity run tf_nv_addons_py3.sif experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py
+    * running python scripts : cd DeepLearningTools && singularity run tf2_addons.sif experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py
 
 %labels
     Author Alexandre Benoit, LISTIC Lab, june 2021
