@@ -8,6 +8,7 @@ From: tensorflow/tensorflow:2.9.1-gpu-jupyter
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
     apt-get install -y ipython3
+    apt-get install -y python3-pytest
     apt-get install -y python3-gdal
     apt-get install -y python3-tk
     apt-get install -y graphviz
