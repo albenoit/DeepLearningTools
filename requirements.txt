@@ -195,7 +195,7 @@ tensorboard==2.9.0
 tensorboard-data-server==0.6.1
 tensorboard-plugin-profile==2.8.0
 tensorboard-plugin-wit==1.8.1
-tensorflow==2.9.1
+tensorflow==2.9.3
 tensorflow-addons==0.17.0
 tensorflow-datasets==4.6.0
 tensorflow-estimator==2.9.0
