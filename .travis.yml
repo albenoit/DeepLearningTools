@@ -8,6 +8,7 @@ python:
 install:
   - sudo apt-get update
   - sudo apt-get install -y wget
+  - sudo apt-get install -y build-essential libseccomp-dev pkg-config uidmap squashfs-tools squashfuse fuse2fs fuse-overlayfs fakeroot cryptsetup curl git
   - wget https://github.com/apptainer/apptainer/releases/download/v1.1.3/apptainer_1.1.3_amd64.deb
   - sudo dpkg -i ./apptainer_1.1.3_amd64.deb
   - sudo apptainer --quiet build tf2_addons.sif install/tf2_addons.def > build.log
