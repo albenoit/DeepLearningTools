@@ -41,36 +41,35 @@ This work has been facilitated by intensive experiments conducted on the JeanZay
 * You run the experiment and regularly look at the Tensorboard to monitor indicators, weight distributions, model output embedding, etc.
 * You finally run the model relying on the Tensorflow serving API.
 
-# Machine Setup (validated with tensorflow 2.6 and 2.8)
+# Machine Setup (validated with tensorflow 2.9.x)
 
-Python package installation can be managed relying on Anaconda or pip package managers using the provided install/requirements.txt file (python3 -m pip install -r install/requirements.txt). You can then install the required packages manually, as shown below. However, the most convenient way is to consider containers in order to keep your system as is (safe and stable) and install all the required packages (maybe in different versions) apart without conflicts. In addition, the same built container can be deployed on laptops, desktops and servers (in clouds) by simply copy/paste of the built container on the target machine. Keep your time avoiding multiple installation procedures, libraries conflict management and all this time-wasting stuff !
-More information on the interest of Singularity :
-*  a brief summary : https://www.nextplatform.com/2017/04/10/singularity-containers-hpc-reproducibility-mobility/
-*  talks about Singularity : https://sylabs.io/videos
+Recommended installation process is to rely on containers as shown bellow. Freezed Python packages dependencies list is reported in file requirements.txt is use to build containers. Then you can also perform a classical but much less reproducible and stable standard Python (Anaconda) installation using that file too. 
+Relying on Singularity or Apptainer continers allows you to build a the machine as a single .sif file and reuse (copy/paste) it on any other machine (laptop, desktop, server) where Singularity or Apptainer is installed. This is a good way to keep your time avoiding multiple installation procedures, libraries conflict management and all this time-wasting stuff !
+More information on Apptainer (opensource fork of Singularity) : [Apptainer](https://apptainer.org/getting-started)
 
-## Container based installation using Singularity (https://sylabs.io/), RECOMMENED:
+## Container based installation using [Apptainer](https://apptainer.org/getting-started) or [Singularity](https://sylabs.io/), RECOMMENDED:
 Have a try with containers to get an off-the-shelf system ready to run on NVIDIA GPUs !
-Singularity will build containers from (official) Tensorflow docker images. Choose between your preferred image from the Tensorflow docker hub https://hub.docker.com/r/tensorflow/tensorflow/tags/ or from NVIDIA NGC https://www.nvidia.com/en-us/gpu-cloud/containers/ .
+Apptainer and Singularity will build containers from (official) Tensorflow docker images. Choose between your preferred image from the [Tensorflow docker hub](https://hub.docker.com/r/tensorflow/tensorflow/tags/) or from [NVIDIA NGC](https://www.nvidia.com/en-us/gpu-cloud/containers/).
 
 I consider here Singularity of the opensource fork Apptainer very close to Docker but generally more adopted for HPC. However an equivalent container design can be done using Docker!
 ### Notes on Singularity/Apptainer:
 #### install (as root) :
-  * Singularity : https://sylabs.io/docs/
-  * Apptainer (opensourced fork) : https://apptainer.org/docs
+  * [Singularity](https://sylabs.io/docs/)
+  * [Apptainer (opensourced fork)](https://apptainer.org/docs)
 #### build the image with GPU (as root):
   * build a custom image with the provided *install/tf2_addons.def* file that includes all python packages to build the container :
   * the install/tf_server.def file is also provided to build a tensorflow model server container.
 ```
 cd install
-singularity build tf2_addons.sif tf2_addons.def #container for model training and validation
-singularity build tf_server.sif tf_server.def               #container for model serving only
+sudo apptainer build tf2_addons.sif tf2_addons.def #container for model training and validation
+sudo apptainer build tf_server.sif tf_server.def               #container for model serving only
 ```
 ### run the image (as standard user):
-  * open a shell on this container, bind to your system folders of interest : `singularity shell --nv --bind /path/to/your/DeepLearningTools/:DeepLearningTools/ tf2_addons.sif`
+  * open a shell on this container, bind to your system folders of interest : `apptainer shell --nv --bind /path/to/your/DeepLearningTools/:DeepLearningTools/ tf2_addons.sif`
   * run the framework, for example on the curve fitting example: `cd /DeepLearningTools/` followed by `python experiments_manager.py --usersettings examples/regression/mysettings_curve_fitting.py`
   * if the gpu is not found (error such as `libcuda reported version is: Invalid argument: expected %d.%d, %d.%d.%d, or %d.%d.%d.%d form for driver version; got "1"`, sometimes, NVIDIA module should be reloaded after a suspend period. Recover it using command `nvidia-modprobe -u -c=0`
 
-## Manual installation using Anaconda and pip (NOT RECOMMENDED, NOT MAINTAINED, package list is no more updated, have a look at the container definition *.def files to see the updated required packages list)
+## Manual installation using Anaconda and pip (NOT RECOMMENDED, NOT MAINTAINED, package list is no more updated, have a look at requirements.txt and the container definition *.def files to see the updated required packages list)
 ### anaconda installation (local account installation, non root installation, recommended):
 1. download and install the appropriate anaconda version from here: https://www.anaconda.com/distribution/
 2. create a specific environment to limit interactions with the system installation:
@@ -84,8 +83,8 @@ tensorflow_serving api is available elsewhere from this command:
 conda install -c qiqiao tensorflow_serving_api
 
 ### pip installation (local system installation, install as root):
-1. install python 2.7 or 3.x and the associated python pip, maybe create a specific environment with the virtualenv tool.
-2. install Tensorflow, Tensorflow serving and related tools using the install/requirements.txt file. It includes those packages and associated tools (opencv, pandas, etc.) : pip install -r install/requirements.txt
+1. install python 3.x and the associated python pip, maybe create a specific environment with the virtualenv tool.
+2. install Tensorflow, Tensorflow serving and related tools using the install/requirements.txt file. It includes those packages and associated tools (opencv, pandas, etc.) : pip install -r requirements.txt
 
 # How to train/test/serve a model ?
 
@@ -93,7 +92,7 @@ The main script is experiments_manager.py can be used in 3 modes, here are some 
 ## 1. Train a model in a context specified in a parameter script such as examples/regression/mysettings_curve_fitting.py (details provided in the following TODO section):
  * ***RECOMMENDED :if all the libraries are installed in a singularity container located at /path/to/tf2_addons.sif***
 ```
-singularity run --nv /path/to/tf2_addons.sif experiments_manager.py --usersettings examples/regression/mysettings_curve_fitting.py
+apptainer run --nv /path/to/tf2_addons.sif experiments_manager.py --usersettings examples/regression/mysettings_curve_fitting.py
 ```
 
  * ***if all the libraries are system installed***
@@ -121,7 +120,7 @@ python3 start_model_serving.py --model_dir=experiments/curve_fitting/my_test_201
 
  * ***RECOMMENDED : if all the libraries are installed in a singularity container located at /path/to/tf2_addons.sif***
 ```
-singularity run --nv /path/to/tf2_addons.sif experiments_manager.py --predict_stream=-1 --model_dir=experiments/curve_fitting/my_test_2018-01-03--14\:40\:53/
+apptainer run --nv /path/to/tf2_addons.sif experiments_manager.py --predict_stream=-1 --model_dir=experiments/curve_fitting/my_test_2018-01-03--14\:40\:53/
 ```
 
  * ***if all the libraries are system installed***
