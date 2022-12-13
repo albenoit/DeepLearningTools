@@ -1,10 +1,10 @@
 # Train, monitor, evaluate and deploy/serve your Tensorflow Machine Learning models rapidly in a unified way !
 
 Here is a set of python3 scripts that demonstrate the use of Tensorflow2.x for model optimization and deployment on your data (1D, 2D, 3D...).
-The proposed tool-chain enables different experiments (model training/validating) to be launched in a unified way. All models are automatically exported periodically to enable model deployment (serving in production).
-All the resulting experiments logs can be compared. Model versioning is enabled. Hyperparameters management enables the Tensorboard HPARAMS interface.
+The proposed toolchain enables different experiments (model training/validating) to be launched in a unified way. All models are automatically exported periodically to enable model deployment (serving in production).
+All the resulting experiment logs can be compared. Model versioning is enabled. The hyperparameters management enables the Tensorboard HPARAMS interface.
 
-This framework can be driven by higher level tools such as [hyperopt](https://hyperopt.github.io/) to explore the hyperparameters space, etc. (see examples/hyperopt for demo(s))
+This framework can be driven by higher-level tools such as [hyperopt](https://hyperopt.github.io/) to explore the hyperparameters space, etc. (see examples/hyperopt for demos)
 
 @brief : the main script 'experiments_manager.py'  enables training, validating and serving Tensorflow2.x models with python3
 
@@ -16,22 +16,22 @@ This work has been facilitated by intensive experiments conducted on the JeanZay
 
 ## Main ideas put together:
 
-* Training a model defined with tf.keras to manage training, validation and export in a easy and systematic way (no more forget your favorite methodology, callbacks from one experiment to the other).
+* Training a model defined with tf.keras to manage training, validation and export in an easy and systematic way (no more forget your favourite methodology, callbacks from one experiment to the other).
 * Using moving averages to store parameters with values smoothed along the last training steps to get more stable and more accurate served models.
 * Automatic storage of all the model outputs on the validation dataset in order to observe some data projections on the TensorBoard for embedding understanding.
-* Early stopping to interrupt training if the considered metric (validation loss by default) exist and does not decrease over a long period.
+* Early stopping interrupting training if considered metrics (validation loss by default) exist and do not decrease over a long period.
 * Make use of the tensorflow-serving-api to serve the model and dynamically load updated models, even while training is still running.
-* A generic tensorflow-serving client codes to reuse the trained model on single sample or streamed data.
+* A generic tensorflow-serving client codes to reuse the trained model on a single sample or streamed data.
 * Each experiment is stored in a specific folder for model versioning and comparison.
 * Restart training after failure made easy.
-* Reproducible experiments with random_seeds
-* Activate various optimization options such as XLA, mixed precision and multi GPU processing
-* Federated Learning (FedML), relying on the [Flower library](https://flower.dev/), few changes to switch from you classical training model to the federated version
-* Kafka data pipeline management: user can produce data to a kafka pipeline and the model optimization can be fed by kafka pipelines ! *Have a look at install/kafka/README.md* 
+* Reproducible experiments with random _seeds
+* Activate various optimization options such as XLA, mixed precision and multi-GPU processing
+* Federated Learning (FedML), relying on the [Flower library](https://flower.dev/), few changes to switch from your classical training model to the federated version.
+* Kafka data pipeline management: users can produce data to a kafka pipeline and the model optimization can be fed by kafka pipelines ! *Have a look at install/kafka/README.md* 
 * *Have a look at the examples folder to start from typical ML problem examples.*
 * **News** : 
   * Federated Learning compliant
-  * **XAI** (eXplainable Artificial Intelligence) compliant, checkout our semantic segmentation XAI in *examples/xaie* [ICPR-XAIE2022 paper](https://hal.archives-ouvertes.fr/hal-03719597).
+  * **XAI** (eXplainable Artificial Intelligence) compliant, check out our semantic segmentation XAI in *examples/xaie* [ICPR-XAIE2022 paper](https://hal.archives-ouvertes.fr/hal-03719597).
 
 ## Approach:
 
@@ -43,24 +43,23 @@ This work has been facilitated by intensive experiments conducted on the JeanZay
 
 # Machine Setup (validated with tensorflow 2.9.x)
 
-Recommended installation process is to rely on containers as shown bellow. Freezed Python packages dependencies list is reported in file requirements.txt is use to build containers. Then you can also perform a classical but much less reproducible and stable standard Python (Anaconda) installation using that file too. 
-Relying on Singularity or Apptainer continers allows you to build a the machine as a single .sif file and reuse (copy/paste) it on any other machine (laptop, desktop, server) where Singularity or Apptainer is installed. This is a good way to keep your time avoiding multiple installation procedures, libraries conflict management and all this time-wasting stuff !
-More information on Apptainer (opensource fork of Singularity) : [Apptainer](https://apptainer.org/getting-started)
+Recommended installation process is to rely on containers as shown below. Frozen Python package dependency list is reported in file requirements.txt and is used to build containers. Then you can also perform a classical but much less reproducible and stable standard Python (Anaconda) installation using that file too. 
+Relying on Singularity or Apptainer containers allows you to build the machine as a single .sif file and reuse (copy/paste) it on any other machine (laptop, desktop, server) where Singularity or Apptainer is installed. This is a good way to keep your time avoiding multiple installation procedures, libraries conflict management and all this time-wasting stuff !
+More information on Apptainer (open source fork of Singularity) : [Apptainer](https://apptainer.org/getting-started)
 
 ## Container based installation using [Apptainer](https://apptainer.org/getting-started) or [Singularity](https://sylabs.io/), RECOMMENDED:
 Have a try with containers to get an off-the-shelf system ready to run on NVIDIA GPUs !
 Apptainer and Singularity will build containers from (official) Tensorflow docker images. Choose between your preferred image from the [Tensorflow docker hub](https://hub.docker.com/r/tensorflow/tensorflow/tags/) or from [NVIDIA NGC](https://www.nvidia.com/en-us/gpu-cloud/containers/).
 
-I consider here Singularity of the opensource fork Apptainer very close to Docker but generally more adopted for HPC. However an equivalent container design can be done using Docker!
+I consider here Singularity or the open source fork Apptainer very close to Docker but generally more adopted for HPC. However an equivalent container design can be done using Docker!
 ### Notes on Singularity/Apptainer:
 #### install (as root) :
   * [Singularity](https://sylabs.io/docs/)
-  * [Apptainer (opensourced fork)](https://apptainer.org/docs)
+  * [Apptainer (open sourced fork)](https://apptainer.org/docs)
 #### build the image with GPU (as root):
   * build a custom image with the provided *install/tf2_addons.def* file that includes all python packages to build the container :
-  * the install/tf_server.def file is also provided to build a tensorflow model server container.
+  * the install/tf_server.def file is also provided to build a Tensorflow model server container.
 ```
-cd install
 sudo apptainer build tf2_addons.sif tf2_addons.def #container for model training and validation
 sudo apptainer build tf_server.sif tf_server.def               #container for model serving only
 ```
@@ -70,7 +69,7 @@ sudo apptainer build tf_server.sif tf_server.def               #container for mo
   * if the gpu is not found (error such as `libcuda reported version is: Invalid argument: expected %d.%d, %d.%d.%d, or %d.%d.%d.%d form for driver version; got "1"`, sometimes, NVIDIA module should be reloaded after a suspend period. Recover it using command `nvidia-modprobe -u -c=0`
 
 ## Manual installation using Anaconda and pip (NOT RECOMMENDED, NOT MAINTAINED, package list is no more updated, have a look at requirements.txt and the container definition *.def files to see the updated required packages list)
-### anaconda installation (local account installation, non root installation, recommended):
+### anaconda installation (local account installation, non-root installations, recommended):
 1. download and install the appropriate anaconda version from here: https://www.anaconda.com/distribution/
 2. create a specific environment to limit interactions with the system installation:
 conda create --name tf_gpu
@@ -82,7 +81,7 @@ conda install tensorflow-gpu pandas opencv matplotlib gdal gdal scikit-learn
 tensorflow_serving api is available elsewhere from this command:
 conda install -c qiqiao tensorflow_serving_api
 
-### pip installation (local system installation, install as root):
+### pip installation (local system installation install as root):
 1. install python 3.x and the associated python pip, maybe create a specific environment with the virtualenv tool.
 2. install Tensorflow, Tensorflow serving and related tools using the install/requirements.txt file. It includes those packages and associated tools (opencv, pandas, etc.) : pip install -r requirements.txt
 
@@ -130,7 +129,7 @@ python experiments_manager.py --predict_stream=-1 --model_dir=experiments/curve_
  
 ## NOTE :
 
-once trained (or along training), start the Tensorboard to parse logs of
+once trained (or along training), start the Tensorboard parsing logs of
 the experiments folder (provided example is experiments/1Dsignals_clustering):
 from the scripts directory using command:
 ```
@@ -143,14 +142,14 @@ values and observe the obtained embedding.
 
 1. The main code for training, validation and prediction is specified in the main script (experiments_manager.py).
 2. Most of the use case specific parameters and Input/Output functions have been
-moved to a separated settings script such as 'examples/regression/mysettings_curve_fitting.py' that is targeted when starting the script (this
+moved to a separated setting script such as 'examples/regression/mysettings_curve_fitting.py' that is targeted when starting the script (this
   filename is set in var FLAGS.usersettings in the main script).
 3. The model to be trained and served is specified in a different script targeted by the settings file.
 
 # KNOWN ISSUES :
 
-* Scripts is now only dedicated to Tensorflow 2. Last Tensorflow 1.14 support is tagged v1 in the repository and has been much simplified after the tf2 migration.
-* This framework is intended to help design, optimise and deploy Tensorflow based models with some systematic strategy that stabilizes the workflow and user experience. However, this is build for research and is subject to changes and updates are impacted by the maintainer activities.
+* Scripts is now only dedicated to Tensorflow 2. Last Tensorflow 1.14 supports is tagged v1 in the repository and has been much simplified after the tf2 migration.
+* This framework is intended to help design, optimize and deploy Tensorflow based models with some systematic strategy that stabilizes the workflow and user experience. However, this is built for research and is subject to changes and updates are impacted by the maintainer activities.
 
 # TODO :
 
