@@ -6,18 +6,18 @@ From: tensorflow/tensorflow:2.9.1-gpu-jupyter
     
 %post
     export DEBIAN_FRONTEND=noninteractive
-    apt-get update
-    apt-get install -y ipython3
-    apt-get install -y python3-gdal
-    apt-get install -y python3-tk
-    apt-get install -y graphviz
-    apt-get install -y redis-server
-    apt-get install -y build-essential cmake git pkg-config libjpeg8-dev libtiff5-dev  libavcodec-dev libavformat-dev libswscale-dev libv4l-dev  libgtk2.0-dev libatlas-base-dev gfortran
-    apt-get install -y nvidia-modprobe libcupti-dev
-    apt-get install -y python3-pip
-    apt-get install -y gstreamer1.0-opencv libopencv-contrib-dev
+    apt-get -qq update
+    apt-get -qq install -y ipython3
+    apt-get -qq install -y python3-gdal
+    apt-get -qq install -y python3-tk
+    apt-get -qq install -y graphviz
+    apt-get -qq install -y redis-server
+    apt-get -qq install -y build-essential cmake git pkg-config libjpeg8-dev libtiff5-dev  libavcodec-dev libavformat-dev libswscale-dev libv4l-dev  libgtk2.0-dev libatlas-base-dev gfortran
+    apt-get -qq install -y nvidia-modprobe libcupti-dev
+    apt-get -qq install -y python3-pip
+    apt-get -qq install -y gstreamer1.0-opencv libopencv-contrib-dev
 
-    python3 -m pip install -r requirements.txt
+    python3 -m pip install --quiet --progress-bar off -r requirements.txt
 
     python3 -m pip list
 
