@@ -1,4 +1,4 @@
-dist: Focal
+dist: focal
 
 language: python
 python:
