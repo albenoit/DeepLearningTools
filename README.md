@@ -1,3 +1,5 @@
+[![Build Status](https://app.travis-ci.com/albenoit/DeepLearningTools.svg?branch=master)](https://app.travis-ci.com/albenoit/DeepLearningTools)
+
 # Train, monitor, evaluate and deploy/serve your Tensorflow Machine Learning models rapidly in a unified way !
 
 Here is a set of python3 scripts that demonstrate the use of Tensorflow2.x for model optimization and deployment on your data (1D, 2D, 3D...).
