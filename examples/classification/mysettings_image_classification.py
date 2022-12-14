@@ -45,7 +45,7 @@ with other processing jobs, yours and the ones of your colleagues.
 Then, connect to the processing node and type in command line 'nvidia-smi'
 to check which gpu is free (very few used memory and GPU )
 '''
-used_gpu_IDs=[0]
+used_gpu_IDs=[]
 #activate XLA graph optimisation, if True, GPU AND CPU XLA is applied
 useXLA=False
 
