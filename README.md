@@ -28,8 +28,8 @@ This work has been facilitated by intensive experiments conducted on the JeanZay
 * Restart training after failure made easy.
 * Reproducible experiments with random _seeds
 * Activate various optimization options such as XLA, mixed precision and multi-GPU processing
-* Federated Learning (FedML), relying on the [Flower library](https://flower.dev/), few changes to switch from your classical training model to the federated version.
-* Kafka data pipeline management: users can produce data to a kafka pipeline and the model optimization can be fed by kafka pipelines ! *Have a look at install/kafka/README.md* 
+* Federated Learning (FedML), relying on the [Flower library](https://flower.dev/), few changes to switch from your classical training model to the federated version
+* Kafka data pipeline management: users can produce data to a kafka pipeline and the model optimization can be fed by kafka pipelines ! *Have a look at install/kafka/README.md*. For a given and working centralized project, your experiment config file contains all information to produce data on other ressources.
 * *Have a look at the examples folder to start from typical ML problem examples.*
 * **News** : 
   * Federated Learning compliant
@@ -128,7 +128,7 @@ apptainer run --nv /path/to/tf2_addons.sif experiments_manager.py --predict_stre
 ```
 python experiments_manager.py --predict_stream=-1 --model_dir=experiments/curve_fitting/my_test_2018-01-03--14\:40\:53/
 ```
- 
+
 ## NOTE :
 
 once trained (or along training), start the Tensorboard parsing logs of
@@ -147,6 +147,30 @@ values and observe the obtained embedding.
 moved to a separated setting script such as 'examples/regression/mysettings_curve_fitting.py' that is targeted when starting the script (this
   filename is set in var FLAGS.usersettings in the main script).
 3. The model to be trained and served is specified in a different script targeted by the settings file.
+
+# Notes on Federated Learning
+The framework is designed to switch with few changes from the classical centralised vesion to federated learning. First create and validate a classical centralised experiment and model. Then, relying on few changes switch and compare with a Federated Learning relying on the [Flower library](https://flower.dev/). More into the details, have a look at the specific *examples/federated/README.md* file. As a brief summary, here are some basics showing you how to adjust your experiment settings file to get something like *examples/federated/mysettings_curve_fitting.py*:
+
+  * Add ```hparams['federated']='fedavg'``` to specify the key 'federated' and the chosen agregation method.
+  * Add ```hparam['procID']=X``` with *X* an integer value to let this experiment run as a federated client (with process ID *X* in this example).
+  * Adjust your data sources in the settings file in order to be able to switch from one data surce to another simply relying on the ```hparam['procID']=X``` parameter.
+  * Start the federated server with the *start_federated_server.py* python script and go !
+  ```
+  apptainer run install/tf2_addons.2.9.1.sif start_federated_server.py --usersettings examples/federated/mysettings_curve_fitting.py
+  ```
+  * Start cliends with command line and update their process ID with the *--procID* option, for instance  *--procID 20*, that will automaticaly update ```hparam['procID']=20``` for this client: 
+  
+  ```
+  apptainer run  install/tf2_addons.2.9.1.sif experiments_manager.py --procID 20  --usersettings examples/federated/mysettings_curve_fitting.py 
+  ```
+# Notes on Kafka
+Starting from a working centralised experiment configuration, as for the Federated learning option, Kafka data pipelining should be enabled with minimal changes. the main principle is to decentralise data production and feed a kafka queue that will be read by a processing node dedicated to the model optimisation part. 
+The general idea is then to apply few changes on a classical centralised experiment settings file and reuse it as is on the data production nodes and on the optimisation node. Detailed informations are provided in *install/kafka/REAME.md* but here is a brief summary:
+ * suppose that a Kafka server is available somewhere. For a fresh config, maybe check *install/kafka* that provides configs to build a kafka node on a docker container.
+ * On the data production nodes, simply start production process relying on the experiment settings file, its parameters and more specifically, its *get_input_pipeline* function.
+ * On the node that conducts model optimization, simply specify that data is available on a kafka log queue by adding to the experiment settings file:
+   * Variable `consume_data_from_kafka=True`
+   * Specify server(s) IP (adjust the following line as required) with variable `kafka_bootstrap_servers=['localhost:9092']`
 
 # KNOWN ISSUES :
 
