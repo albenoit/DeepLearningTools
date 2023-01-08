@@ -150,7 +150,7 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     @param isTraining : a boolean that activates batch shuffling
     '''
     #download the dataset if necessary
-    dataset_path='~/.keras/datasets/cats_and_dogs_filtered'
+    dataset_path=os.path.join(os.path.expanduser("~"),'.keras/datasets/cats_and_dogs_filtered')
     if not(os.path.exists(dataset_path)):
       _URL = 'https://storage.googleapis.com/mledu-datasets/cats_and_dogs_filtered.zip'
       path_to_zip = tf.keras.utils.get_file('cats_and_dogs_filtered.zip', origin=_URL, extract=True, archive_format='zip')
