@@ -1,11 +1,11 @@
-#/bin/sh
+#!/bin/bash
+
 # supposing that the data is ready (localiztion ok, maybe a kafka server is started)
 # run all the commands to conduct a single experiment
-cd ../../
 echo "WARNING, PLEASE OPEN THIS SCRIPT AND ADJUST PATH TO THE APPROPRIATE CONTAINER..."
 #echo "starting federated parameter server..." 
 nohup singularity run install/tf2_addons.2.9.1.sif start_federated_server.py --usersettings examples/federated/mysettings_curve_fitting.py &
-#sleep 5
+sleep 5
 
 for id in {-5..0}
 do
