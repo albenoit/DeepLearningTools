@@ -183,7 +183,10 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
         output_path='{folder}/1'.format(folder=self.settings.model_export_filename)
       else:
         output_path='{folder}/{version}'.format(folder=self.settings.model_export_filename, version=epoch)
-      output_path_orig=output_path+'raw'
+      output_path_orig=output_path
+      if len(usersettings.used_gpu_IDs)>0: #if no gpu is used, then tensorrt model export won't be applied
+        print('No GPU specified, only standard Tensorflow model export will be applied')
+        output_path_orig+='raw'
       model_concrete_function=exported_module.served_model.get_concrete_function()
       signatures={'serving_default':model_concrete_function, self.settings.model_name:model_concrete_function}
       try:
@@ -197,37 +200,38 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
           signatures=signatures,
           options=None
           )
-        print('Now exporting model for inference...')
         
-        from tensorflow.python.compiler.tensorrt import trt_convert as trt
-        print(os.listdir(output_path_orig))
-        conversion_params = trt.DEFAULT_TRT_CONVERSION_PARAMS
-        if self.settings.enable_mixed_precision:
-          #TODO, refine precision conversion, see : https://colab.research.google.com/github/vinhngx/tensorrt/blob/vinhn-tf20-notebook/tftrt/examples/image-classification/TFv2-TF-TRT-inference-from-Keras-saved-model.ipynb?hl=en#scrollTo=qKSJ-oizkVQY
-          # and official doc https://docs.nvidia.com/deeplearning/frameworks/tf-trt-user-guide/index.html#tf-trt-api-20
-          conversion_params = conversion_params._replace(precision_mode="FP16")
-        print('Export for inference conversion_params:', conversion_params)
-        converter = trt.TrtGraphConverterV2(input_saved_model_dir=output_path_orig)
-        converter.convert()
-        converter.save(output_path)
-        print('Export for inference OK')
-        #activate tensorflow_model_optimization is required (if tensorflow_model_optimization is available)
-        if self.settings.quantization_aware_training:
-          print('Exporting to TFLite...')
-          try:
-            converter = tf.lite.TFLiteConverter.from_keras_model(exported_module)
-            converter.optimizations = [tf.lite.Optimize.DEFAULT]
-            quantized_tflite_model = converter.convert() 
-            # Save the optimized graph'test.pb'
-            tf.io.write_graph(graph_or_graph_def=quantized_tflite_model,
-                              logdir= output_path,
-                              name= 'saved_model.pb',
-                              as_text=False) 
-            
-            print('Export to TFLite OK')
-          except Exception as e:
-            print('Could not apply model quantization, relying on the original model')
-          print('Export to TFLite ended')
+        if len(usersettings.used_gpu_IDs)>0:
+          print('Now exporting model for inference...')
+          from tensorflow.python.compiler.tensorrt import trt_convert as trt
+          print(os.listdir(output_path_orig))
+          conversion_params = trt.DEFAULT_TRT_CONVERSION_PARAMS
+          if self.settings.enable_mixed_precision:
+            #TODO, refine precision conversion, see : https://colab.research.google.com/github/vinhngx/tensorrt/blob/vinhn-tf20-notebook/tftrt/examples/image-classification/TFv2-TF-TRT-inference-from-Keras-saved-model.ipynb?hl=en#scrollTo=qKSJ-oizkVQY
+            # and official doc https://docs.nvidia.com/deeplearning/frameworks/tf-trt-user-guide/index.html#tf-trt-api-20
+            conversion_params = conversion_params._replace(precision_mode="FP16")
+          print('Export for inference conversion_params:', conversion_params)
+          converter = trt.TrtGraphConverterV2(input_saved_model_dir=output_path_orig)
+          converter.convert()
+          converter.save(output_path)
+          print('Export for inference OK')
+          #activate tensorflow_model_optimization is required (if tensorflow_model_optimization is available)
+          if self.settings.quantization_aware_training:
+            print('Exporting to TFLite...')
+            try:
+              converter = tf.lite.TFLiteConverter.from_keras_model(exported_module)
+              converter.optimizations = [tf.lite.Optimize.DEFAULT]
+              quantized_tflite_model = converter.convert() 
+              # Save the optimized graph'test.pb'
+              tf.io.write_graph(graph_or_graph_def=quantized_tflite_model,
+                                logdir= output_path,
+                                name= 'saved_model.pb',
+                                as_text=False) 
+              
+              print('Export to TFLite OK')
+            except Exception as e:
+              print('Could not apply model quantization, relying on the original model')
+            print('Export to TFLite ended')
           
       except Exception as e:
         print('Failed to export serving model. Reported error message:', e)
@@ -841,7 +845,10 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
         #synchronous approach... that may provide more details on AbortionError
         if debug:
           start_time=time.time()
-        answer=stub.Predict(request, experiment_settings.serving_client_timeout_int_secs)
+        timeout=experiment_settings.serving_client_timeout_int_secs
+        if predictionIdx==1:#first request takes longer time (memory allocation, and so on)
+          timeout*=5
+        answer=stub.Predict(request, timeout)
         if debug:
           print('Time to send request/decode response:',round(time.time() - start_time, 2))
           start_time=time.time()
