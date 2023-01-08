@@ -47,7 +47,7 @@ def test_timeseries():
   print('Test end, loss=', loss)
   assert loss < 500
 
-def _test_classification(): #TODO manage preliminary data download
+def test_classification():
   #with pytest.raises(AttributeError) as ce:
   FLAGS = get_default_args()
   FLAGS.usersettings='examples/classification/mysettings_image_classification.py'
