@@ -40,7 +40,6 @@ hparams={
          'learningRate':0.001,
          'nbEpoch':5000,
          'addNoise':True,
-         'anomalyAtX':-4, #-3 #set a float value instead of None to impose an abnormal value
          'procID':0, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
          }
 
@@ -106,16 +105,8 @@ served_head_names=['prediction']
 def target_curve(x):
     y=(x**2)/10.
 
-    #ugly area, x can be a scalar (when function called from generator) or a numpy array
-    if 'anomalyAtX' in hparams:
-      anomaly= x==hparams['anomalyAtX']
-      if anomaly is True:
-        y=100
-      if isinstance(anomaly,np.ndarray):
-        y[anomaly]=100
-
     if hparams['addNoise'] is True:
-        sigma=1.0
+        sigma=2.0
         noise=np.random.normal(loc=0.0, scale=0.1, size=x.shape).astype(np.float32)
         y+=noise
     return y
@@ -183,7 +174,7 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     '''
     import itertools
     sampling_interval_min=-int(hparams['procID'])
-    sampling_interval_max=int(hparams['procID'])+1
+    sampling_interval_max=int(hparams['procID'])+2
     def gen():
 
       for i in itertools.count(1):
