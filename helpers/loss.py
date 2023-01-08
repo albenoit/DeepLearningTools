@@ -19,7 +19,7 @@ def class_weights(samples_per_class, beta=None):
           class weights (factor to be applied for each class loss)
   '''
   class_nb=len(samples_per_class)
-  if beta is None:
+  if beta == None:
     N=np.sum(samples_per_class)
     beta   = (N-1.)/N
   #print('class balancing beta', beta)
@@ -425,9 +425,9 @@ class Regularizer_L1L2Ortho(tf.Module):
       self.L1L2_reg = Regularizer_None()
 
     if self.ortho>0:
-      if self.ortho_type is 'soft':
+      if self.ortho_type=='soft':
         self.Ortho_reg = Regularizer_soft_orthogonality(l=ortho)
-      elif self.ortho_type is 'srip':
+      elif self.ortho_type=='srip':
         self.Ortho_reg = Regularizer_Spectral_Restricted_Isometry(l=ortho, nb_filters=self.nb_filters)
       else:
         raise ValueError('weights_L1L2_soft_ortho_regularizer : unexpected provided ortho_type, expeting \'soft\' or \'srip\', received '+self.ortho_type)
