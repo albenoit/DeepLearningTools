@@ -1,4 +1,4 @@
-# federacted erver should be started from the main script:  start_federated_server.py
+# federated erver should be started from the main script:  start_federated_server.py
 # main parameter server, should be started first
 
 import flwr as fl
