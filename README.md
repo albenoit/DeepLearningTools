@@ -70,8 +70,9 @@ sudo apptainer build tf_server.sif tf_server.def               #container for mo
   * run the framework, for example on the curve fitting example: `cd /DeepLearningTools/` followed by `python experiments_manager.py --usersettings examples/regression/mysettings_curve_fitting.py`
   * if the gpu is not found (error such as `libcuda reported version is: Invalid argument: expected %d.%d, %d.%d.%d, or %d.%d.%d.%d form for driver version; got "1"`, sometimes, NVIDIA module should be reloaded after a suspend period. Recover it using command `nvidia-modprobe -u -c=0`
 
-## Manual installation using Anaconda and pip (NOT RECOMMENDED, NOT MAINTAINED, package list is no more updated, have a look at requirements.txt and the container definition *.def files to see the updated required packages list)
-### anaconda installation (local account installation, non-root installations, recommended):
+## Manual installation using Anaconda and pip (NOT RECOMMENDED, NOT MAINTAINED).
+The requirements.txt package list is still updated and is used to build the software environment as a container (recommended approach presented above). You can still use this to build up classical python virtual environment but this is not recommended nor maintained.
+### Anaconda installation (local account installation, non-root installations, recommended):
 1. download and install the appropriate anaconda version from here: https://www.anaconda.com/distribution/
 2. create a specific environment to limit interactions with the system installation:
 conda create --name tf_gpu
