@@ -422,8 +422,12 @@ def run_experiment(usersettings):
       learning_rate=usersettings.get_learningRate()
       loss=usersettings.get_total_loss(model)
       optimizer=usersettings.get_optimizer(model, loss, learning_rate)
-      if usersettings.weights_moving_averages:
-        optimizer=tfa.optimizers.MovingAverage(optimizer, average_decay=0.9999, name='weights_ema')
+      if usersettings.weights_moving_averages and optimizer.use_ema==False:
+          print('Overriding optimizer option and enabling exponential weights moving average (EMA) along training...')
+          optimizer.use_ema=True
+          optimizer.ema_momentum=0.99
+        # NO MORE USEFULL FOR *BASIC* EMA : optimizer=tfa.optimizers.MovingAverage(optimizer, average_decay=0.9999, name='weights_ema')
+      
       metrics=usersettings.get_metrics(model, loss)
 
       print('Compiling model...')
@@ -847,7 +851,7 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
           start_time=time.time()
         timeout=experiment_settings.serving_client_timeout_int_secs
         if predictionIdx==1:#first request takes longer time (memory allocation, and so on)
-          timeout*=5
+          timeout*=5  
         answer=stub.Predict(request, timeout)
         if debug:
           print('Time to send request/decode response:',round(time.time() - start_time, 2))
