@@ -17,6 +17,6 @@ sleep 300
 echo "adding new clients working on other data intervals..." 
 for id in {0..5}
 do
-    nohup singularity run  install/tf2_addons.2.8.0.sif experiments_manager.py --procID $id  --usersettings examples/federated/mysettings_curve_fitting.py &
+    nohup singularity run  install/tf2_addons.2.9.1.sif experiments_manager.py --procID $id  --usersettings examples/federated/mysettings_curve_fitting.py &
 done
 echo "production model optims are running..." 
