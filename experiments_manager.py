@@ -424,9 +424,13 @@ def run_experiment(usersettings):
       optimizer=usersettings.get_optimizer(model, loss, learning_rate)
       if usersettings.weights_moving_averages and optimizer.use_ema==False:
           print('Overriding optimizer option and enabling exponential weights moving average (EMA) along training...')
-          optimizer.use_ema=True
-          optimizer.ema_momentum=0.99
-        # NO MORE USEFULL FOR *BASIC* EMA : optimizer=tfa.optimizers.MovingAverage(optimizer, average_decay=0.9999, name='weights_ema')
+          ema_momentum_default=0.99
+          try:
+            optimizer.use_ema=True
+            optimizer.ema_momentum=ema_momentum_default
+          except:
+            print('Optimizer does not support EMA, trying to introduce EMA from tfa module')
+            optimizer=tfa.optimizers.MovingAverage(optimizer, average_decay=ema_momentum_default, name='weights_ema')
       
       metrics=usersettings.get_metrics(model, loss)
 
