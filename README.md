@@ -43,7 +43,7 @@ This work has been facilitated by intensive experiments conducted on the JeanZay
 * You run the experiment and regularly look at the Tensorboard to monitor indicators, weight distributions, model output embedding, etc.
 * You finally run the model relying on the Tensorflow serving API.
 
-# Machine Setup (validated with tensorflow 2.9.x)
+# Machine Setup (validated with tensorflow 2.9.x->2.11.0)
 
 Recommended installation process is to rely on containers as shown below. Frozen Python package dependency list is reported in file requirements.txt and is used to build containers. Then you can also perform a classical but much less reproducible and stable standard Python (Anaconda) installation using that file too. 
 Relying on Singularity or Apptainer containers allows you to build the machine as a single .sif file and reuse (copy/paste) it on any other machine (laptop, desktop, server) where Singularity or Apptainer is installed. This is a good way to keep your time avoiding multiple installation procedures, libraries conflict management and all this time-wasting stuff !
