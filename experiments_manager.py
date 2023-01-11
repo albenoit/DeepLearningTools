@@ -422,16 +422,19 @@ def run_experiment(usersettings):
       learning_rate=usersettings.get_learningRate()
       loss=usersettings.get_total_loss(model)
       optimizer=usersettings.get_optimizer(model, loss, learning_rate)
-      if usersettings.weights_moving_averages and optimizer.use_ema==False:
+      if usersettings.weights_moving_averages:
           print('Overriding optimizer option and enabling exponential weights moving average (EMA) along training...')
           ema_momentum_default=0.99
-          try:
+        
+          if hasattr(optimizer, 'ema'):
             optimizer.use_ema=True
             optimizer.ema_momentum=ema_momentum_default
-          except:
-            print('Optimizer does not support EMA, trying to introduce EMA from tfa module')
-            optimizer=tfa.optimizers.MovingAverage(optimizer, average_decay=ema_momentum_default, name='weights_ema')
-      
+          else:
+            try:
+              print('Optimizer does not support EMA, trying to introduce EMA from tfa module')
+              optimizer=tfa.optimizers.MovingAverage(optimizer, average_decay=ema_momentum_default, name='weights_ema')
+            except Exception as e:
+              print('Could not apply weights EMA:', e)
       metrics=usersettings.get_metrics(model, loss)
 
       print('Compiling model...')
