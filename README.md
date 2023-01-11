@@ -71,7 +71,8 @@ sudo apptainer build tf_server.sif tf_server.def               #container for mo
   * if the gpu is not found (error such as `libcuda reported version is: Invalid argument: expected %d.%d, %d.%d.%d, or %d.%d.%d.%d form for driver version; got "1"`, sometimes, NVIDIA module should be reloaded after a suspend period. Recover it using command `nvidia-modprobe -u -c=0`
 
 ## Manual installation using Anaconda and pip (NOT RECOMMENDED, NOT MAINTAINED).
-The requirements.txt package list is still updated and is used to build the software environment as a container (recommended approach presented above). You can still use this to build up classical python virtual environment but this is not recommended nor maintained.
+The requirements.txt python package list is still updated. However, some other system tools are also required such that building the software environment as a container is the recommended approach presented above. However, you can still use this requirements file to build up classical python virtual environment but this is not recommended nor maintained. In this case, you then have to check all non python additional tools listed in the *install/tf2_addons.def* file.
+
 ### Anaconda installation (local account installation, non-root installations, recommended):
 1. download and install the appropriate anaconda version from here: https://www.anaconda.com/distribution/
 2. create a specific environment to limit interactions with the system installation:
