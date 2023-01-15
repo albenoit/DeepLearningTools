@@ -240,7 +240,7 @@ typeguard==2.13.3
 typing-extensions==4.4.0
 tzdata==2022.7
 tzlocal==4.2
-urllib3==1.25.8
+urllib3==1.26.5
 visions==0.7.5
 wcwidth==0.2.5
 webencodings==0.5.1
