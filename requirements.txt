@@ -19,7 +19,7 @@ bleach==5.0.1
 bqplot==0.12.36
 cachetools==5.2.0
 cdlib==0.2.6
-certifi==2019.11.28
+certifi==2022.12.7
 cffi==1.15.1
 chardet==3.0.4
 charset-normalizer==3.0.1
