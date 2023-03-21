@@ -4,7 +4,24 @@ import numpy as np
 from tensorflow.keras import layers
 from tensorflow.python.layers.core import Dense
 import helpers.loss
+from helpers.distance_network import deep_relative_trust
+
 import os
+
+#add a method to track model weights changes on model.set_weights() calls
+def track_weights_change(model, weights, round:int, prefix:str=''): # as for keras/keras/engine/base_layer.py
+    weights_change_norm=[tf.linalg.norm(model.get_weights()[i]-weights[i]) for i in range(len(weights))]
+    weights_change_norm_relative=[tf.cast(weights_change_norm[i], tf.float32)/tf.cast(tf.linalg.norm(model.get_weights()[i]), tf.float32) for i in range(len(weights))]
+    #print('gradient norm move tracking')
+    #for i in range(len(weights)):
+    #  tf.summary.scalar('layer_weights_changes_l'+str(i),data=weights_change_norm[i], step=round)
+    #  tf.summary.scalar('layer_weights_changes_l'+str(i)+'relative',data=weights_change_norm_relative[i], step=round)
+    tf.summary.scalar(prefix+'layer_weights_changes_avg',data=np.mean(weights_change_norm), step=round)
+    tf.summary.scalar(prefix+'layer_weights_changes_avg_relative',data=np.mean(weights_change_norm_relative), step=round)
+    trusted_dist=deep_relative_trust(first_network= model.get_weights(),
+                                            second_network= weights,
+                                            return_drt_product=True)[0]
+    tf.summary.scalar(prefix+'local_global_model_trusted_dist',data=np.float32(trusted_dist), step=round)
 
 class ReplicatedOrthogonalInitialize(tf.keras.initializers.Orthogonal):
   
