@@ -85,8 +85,8 @@ nbEpoch=hparams['nbEpoch']
 early_stopping_patience=10
 
 #set here paths to your data used for train, val
-raw_data_dir_train = "datasamples/timeseries"
-raw_data_dir_val =   "datasamples/timeseries" # WARNING, IN THIS DEMO TRAIN AND VAL DATA ARE THE SAME, DATASET MUST BE DISTINCT FOR REAL EXPERIMENTS
+raw_data_dir_train = "../../../../datasamples/timeseries"
+raw_data_dir_val =   "../../../../datasamples/timeseries" # WARNING, IN THIS DEMO TRAIN AND VAL DATA ARE THE SAME, DATASET MUST BE DISTINCT FOR REAL EXPERIMENTS
 raw_data_filename_extension='*.csv'
 temporal_series_length=hparams['tsLengthIn']+hparams['tsLengthOut']
 ts_windowing_shift_ratio=10
@@ -194,7 +194,7 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     #load all csv files to use for training
     raw_data_files=DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_files_folder, file_extension=raw_data_filename_extension)
     #sort files in numeric order wrt the last integer before file extension
-    raw_data_files=sorted(raw_data_files, key=lambda e: int((e.split('.')[0]).split('_')[-1]))
+    raw_data_files=sorted(raw_data_files, key=lambda e: int((e.split('.')[-2]).split('_')[-1]))
     print('Input files found (SORTED IN TIME)='+str(raw_data_files))
     """def per_sample_process_function(single_period_data_block_raw, timestamps):
         ''' let the raw data as is but reduce the timestamp to the first and last date
