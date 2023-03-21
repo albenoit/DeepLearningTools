@@ -40,6 +40,7 @@ hparams={
          'learningRate':0.001,
          'nbEpoch':5000,
          'addNoise':True,
+         'range':4,
          'procID':0, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
          }
 
@@ -90,7 +91,7 @@ reference_labels=['values']
 
 ########## MODEL SERVING/PRODUCTION PARAMETERS SECTION ################
 #-> port number to be used when interracting with the tensorflow-server
-tensorflow_server_address='127.0.0.1'
+tensorflow_server_address='localhost'
 tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
 serving_client_timeout_int_secs=1#timeout limit when a client requests a served model
@@ -103,7 +104,7 @@ served_head_names=['prediction']
 
 ########## LOCAL PARAMETERS (ONLY USED BELOW) SECTION ################
 def target_curve(x):
-    y=(x**2)/10.
+    y=(x**2)/30.
 
     if hparams['addNoise'] is True:
         sigma=2.0
@@ -173,8 +174,8 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     @param isTraining : a boolean that activates batch shuffling
     '''
     import itertools
-    sampling_interval_min=-int(hparams['procID'])
-    sampling_interval_max=int(hparams['procID'])+2
+    sampling_interval_min=int(hparams['procID'])-int(hparams['range'])
+    sampling_interval_max=int(hparams['procID'])+int(hparams['range'])
     def gen():
 
       for i in itertools.count(1):
