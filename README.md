@@ -14,7 +14,7 @@ This framework can be driven by higher-level tools such as [hyperopt](https://hy
 
 A quick presentation of the system is available [here](https://docs.google.com/presentation/d/1tFetD27PK9kt29rdwwZ6QKLYNDyJkHoCLT8GHweve_8/edit?usp=sharing), details are given below.
 
-This work has been facilitated by intensive experiments conducted on the JeanZay French supercomputer (Grant 2020-AD011011418) (http://www.idris.fr/jean-zay/)
+This work has been facilitated by intensive experiments conducted on the JeanZay French supercomputer (Grants 2020-AD011011418 and 2021-AD011011418R1) (http://www.idris.fr/jean-zay/)
 
 ## Main ideas put together:
 
