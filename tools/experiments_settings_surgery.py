@@ -1,18 +1,6 @@
 import numpy as np
 import os
 
-def reload_external_hparams_from_file(sessionFolder):
-  hparams_addons=None
-  #then try to load optionnal external hyperparameters in the session folder
-  print("sessionFolder",sessionFolder)
-  filename_optionnal_hparams=os.path.join(sessionFolder, settingsFile_addons_saveName)
-  print('**Looking for additionnal hyperparameters in optionnal file '+filename_optionnal_hparams)
-  if os.path.exists(filename_optionnal_hparams):
-    print('  -> Found external hyperparameters file')
-    hparams_addons=imp.load_source('settings', filename_optionnal_hparams).hparams_addons
-    print('  -> loaded additionnal_hparams : '+str(hparams_addons))
-  return hparams_addons
-
 def insert_additionnal_hparams(settings_file, hparams):
 
   #basic stop condition, if no additionnal hparams, then return the input script filename
