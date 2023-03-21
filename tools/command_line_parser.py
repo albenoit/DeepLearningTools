@@ -18,9 +18,6 @@ def get_commands():
                         help="filename of the settings file that defines an experiment")
     parser.add_argument("-r","--restart_interrupted", action='store_true',
                         help="Set to restart an interrupted session, model_dir option should be set")
-    parser.add_argument("-g","--debug_server_addresses", action='store_true',
-                        default="127.0.0.1:2333",
-                        help="Set here the IP:port to specify where to reach the tensorflow debugger")
     parser.add_argument("-pid","--procID", default=None,
                         help="Specifiy here an ID to identify the process (useful for federated training sessions)")
     parser.add_argument("-dist","--distributed", action='store_true',
