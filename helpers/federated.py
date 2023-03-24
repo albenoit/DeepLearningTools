@@ -6,7 +6,8 @@ from tools.experiment_settings import define_callbacks
 
 # Define Flower client
 class FlClient(fl.client.NumPyClient):
-    def __init__(self, settings, model, train_data, train_iterations_per_epoch, val_data, val_iterations_per_epoch, workers, file_writer, log_dir):
+    def __init__(self, cid, settings, model, train_data, train_iterations_per_epoch, val_data, val_iterations_per_epoch, workers, file_writer, log_dir):
+        self.cid = cid #an interger client identifier, may be None or empty if not in simulation mode
         self.history=None
         self.round=0
         self.last_val_loss=np.inf
