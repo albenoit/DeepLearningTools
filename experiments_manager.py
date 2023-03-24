@@ -135,18 +135,21 @@ from tensorflow.keras import mixed_precision
 SETTINGSFILE_COPY_NAME='experiment_settings.py'
 WEIGHTS_MOVING_AVERAGE_DECAY=0.998
 
-def loadModel_def_file(sessionFolder, usersettings):
+def loadModel_def_file(usersettings, absolute_path=False):
   ''' basic method to load the model targeted by usersettings.model_file
   Args: sessionFolder, the path to the model file
   Returns: a keras model
   '''
-  model_path=os.path.basename(usersettings.model_file)
+  if absolute_path == False:
+    model_path=os.path.basename(usersettings.model_file)
+  if absolute_path == True:
+    model_path=usersettings.model_file
   try:
     spec=importlib.util.spec_from_file_location('model_def', model_path)
     model_def = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(model_def)
   except Exception as e:
-    raise ValueError('loadModel_def_file: Failed to load model file {model} from sessionFolder {sess}, error message={err}'.format(model=usersettings.model_file, sess=sessionFolder, err=e))
+    raise ValueError('loadModel_def_file: Failed to load model file {model}, error message={err}'.format(model=usersettings.model_file, err=e))
   model=model_def.model
 
   print('loaded model file {file}'.format(file=model_path))
@@ -196,7 +199,7 @@ def loadExperimentsSettings(filename, call_from_session_folder=False, restart_fr
     return usersettings, sessionFolder
 
 # Define and run experiment ###############################
-def build_run_training_session(cid: str=''):
+def build_run_training_session(cid: str=None):
   ''' define and run the optimisation process
       this function loads settings from the working directory
       and builds/run the optimisation.
@@ -210,11 +213,18 @@ def build_run_training_session(cid: str=''):
   # to contain all the necessary files including:
   # - the configuration file (experiment_settings.py)
   # - optionally a 'checkpoints' folder in order to pursue training (recover from previous interruption) 
-  if cid=='':
-    settings_file=os.path.join(os.getcwd(), SETTINGSFILE_COPY_NAME)
-  else:
+  settings_file=os.path.join(os.getcwd(), SETTINGSFILE_COPY_NAME)
+  if cid!=None:
+    with open('/tmp/'+str(cid)+'.notes', 'a') as f:
+      message='\ncid {cid} with cwd={cwd} and job_session_folder in locals={l} or job_session_folder in globals={g}'.format(cid=cid,
+                                                                                                                          cwd=os.getcwd(),
+                                                                                                                          l='job_session_folder' in locals(),
+                                                                                                                          g='job_session_folder' in globals())
+      f.write(message) 
+
     settings_file=tools.experiments_settings_surgery.insert_additionnal_hparams(settings_file, {'procID':cid})
 
+  #load experiment settings from current working directory
   usersettings, _ =loadExperimentsSettings(filename=settings_file,
                                            call_from_session_folder=True)
   gpu_workers_nb=tools.gpu.check_GPU_available(usersettings)
@@ -298,7 +308,7 @@ def build_run_training_session(cid: str=''):
     #def load_fit_model():
     with model_scope:
       #load model
-      model=loadModel_def_file(os.getcwd(), usersettings)(usersettings)
+      model=loadModel_def_file(usersettings)(usersettings)
       #setup training
       learning_rate=usersettings.get_learningRate()
       loss=usersettings.get_total_loss(model)
@@ -464,9 +474,13 @@ def build_run_training_session(cid: str=''):
   else:
     print('Now starting a FEDERATED model training session...')
     # Start Flower client
-    federated_learner=federated.FlClient(usersettings, model, train_data, train_iterations_per_epoch, val_data, val_iterations_per_epoch, workers, file_writer, log_dir)
-    fl.client.start_numpy_client(server_address=usersettings.federated_learning_server_address, client=federated_learner)
-    history=federated_learner.history
+    federated_learner=federated.FlClient(cid, usersettings, model, train_data, train_iterations_per_epoch, val_data, val_iterations_per_epoch, workers, file_writer, log_dir)
+    if 'isServer' not in usersettings.hparams.keys():
+      fl.client.start_numpy_client(server_address=usersettings.federated_learning_server_address, client=federated_learner)
+      history=federated_learner.history
+    else:
+      # if function is called for flower simulation, then only the client instance is returned
+      return federated_learner
   return history
 
 def run_experiment(usersettings):
@@ -678,7 +692,15 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
       print('-> python experiments_manager.py --restart_interrupted --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/')
 
   else:
-      print('### TRAINING MODE ###')
+      print('### TRAINING MODE, preparing session ###')
+      """ This mode first prepares a trainin session, different modes possible:
+      -> in classical centralized learning, this script can :
+      ------>create and run a new training session in a specific session folder
+      ------>restart a training session in an existing specific session folder
+      -> in decentralized learning (as for federated learning):
+      ------>create the training session folder to be used by the central server
+             BUT no training is started, only the session folder location is returned
+      """
       """ setting up default values from command line """
       settings_file=FLAGS.usersettings
       """ updating default values if running function from an upper level """
@@ -748,15 +770,22 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
         with open(os.path.join(sessionFolder, 'model_serving_setup.ini'), 'w') as configfile:
           serving_config.write(configfile)
         
-      # Next keep initial working folder, move to the session folder and run experiment
-      initial_wd=os.getcwd()
-      os.chdir(sessionFolder)
-      res, last_exported_model=run_experiment(usersettings)
-      # Finally recover initial working directory
-      os.chdir(initial_wd)
-      #refactor result in a single updated dictionnary
-      experiments_output=res
-      experiments_output.update({'last_exported_model':last_exported_model, 'sessionFolder':sessionFolder})
+      # now ready to start a training session
+      # -> for classical/centralised learning, training starts
+      # -> if this run function is called from start_feerated_server.py script, then sessionFolder is ready but do not start training at this step
+      if 'isFLserver' not in external_hparams.keys():
+        # Next keep initial working folder, move to the session folder and run experiment
+        initial_wd=os.getcwd()
+        os.chdir(sessionFolder)
+        res, last_exported_model=run_experiment(usersettings)
+        # Finally recover initial working directory
+        os.chdir(initial_wd)
+        #refactor result in a single updated dictionnary
+        experiments_output=res  
+        experiments_output.update({'last_exported_model':last_exported_model, 'sessionFolder':sessionFolder})
+      else:
+        print('SETUP mode, training session folder is prepared and ready to start training.\n No training is started at this step, to be conducted next')
+        return sessionFolder
   return experiments_output
 
 if __name__ == "__main__":
