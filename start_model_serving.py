@@ -11,7 +11,7 @@ import argparse
 import configparser
 import helpers.model_serving_tools as srv_comm_tools
 
-def get_served_model_info(one_model_path, expected_model_name, singularity_tf_server_container_path):
+def get_served_model_info(one_model_path, expected_model_name, tf_server_container_path):
   ''' basic function that checks served model behaviors
   Args:
   one_model_path: the path to a servable model directory
@@ -23,8 +23,8 @@ def get_served_model_info(one_model_path, expected_model_name, singularity_tf_se
   #get the first subfolder of the served models directory
   served_model_info_cmd='saved_model_cli show --dir {target_model} --tag_set serve --signature_def {model_name}'.format(target_model=one_model_path,
                                                                                       model_name=expected_model_name)
-  if len(singularity_tf_server_container_path)>0:
-    served_model_info_cmd='singularity exec '+singularity_tf_server_container_path+' '+served_model_info_cmd
+  if len(tf_server_container_path)>0:
+    served_model_info_cmd='apptainer exec '+tf_server_container_path+' '+served_model_info_cmd
   print('Checking served model available signatures using command '+served_model_info_cmd)
   cmd_result=subprocess.check_output(served_model_info_cmd.split())
   print('Answer:')
@@ -33,7 +33,6 @@ def get_served_model_info(one_model_path, expected_model_name, singularity_tf_se
     print('Target model {target} name found in the command answer'.format(target=expected_model_name))
   else:
     raise ValueError('Target model {target} name NOT found in the command answer'.format(target=expected_model_name))
-
 
 def start_model_serving(flags):
   # get trained model config
@@ -49,16 +48,16 @@ def start_model_serving(flags):
   
   #check server
   try:
-    get_served_model_info(one_model_path, config['SERVER']['model_name'], flags.singularity_tf_server_container_path)
+    get_served_model_info(one_model_path, config['SERVER']['model_name'], flags.tf_server_container_path)
   except Exception as e:
     print('Could not call saved_model_cli, is Tensorflow installed? Error:', e)
   tensorflow_start_cmd=" --port={port} --model_name={model} --model_base_path={model_dir}".format(port=config['SERVER']['port'],
                                                                                       model=config['SERVER']['model_name'],
                                                                                       model_dir=model_folder)
   #start server from host of singularity container
-  if len(flags.singularity_tf_server_container_path)>0:
-    print('Starting Tensorflow model server from provided singularity container : '+FLAGS.singularity_tf_server_container_path)
-    tensorflow_start_cmd='singularity run --nv '+FLAGS.singularity_tf_server_container_path+tensorflow_start_cmd
+  if len(flags.tf_server_container_path)>0:
+    print('Starting Tensorflow model server from provided singularity container : '+FLAGS.tf_server_container_path)
+    tensorflow_start_cmd='apptainer run --nv '+FLAGS.tf_server_container_path+tensorflow_start_cmd
   else:
     print('Starting Tensorflow model server installed on system')
     tensorflow_start_cmd='tensorflow_model_server '+tensorflow_start_cmd
@@ -72,7 +71,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='demo_semantic_segmentation')
     parser.add_argument("-m","--model_dir", default=None,
                         help="Output directory for model and training stats.")
-    parser.add_argument("-psi","--singularity_tf_server_container_path", default='',
+    parser.add_argument("-psi","--tf_server_container_path", default='',
                         help="start the tensorflow server on a singularity container to run predictions")
     parser.add_argument("-c","--commands", action='store_true',
                         help="show command examples")
