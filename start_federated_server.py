@@ -1,42 +1,37 @@
 # main parameter server, should be started first
 import flwr as fl
-import experiments_manager
 import tensorflow as tf
 import os
+import experiments_manager # make use of all the standard tools of the framework
+import tools
+import helpers
+import sys
 
-# retreive command line arguents
-import argparse
-parser = argparse.ArgumentParser(description='Deep learning experiments manager')
-parser.add_argument("-u","--usersettings",
-                    help="filename of the settings file that defines an experiment")
+sys.path.insert(0, os.getcwd())
+# retreive command line arguents, all the standard commands 
+parser=tools.command_line_parser.get_commands()
+# add script specific arguments
 parser.add_argument("-w","--pretrainedmodelcheckpointpath", default="",
                     help="path to a previous model checkpoint that provides pretrained model weights")
-parser.add_argument("-r","--num_rounds", default=100, type=int,
+parser.add_argument("-rounds","--num_rounds", default=20, type=int,
                     help="set the maximum clients/server rounds number, defaults is 100")
-
+parser.add_argument("-clients","--num_clients", default=5, type=int,
+                    help="set the maximum clients/server rounds number, defaults is 100")
+parser.add_argument("-sim","--simulation", action='store_true',
+                    help="run in simulation mode i.e. all processes are conducted on the same shared machine")
+#get framework and local command line arguments
 FLAGS = parser.parse_args()
 
 #get experiment settings filename path
 usersettings_file=FLAGS.usersettings
-#load experiments settings
-def loadModel_def_file(usersettings):
-  ''' basic method to load the model targeted by usersettings.model_file
-  Args: sessionFolder, the path to the model file
-  Returns: a keras model
-  '''
-  import imp
-  model_path=usersettings.model_file
-  try:
-    model_def=imp.load_source('model_def', model_path)#importlib.import_module("".join(model_path.split('.')[:-1]))#
-  except Exception as e:
-    raise ValueError('loadModel_def_file: Failed to load model file {model} from sessionFolder {sess}, error message={err}'.format(model=usersettings.model_file, sess=sessionFolder, err=e))
-  model=model_def.model
+#load experiments settings, force server mode to only prepare a session folder from which the server can report its states
+job_session_folder = experiments_manager.run(FLAGS, train_config_script=usersettings_file, external_hparams={'isFLserver':True})
+print('job_session_folder', job_session_folder)
+# Next keep initial working folder, move to the session folder and run experiment
+initial_wd=os.getcwd()
 
-  print('loaded model file {file}'.format(file=model_path))
-  return model
-
-
-usersettings, sessionFolder = experiments_manager.loadExperimentsSettings(usersettings_file, isServingModel=False)
+usersettings, _= experiments_manager.loadExperimentsSettings(filename=os.path.join(job_session_folder, experiments_manager.SETTINGSFILE_COPY_NAME), 
+                                                             call_from_session_folder=False)
 min_fl_clients_nb=0
 if 'flClients' in usersettings.hparams:
   min_fl_clients_nb=usersettings.hparams['flClients']
@@ -51,13 +46,12 @@ else:
 if os.path.exists(FLAGS.pretrainedmodelcheckpointpath):
   print('centralized model is pretrained... loading from ', FLAGS.pretrainedmodelcheckpointpath)
   from helpers.model import load_model
-  model=load_model(FLAGS.pretrainedmodelcheckpointpath+'/checkpoints/')
+  model=load_model(os.path.join(FLAGS.pretrainedmodelcheckpointpath,'checkpoints/'), usersettings)
 else:
   print('Loading a clean model to be trained from scratch')
-  model=loadModel_def_file(usersettings)(usersettings)
+  model=experiments_manager.loadModel_def_file(usersettings, absolute_path=True)(usersettings)
 
 #load model as will be done by the clients taking into account the experiment settings
-
 
 """
 REMINDER from https://flower.dev/docs/strategies.html: 
@@ -77,20 +71,63 @@ init_params=fl.common.ndarrays_to_parameters(model.get_weights())
 
 #then apply the specified agregation strategy
 print('Experiment settings file reports federated learning strategy:', strategy_name)
-strategy=None
+strategy_cl=None
 if strategy_name == 'fedavg':
-  strategy = fl.server.strategy.FedAvg(initial_parameters=init_params, min_fit_clients=min_fl_clients_nb, min_available_clients=min_fl_clients_nb) 
+  strategy_cl = fl.server.strategy.FedAvg
+
 elif strategy_name == 'fedadam':
-  strategy = fl.server.strategy.FedAdam(initial_parameters=init_params, min_fit_clients=min_fl_clients_nb, min_available_clients=min_fl_clients_nb)
+  strategy_cl = fl.server.strategy.FedAdam
 elif strategy_name == 'fedyogi':
-  strategy = fl.server.strategy.FedYogi(initial_parameters=init_params, min_fit_clients=min_fl_clients_nb, min_available_clients=min_fl_clients_nb)
+  strategy_cl = fl.server.strategy.FedYogi
 elif strategy_name == 'feddagrad':
-  strategy = fl.server.strategy.FedAdagrad(initial_parameters=init_params, min_fit_clients=min_fl_clients_nb, min_available_clients=min_fl_clients_nb)
+  strategy_cl = fl.server.strategy.FedAdagrad
 elif strategy_name == 'qffedavg':
-  strategy = fl.server.strategy.QffedAvg(initial_parameters=init_params, min_fit_clients=min_fl_clients_nb, min_available_clients=min_fl_clients_nb)
+  strategy_cl = fl.server.strategy.QffedAvg
 else:
   raise ValueError('cannot recognize agregation strategy from the experiment settings file')
+strategy=strategy_cl(initial_parameters=init_params, min_fit_clients=min_fl_clients_nb, min_available_clients=min_fl_clients_nb) 
+#finally run server in real or simulation mode
+if FLAGS.simulation==False:
+  print('Federated Learning session starts with REAL clients, CHECK DISTRIBUTED RESSOURCES availability and load')
+  fl.server.start_server(server_address="localhost:8080", config=fl.server.ServerConfig(num_rounds=FLAGS.num_rounds), strategy=strategy)
+else:
+  print('Federated Learning session starts with SIMULATED clients, SINGLE MACHINE MODE, check machine load')
+  print('--> have a look at logs at /tmp/ray/session_latest/logs/')
+  import ray
+  ray.init()
+  ray.available_resources()
+  client_training_fn=experiments_manager.build_run_training_session
+  # before starting simulation, help local modules to be loaded properly
+  # on the ray client side by adding them a __path__ property to mke them loadable  
+  experiments_manager.__path__=[os.getcwd()]
+  tools.__path__=[os.getcwd()]
+  helpers.__path__=[os.getcwd()]
 
-fl.server.start_server(config=fl.server.ServerConfig(num_rounds=FLAGS.num_rounds), strategy=strategy)
+  #setup ray server config:
+  ray_server_config={
+            "ignore_reinit_error": True, #default arg
+            "include_dashboard": True, # default is False but you may need this for tracking
+            "num_cpus": 8,
+            "num_gpus": 1,
+            #"memory": 16000 * 1024 * 1024,#16Gb
+            "runtime_env":{ "working_dir":job_session_folder,
+                            "py_modules": [experiments_manager, tools, helpers]}
+  }
+    # The argument below is new
+  client_resources = {
+          "num_cpus": 2,
+          "num_gpus": 0.2,
+  }
 
+  # start simulation           
+  fl.simulation.start_simulation(
+    client_fn=client_training_fn,
+    num_clients=FLAGS.num_clients,
+    config=fl.server.ServerConfig(num_rounds=FLAGS.num_rounds),
+    strategy=strategy,
+    ray_init_args=ray_server_config
+  )
+
+#end of the job, recover initial working directory
+os.chdir(initial_wd)
 
