@@ -301,7 +301,7 @@ class ExperimentSettings(object):
     self.use_multiprocessing=False
     self.quantization_aware_training=self.hasOrDefault('quantization_aware_training', False)
     self.federated_learning=self.hasOrDefault('enable_federated_learning', False)
-    self.federated_learning_server_address=self.hasOrDefault('federated_learning_server_address', "[::]:8080")
+    self.federated_learning_server_address=self.hasOrDefault('federated_learning_server_address', "localhost:8080")
     # learning rate management
     self.early_stopping_patience=self.assertPositive_above_zero('early_stopping_patience', 'the number of epoch without val_loss decrease to wait for before stopping training')
     self.get_learningRate=self.has('get_learningRate', 'the training speed factor, returns a float or a tf.keras.optimizers.schedules object')
