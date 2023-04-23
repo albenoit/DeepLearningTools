@@ -84,33 +84,35 @@ and to complete the session name folder to facilitate experiments tracking and c
 Some examples of such functions are put in the README.md and in the versionned examples folder
 """
 
-#script imports
-from tools.experiment_settings import ExperimentSettings
-import tools.experiments_settings_surgery
-from tools.command_line_parser import get_commands
-from tools.experiment_settings import define_callbacks
+#standard imports
 import os, shutil
 import datetime, time
-import tensorflow as tf
 import numpy as np
 import pandas as pd
 import importlib
 import types
 import copy
 import configparser
-from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
-from tensorflow.python import debug as tf_debug
-from tensorflow.keras.models import load_model
+import glob
+
+#tensorflow related
+import tensorflow as tf
 from tensorflow.keras.utils import plot_model
+from tensorflow.keras import mixed_precision
 
-from tensorflow.python.tools import optimize_for_inference_lib
-from helpers import model_serving_tools
-from helpers.model import track_gradients, track_weights_change
-from helpers import federated
-import helpers.tensor_msg_io
-import helpers.kafka_io
+#local imports
+from deeplearningtools.helpers import model_serving_tools
+from deeplearningtools.helpers.model import track_weights_change
+from deeplearningtools.helpers.federated.flclient import FlClient
+from deeplearningtools.helpers import tensor_msg_io
+from deeplearningtools.helpers import kafka_io
+from deeplearningtools.tools import experiments_settings_surgery
+from deeplearningtools.tools.command_line_parser import get_commands
+from deeplearningtools.tools.experiment_settings import  loadExperimentsSettings, loadModel_def_file, SETTINGSFILE_COPY_NAME
+from deeplearningtools.tools.callbacks import define_callbacks
+from deeplearningtools.tools import gpu
 
-import tools.gpu
+#optional libs imports
 try:
   import tensorflow_addons as tfa
 except:
@@ -129,77 +131,12 @@ try:
 except ModuleNotFoundError as e :
   print('WARNING, Flower lib no present, this may impact distributed learning if required. Error=',e)
 
-from tensorflow.keras import mixed_precision
 
 #constants
-SETTINGSFILE_COPY_NAME='experiment_settings.py'
 WEIGHTS_MOVING_AVERAGE_DECAY=0.998
 
-def loadModel_def_file(usersettings, absolute_path=False):
-  ''' basic method to load the model targeted by usersettings.model_file
-  Args: sessionFolder, the path to the model file
-  Returns: a keras model
-  '''
-  if absolute_path == False:
-    model_path=os.path.basename(usersettings.model_file)
-  if absolute_path == True:
-    model_path=usersettings.model_file
-  try:
-    spec=importlib.util.spec_from_file_location('model_def', model_path)
-    model_def = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(model_def)
-  except Exception as e:
-    raise ValueError('loadModel_def_file: Failed to load model file {model}, error message={err}'.format(model=usersettings.model_file, err=e))
-  model=model_def.model
-
-  print('loaded model file {file}'.format(file=model_path))
-  return model
-
-
-def loadExperimentsSettings(filename, call_from_session_folder=False, restart_from_sessionFolder=None, isServingModel=False):
-    ''' load experiments parameters from the mysettingsxxx.py script
-        also mask GPUs to only use the ones specified in the settings file
-      Args:
-        filename: the settings file, if restarting an interrupted training session, you should target the experiments_settings.py copy available in the experiment folder to restart"
-        restart_from_sessionFolder: [OPTIONNAL] set the  session folder of a previously interrupted training session to restart
-        isServingModel: [OPTIONNAL] set True in the case of using model serving (server or client mode) so that some settings are not checked
-    '''
-
-    if restart_from_sessionFolder is not None:
-      if os.path.exists(restart_from_sessionFolder):
-        print('Attempting to restart a previously ran training job...')
-        sessionFolder=restart_from_sessionFolder
-        #target the initial experiments settings file
-        filename=os.path.join(restart_from_sessionFolder, SETTINGSFILE_COPY_NAME)
-        print('From working folder'+str(os.getcwd()))
-        print('looking for '+str(filename))
-        if os.path.exists(filename):
-          print('Found')
-        else:
-          raise ValueError('Could not find experiment_settings.py file in the experiment folder:'+str(sessionFolder))
-      else:
-        raise ValueError('Could not restart interrupted training session, working folder not found:'+str(restart_from_sessionFolder))
-    else:
-      print('Process starts...')
-
-    usersettings=ExperimentSettings(filename, isServingModel, call_from_session_folder)
-
-    if isServingModel:
-      sessionFolder=os.path.dirname(filename)
-
-    #manage the working folder in the case of a new experiment
-    workingFolder=usersettings.workingFolder
-    if restart_from_sessionFolder is None:
-      sessionFolder=os.path.join(workingFolder, usersettings.session_name+'_'+datetime.datetime.now().strftime("%Y-%m-%d--%H:%M:%S"))
-      usersettings.recoverFromCheckpoint=False
-    else:
-      usersettings.recoverFromCheckpoint=True
-
-    print('Considered usersettings.hparams=',str(usersettings.hparams))
-    return usersettings, sessionFolder
-
 # Define and run experiment ###############################
-def build_run_training_session(cid: str=None):
+def build_run_training_session(cid: str=''):
   ''' define and run the optimisation process
       this function loads settings from the working directory
       and builds/run the optimisation.
@@ -207,29 +144,70 @@ def build_run_training_session(cid: str=None):
       OR this can be an ephemeral intermediate training step
       as for transfer learning or federated learning
   '''
-
+  print('Starting a single training session...')
   #####################################
   # load configuration, expects the process working directory
   # to contain all the necessary files including:
   # - the configuration file (experiment_settings.py)
   # - optionally a 'checkpoints' folder in order to pursue training (recover from previous interruption) 
   settings_file=os.path.join(os.getcwd(), SETTINGSFILE_COPY_NAME)
-  if cid!=None:
-    with open('/tmp/'+str(cid)+'.notes', 'a') as f:
-      message='\ncid {cid} with cwd={cwd} and job_session_folder in locals={l} or job_session_folder in globals={g}'.format(cid=cid,
-                                                                                                                          cwd=os.getcwd(),
-                                                                                                                          l='job_session_folder' in locals(),
-                                                                                                                          g='job_session_folder' in globals())
-      f.write(message) 
-
-    settings_file=tools.experiments_settings_surgery.insert_additionnal_hparams(settings_file, {'procID':cid})
+  if cid!='':
+    message='\nINFO: cid {cid} with cwd={cwd} and job_session_folder in locals={l} or job_session_folder in globals={g}'.format(cid=cid,
+                                                                                                                        cwd=os.getcwd(),
+                                                                                                                        l='job_session_folder' in locals(),
+                                                                                                                        g='job_session_folder' in globals())
+    print(message) 
+    settings_file=experiments_settings_surgery.insert_additionnal_hparams(settings_file, {'procID':cid, 'cid':cid, 'isFLserver':False})
 
   #load experiment settings from current working directory
   usersettings, _ =loadExperimentsSettings(filename=settings_file,
                                            call_from_session_folder=True)
-  gpu_workers_nb=tools.gpu.check_GPU_available(usersettings)
+  
+  #####################################
+  #prepare session
+  tf.keras.backend.clear_session() # We need to clear the session to enable JIT in the middle of the program.
+  tf.random.set_seed(usersettings.random_seed)
+  #(de)activate XLA graph optimization
+  tf.config.optimizer.set_jit(usersettings.useXLA)
+  if usersettings.useXLA:
+    print('Forcing XLA on the CPU side')
+    os.environ['TF_XLA_FLAGS']='--tf_xla_cpu_global_jit'
+    if usersettings.debug and usersettings.use_profiling:
+      os.environ['XLA_FLAGS']='--xla_hlo_profile'
 
-  if os.path.exists(os.path.join(os.getcwd(),'checkpoints')):
+  else:
+    os.environ['TF_XLA_FLAGS']=''
+
+  gpu_workers_nb=gpu.check_GPU_available(usersettings)
+
+
+  ######################################
+
+  #####################################
+  #check GPU requirements vs availability
+  if usersettings.debug:
+    tf.debugging.set_log_device_placement(True)
+
+  #####################################
+  #prepare session
+  '''tf.keras.backend.clear_session() # We need to clear the session to enable JIT in the middle of the program.
+  tf.random.set_seed(usersettings.random_seed)
+
+  os.environ['TF_GPU_THREAD_MODE']='gpu_private'
+  #(de)activate XLA graph optimization
+  tf.config.optimizer.set_jit(usersettings.useXLA)
+  if usersettings.useXLA:
+    print('Forcing XLA on the CPU side')
+    os.environ['TF_XLA_FLAGS']='--tf_xla_cpu_global_jit'
+    if usersettings.debug and usersettings.use_profiling:
+      os.environ['XLA_FLAGS']='--xla_hlo_profile'
+
+  else:
+    os.environ['TF_XLA_FLAGS']=''
+
+  '''
+  ######################################
+  if os.path.exists(os.path.join(os.getcwd(),'checkpoints', cid)):
     print('Recovering training from checkpoint...')
     usersettings.recoverFromCheckpoint=True
   else:
@@ -250,13 +228,13 @@ def build_run_training_session(cid: str=None):
     # if reading from a kafka log queue:
     if usersettings.consume_data_from_kafka: 
       print("Original dataset specs:\n->", train_data.element_spec)
-      train_val_dataset_features=helpers.tensor_msg_io.get_data_label_features_from_dataset(train_data)
+      train_val_dataset_features=tensor_msg_io.get_data_label_features_from_dataset(train_data)
       print("train_val_dataset_features:",train_val_dataset_features)
       log_queue_name=usersettings.session_name
       if 'procID' in usersettings.hparams.keys():
         log_queue_name+=str(usersettings.hparams['procID'])
-      kafka_reader_train=helpers.kafka_io.KafkaIO(topic_name=log_queue_name+'train', bootstrap_servers=usersettings.kafka_bootstrap_servers, element_spec=train_data.element_spec)
-      kafka_reader_val=helpers.kafka_io.KafkaIO(topic_name=log_queue_name+'val', bootstrap_servers=usersettings.kafka_bootstrap_servers, element_spec=val_data.element_spec)
+      kafka_reader_train=kafka_io.KafkaIO(topic_name=log_queue_name+'train', bootstrap_servers=usersettings.kafka_bootstrap_servers, element_spec=train_data.element_spec)
+      kafka_reader_val=kafka_io.KafkaIO(topic_name=log_queue_name+'val', bootstrap_servers=usersettings.kafka_bootstrap_servers, element_spec=val_data.element_spec)
       #setup consumer depending on data and label types:
       if isinstance(train_data.element_spec[0], dict):
         train_data=kafka_reader_train.kafka_dataset_consumer_tf_custom(train_val_dataset_features, batch_size=usersettings.batch_size, shuffle=True)
@@ -291,9 +269,29 @@ def build_run_training_session(cid: str=None):
   #create the model from the user defined model file
   # -> (script targeted by usersettings.model_file)
   
-  #if current session folder contains the checkpoint
+  # maybe try to load an existing pretrained model (checkpoint in working folder)
   initial_epoch=0
-  if usersettings.recoverFromCheckpoint is False:
+  must_create_new_model=True
+  if usersettings.recoverFromCheckpoint == True:
+    checkpoint_search_path=os.path.join(os.getcwd(),'checkpoints',cid, 'model_epoch_*')
+    print('**** Restoring from checkpoint: searching in folder', checkpoint_search_path)
+    available_models=sorted(glob.glob(checkpoint_search_path), key=os.path.getmtime)
+    print('All available model=', available_models)
+    if len(available_models)==0:
+      print('Could NOT find a pretrained model, creating a new one to be trained from scratch...')
+    else:
+      print('Could find pretrained model, loading...')
+      loaded_model=available_models[-1]
+      print(loaded_model.split('_')[-1])
+      initial_epoch=int(loaded_model.split('_')[-1])
+      print('Restarting optimization from epoch: '+str(initial_epoch))
+      print('loading ',loaded_model)
+      try:
+        model = tf.keras.models.load_model(loaded_model)
+        must_create_new_model=False
+      except Exception as e:
+        print('Could not load existing model, training from scratch...')
+  if must_create_new_model: #if could not restore from checkpoint or start training from scratch
 
     print('**** Training from scratch...')
     model_scope=tf.name_scope('model')
@@ -303,7 +301,6 @@ def build_run_training_session(cid: str=None):
       print('-> Chosen distribution strategy :',distribution_strategy)
       model_scope=distribution_strategy.scope()#(model_scope, distribution_strategy.scope())
     usersettings.summary()
-
 
     #def load_fit_model():
     with model_scope:
@@ -338,10 +335,10 @@ def build_run_training_session(cid: str=None):
                     metrics=metrics) #can specify per output metrics : metrics={'output_a': 'accuracy', 'output_b': ['accuracy', 'mse']}
       
       if usersettings.enable_mixed_precision:
-        tools.gpu.check_mixed_precision_compatibility(model, usersettings)
+        gpu.check_mixed_precision_compatibility(model, usersettings)
       
       try:
-        init_model_name=os.getcwd()+'/checkpoints/model_init'
+        init_model_name=os.path.join(os.getcwd(),'checkpoints',cid,'model_init')
         print('******************************************')
         print('Saving the model at init state in ',init_model_name, 'issues at this point should warn you before moving to long training sessions...')
         model.save(init_model_name)
@@ -349,22 +346,11 @@ def build_run_training_session(cid: str=None):
         print('******************************************')
         
       except Exception as e:
-          raise ValueError('Could not serialize the model, did all model elements defined in the model prior model.compile are serialisable and have their get_config(self) method ? Error message=',e)
-  else:#recovering from checkpoint
-    print('**** Restoring from checkpoint...')
-    import glob
-    available_models=sorted(glob.glob(os.path.join(os.getcwd(),'checkpoints/model_epoch_*')), key=os.path.getmtime)
-    print('All available model=', available_models)
-    loaded_model=available_models[-1]
-    print(loaded_model.split('_')[-1])
-    initial_epoch=int(loaded_model.split('_')[-1])
-    print('Restarting optimization from epoch: '+str(initial_epoch))
-    print('loading ',loaded_model)
-    model = tf.keras.models.load_model(loaded_model)
-
+          print('WARNING !!! Experiments Manager says : could not serialize the model, did all model elements defined in the model prior model.compile are serialisable and have their get_config(self) method ? Error message=',e)
+    
   # logs and summaries management:
   #-> classical logging on Tensorboard (scalars, historams, and so on)
-  log_dir=os.getcwd()+"/logs/"# + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+  log_dir=os.path.join(os.getcwd(),"logs",cid)
   #-> specify a summary writer (for more customisation capabilities)
   file_writer = tf.summary.create_file_writer(log_dir)
   file_writer.set_as_default()
@@ -381,39 +367,21 @@ def build_run_training_session(cid: str=None):
         layer for layer in model._layers if isinstance(layer, Layer)
     ]'''
     plot_model(model,
-              to_file=os.getcwd()+'/'+model_name_str+'.png',
+              to_file=os.path.join(os.getcwd(),model_name_str+'.png'),
               show_shapes=True)
   except Exception as e:
     print('Could not plot model, error:',e)
   
   #-> as a printed log and write the network summary to file in the session folder
-  with open(os.getcwd()+'/'+model_name_str+'.txt','w') as fh:
+  with open(os.path.join(os.getcwd(), model_name_str+'.txt'),'w') as fh:
     # Pass the file handle in as a lambda function to make it callable
     print('model.summary', model.summary())
     model.summary(print_fn=lambda x: fh.write(x + '\n'))
-
-  '''try:
-    receptive_field_info=tf.contrib.receptive_field.compute_receptive_field_from_graph_def(
-                                                          model,
-                                                          input_node,
-                                                          output_node,
-                                                          stop_propagation=None,
-                                                          input_resolution=None
-                                                      )
-  except Exception as e:
-    print('Receptive field computation failed, reason=',e)
-  '''
-  
+ 
   if usersettings.debug:
     #TODO to be tested
     print('TODO: check this for tf2 migration...')
     tf.debugging.experimental.enable_dump_debug_info(log_dir, tensor_debug_mode="FULL_HEALTH", circular_buffer_size=-1)
-    #tf_debug.TensorBoardDebugWrapperSession(tf.Session(), usersettings.debug_server_addresses) #"[[_host]]:[[_port]]")
-    '''all_callbacks.append(tf_debug.TensorBoardDebugHook(usersettings.debug_server_addresses,
-                                          send_traceback_and_source_code=True,
-                                          log_usage=False)
-                      )
-    '''
 
   #####################################
   # train the model
@@ -429,12 +397,11 @@ def build_run_training_session(cid: str=None):
     print('* multiprocessing workers=',workers)
   history = None
 
-  #manage epoch index in case of fitting interruption/restart
-  epoch_start_index=0
-
   #print XLA mode
-  print('*** XLA optimization state : TF_XLA_FLAGS =', os.environ['TF_XLA_FLAGS'])
-
+  if 'TF_XLA_FLAGS' in os.environ.keys():
+    print('*** XLA optimization state : TF_XLA_FLAGS =', os.environ['TF_XLA_FLAGS'])
+  else:
+    print('No TF_XLA_FLAGS found in os.environ setup')
   #activate tensorflow_model_optimization is required (if tensorflow_model_optimization is available)
   if usersettings.quantization_aware_training:
     try:
@@ -448,9 +415,12 @@ def build_run_training_session(cid: str=None):
   #-> train with (in memory) input data pipelines
   if train_data==val_data:
     raise ValueError('train_data and val_data are the same, please fix this error')
+  
+  # prepare callbacks
+  all_callbacks=define_callbacks(usersettings, model, train_iterations_per_epoch, file_writer, log_dir)
+
   if usersettings.federated_learning is False or federated_learning_available is False:
     print('Now starting a CENTRALIZED model training session...')
-    all_callbacks=define_callbacks(usersettings, model, train_iterations_per_epoch, file_writer, log_dir)
     history = model.fit(
             x=train_data,
             y=None,#train_data,
@@ -473,13 +443,21 @@ def build_run_training_session(cid: str=None):
         )
   else:
     print('Now starting a FEDERATED model training session...')
+    if 'isFLserver' in usersettings.hparams.keys():
+      if usersettings.hparams['isFLserver']==True:
+        print('-> model prepared, ready to be used on the server side')
+        return usersettings, model, {'data_pipeline':train_data, 'steps_per_epoch':train_iterations_per_epoch}, {'data_pipeline':val_data, 'steps_per_epoch':val_iterations_per_epoch}, file_writer
+    #implicit else
+    print('-> client model configured')
     # Start Flower client
-    federated_learner=federated.FlClient(cid, usersettings, model, train_data, train_iterations_per_epoch, val_data, val_iterations_per_epoch, workers, file_writer, log_dir)
-    if 'isServer' not in usersettings.hparams.keys():
+    federated_learner=FlClient(usersettings, model, train_data, train_iterations_per_epoch, val_data, val_iterations_per_epoch, workers, file_writer, log_dir)
+    if 'cid' not in usersettings.hparams.keys(): #if not in simulation mode, start flower client
+      print('CLient is real runner')
       fl.client.start_numpy_client(server_address=usersettings.federated_learning_server_address, client=federated_learner)
       history=federated_learner.history
     else:
       # if function is called for flower simulation, then only the client instance is returned
+      print('Client is simulated runner')
       return federated_learner
   return history
 
@@ -491,25 +469,9 @@ def run_experiment(usersettings):
   if usersettings.debug:
     tf.debugging.set_log_device_placement(True)
 
-  #####################################
-  #prepare session
-  tf.keras.backend.clear_session() # We need to clear the session to enable JIT in the middle of the program.
-  tf.random.set_seed(usersettings.random_seed)
 
   os.environ['TF_GPU_THREAD_MODE']='gpu_private'
-  #(de)activate XLA graph optimization
-  tf.config.optimizer.set_jit(usersettings.useXLA)
-  if usersettings.useXLA:
-    print('Forcing XLA on the CPU side')
-    os.environ['TF_XLA_FLAGS']='--tf_xla_cpu_global_jit'
-    if usersettings.debug and usersettings.use_profiling:
-      os.environ['XLA_FLAGS']='--xla_hlo_profile'
-
-  else:
-    os.environ['TF_XLA_FLAGS']=''
-
-
-
+ 
   #run a single training experiment
   history=build_run_training_session()
 
@@ -681,15 +643,15 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
                   debug=FLAGS.debug)
 
   elif FLAGS.commands is True :
-      print('Here are some command examples')
-      print('1. train a model (once the mysettings_1D_experiments.py is set):')
-      print('-> python experiments_manager.py --usersettings=mysettings_1D_experiments.py')
-      print('2. start a tensorflow server on the trained/training model :')
-      print('-> python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53')
-      print('3. interract with the tensorflow server, sending input buffers and receiving answers')
-      print('-> python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/')
-      print('4. restart an interrupted training session')
-      print('-> python experiments_manager.py --restart_interrupted --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/')
+      print(r'Here are some command examples')
+      print(r'1. train a model (once the mysettings_1D_experiments.py is set):')
+      print(r'-> python experiments_manager.py --usersettings=mysettings_1D_experiments.py')
+      print(r'2. start a tensorflow server on the trained/training model :')
+      print(r'-> python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53')
+      print(r'3. interract with the tensorflow server, sending input buffers and receiving answers')
+      print(r'-> python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/')
+      print(r'4. restart an interrupted training session')
+      print(r'-> python experiments_manager.py --restart_interrupted --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/')
 
   else:
       print('### TRAINING MODE, preparing session ###')
@@ -720,7 +682,7 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
         
       if custom_settings:
         print('Some custom settings have been specified : training from setup file {file} with the following external hyperparameters {params}'.format(file=train_config_script, params=external_hparams))
-        settings_file=tools.experiments_settings_surgery.insert_additionnal_hparams(settings_file, external_hparams)
+        settings_file=experiments_settings_surgery.insert_additionnal_hparams(settings_file, external_hparams)
         print('-> created a temporary experiments settings file : '+settings_file)
 
 

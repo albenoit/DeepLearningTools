@@ -31,102 +31,115 @@ sleep 10
 
 # LOGS LOCATION : by default, queues/logs are stored here : /tmp/kafka-logs
 """
-
-import helpers.kafka_io
-import tools.experiments_settings_surgery
-
-# retreive command line arguents
-log_queue_name='default_queue'
 import argparse
-argparser = argparse.ArgumentParser(description='Data producer to Kafka that makes use of DeepLearningTools experiments input data pipelines')
-argparser.add_argument("-u","--usersettings",
-                    help="filename of the settings file that defines an experiment")
-argparser.add_argument("-v","--isvalidationdata", action='store_true',
-                    help="by default, this script will push training data but if this option is used, validation data will be pushed instead")
-argparser.add_argument("-s","--server", default=['127.0.0.1:9092'],
-                    help="specify the kafka servers where to push the data")
-argparser.add_argument("-q","--overridequeue", default=log_queue_name,
-                    help="specify the kafka log queue where to push the data")
-argparser.add_argument("-pid","--procID", default=None,
-                    help="Specifiy here an ID to identify the process (useful for federated training sessions)")
-argparser.add_argument("-e","--epochs", default=1, type=int,
-                    help="customize the number of data epoch to be produced and stored, default is one epoch, more usually involoves more data augmentation")
+import numpy as np
 
-argparser.add_argument("-c","--check", action='store_true',
-                    help="does not produce but simply reads an existing kafka dataset")
+import deeplearningtools.helpers.kafka_io
+import deeplearningtools.experiments_manager
+import deeplearningtools.helpers.tensor_msg_io
+import deeplearningtools.tools.experiments_settings_surgery
 
-commands = argparser.parse_args()
-print(commands)
+DEFAULT_LOG_QUEUE_NAME='default_queue'
 
-#get experiment settings filename path
+def get_commands():
+    ''' defines the command line argument parser dedicated to this script'''
+    argparser = argparse.ArgumentParser(description='Data producer to Kafka that makes use of DeepLearningTools experiments input data pipelines')
+    argparser.add_argument("-u","--usersettings",
+                        help="filename of the settings file that defines an experiment")
+    argparser.add_argument("-v","--isvalidationdata", action='store_true',
+                        help="by default, this script will push training data but if this option is used, validation data will be pushed instead")
+    argparser.add_argument("-s","--server", default=['127.0.0.1:9092'],
+                        help="specify the kafka servers where to push the data")
+    argparser.add_argument("-q","--overridequeue", default=DEFAULT_LOG_QUEUE_NAME,
+                        help="specify the kafka log queue where to push the data")
+    argparser.add_argument("-pid","--procID", default=None,
+                        help="Specifiy here an ID to identify the process (useful for federated training sessions)")
+    argparser.add_argument("-e","--epochs", default=1, type=int,
+                        help="customize the number of data epoch to be produced and stored, default is one epoch, more usually involoves more data augmentation")
 
-import experiments_manager
-settings_file=commands.usersettings
+    argparser.add_argument("-c","--check", action='store_true',
+                        help="does not produce but simply reads an existing kafka dataset")
+    return argparser
 
-#take into account some hyperparameters if required
-external_hparams={}
-if commands.procID is not None:
-    external_hparams['procID']=commands.procID
+def run(commands):
+    ''' main function that applies runs kafka library to push/read data to/from a kafka server
+    Args:
+        commands: the decoded expected flags defined in the get_commands() function defined in this script
+         
+     '''
+    #get experiment settings filename path
+    settings_file=commands.usersettings
 
-if len(external_hparams.keys())>0:
-    settings_file=tools.experiments_settings_surgery.insert_additionnal_hparams(settings_file, external_hparams)
+    #take into account some hyperparameters if required
+    external_hparams={}
+    if commands.procID is not None:
+        external_hparams['procID']=commands.procID
 
-#load experiment file
-usersettings, sessionFolder = experiments_manager.loadExperimentsSettings(settings_file, isServingModel=False)
+    if len(external_hparams.keys())>0:
+        settings_file=deeplearningtools.tools.experiments_settings_surgery.insert_additionnal_hparams(settings_file, external_hparams)
 
-# get dataset
-dataset_folder=None
-if commands.isvalidationdata:
-    dataset_folder=usersettings.raw_data_dir_val
-else:
-    dataset_folder=usersettings.raw_data_dir_train
-dataset =usersettings.get_input_pipeline(raw_data_files_folder=dataset_folder,
-                                         isTraining=not(commands.isvalidationdata),
-                                         batch_size=1,
-                                         nbEpoch=commands.epochs)
+    #load experiment file
+    usersettings, sessionFolder = deeplearningtools.experiments_manager.loadExperimentsSettings(settings_file, isServingModel=False)
 
-# push data to the kafka server
-if commands.overridequeue == log_queue_name: # if queue name is not overwriten, create a queue nam relying on experiment name+procID when applicable
-    log_queue_name=usersettings.session_name
-    # in case the procID exists, add this to the queue name
-
-    if 'procID' in usersettings.hparams.keys():
-        log_queue_name+=str(usersettings.hparams['procID'])
-    
+    # get dataset
+    dataset_folder=None
     if commands.isvalidationdata:
-        log_queue_name+='val'
+        dataset_folder=usersettings.raw_data_dir_val
     else:
-        log_queue_name+='train'
+        dataset_folder=usersettings.raw_data_dir_train
+    dataset =usersettings.get_input_pipeline(raw_data_files_folder=dataset_folder,
+                                            isTraining=not(commands.isvalidationdata),
+                                            batch_size=1,
+                                            nbEpoch=commands.epochs)
 
-if commands.check is False:
-    print('**** Pushing data on kafka log queue', log_queue_name)
-    kafka_writer=helpers.kafka_io.KafkaIO(log_queue_name, commands.server)
-    kafka_writer.kafka_producer_tf(dataset, log='log_queue_name.info')
-else:
-    print('*** reading from existing queue, log_queue_name')
-    import helpers.tensor_msg_io
-    import helpers.kafka_io
-    import numpy as np
-    train_val_dataset_features=helpers.tensor_msg_io.get_label_data_features_from_dataset(dataset)
-    kafka_dataset_reader=helpers.kafka_io.KafkaIO(topic_name=log_queue_name, bootstrap_servers=usersettings.kafka_bootstrap_servers, element_spec=dataset.element_spec)
-    dataset=kafka_dataset_reader.kafka_dataset_consumer_tf_custom(train_val_dataset_features, batch_size=usersettings.batch_size, shuffle=False)
-    
-    # to be comparable with the original dataset:
-    dataset_orig =usersettings.get_input_pipeline(  raw_data_files_folder=dataset_folder,
-                                                    isTraining=not(commands.isvalidationdata),
-                                                    batch_size=usersettings.batch_size,
-                                                    nbEpoch=1)
+    # push data to the kafka server
+    if commands.overridequeue == DEFAULT_LOG_QUEUE_NAME: # if queue name is not overwriten, create a queue name relying on experiment name+procID when applicable
+        log_queue_name=usersettings.session_name
+        # in case the procID exists, add this to the queue name
 
-    '''for id, sample_duo in enumerate(datasetzip(dataset, dataset_orig)):
-        sample=sample_duo[0]
-        sample_orig=sample_duo[1]
-        print('### KAFKA sample:', id)
-        print('sample:',sample)
-        print('### ORIG. sample:', id)
-        print('sample:',sample_orig[0])
-    '''
-    for id, sample in enumerate(dataset):
-        print('### KAFKA sample:', id)
-        print('sample:',sample)
-    print('Read all the dataset with number of samples:', id)
-    
+        if 'procID' in usersettings.hparams.keys():
+            log_queue_name+=str(usersettings.hparams['procID'])
+        
+        if commands.isvalidationdata:
+            log_queue_name+='val'
+        else:
+            log_queue_name+='train'
+
+    if commands.check is False:
+        print('**** Pushing data on kafka log queue', log_queue_name)
+        kafka_writer=deeplearningtools.helpers.kafka_io.KafkaIO(log_queue_name, commands.server)
+        kafka_writer.kafka_producer_tf(dataset, log='log_queue_name.info')
+    else:
+        print('*** reading from existing queue, log_queue_name')
+        train_val_dataset_features=deeplearningtools.helpers.tensor_msg_io.get_data_label_features_from_dataset(dataset)
+        kafka_dataset_reader=deeplearningtools.helpers.kafka_io.KafkaIO(topic_name=log_queue_name, bootstrap_servers=usersettings.kafka_bootstrap_servers, element_spec=dataset.element_spec)
+        dataset=kafka_dataset_reader.kafka_dataset_consumer_tf_custom(train_val_dataset_features, batch_size=usersettings.batch_size, shuffle=False)
+        
+        # to be comparable with the original dataset:
+        dataset_orig =usersettings.get_input_pipeline(  raw_data_files_folder=dataset_folder,
+                                                        isTraining=not(commands.isvalidationdata),
+                                                        batch_size=usersettings.batch_size,
+                                                        nbEpoch=1)
+
+        '''for id, sample_duo in enumerate(datasetzip(dataset, dataset_orig)):
+            sample=sample_duo[0]
+            sample_orig=sample_duo[1]
+            print('### KAFKA sample:', id)
+            print('sample:',sample)
+            print('### ORIG. sample:', id)
+            print('sample:',sample_orig[0])
+        '''
+        for id, sample in enumerate(dataset):
+            print('### KAFKA sample:', id)
+            print('sample:',sample)
+        print('Read all the dataset with number of samples:', id)
+        
+
+
+if __name__ == "__main__":
+
+    # retreive command line arguents
+    parser = get_commands()
+    FLAGS=parser.parse_args()
+    run(FLAGS)
+

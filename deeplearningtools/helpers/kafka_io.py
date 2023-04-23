@@ -28,9 +28,9 @@ sleep 10
 import datetime
 import kafka
 try:
-  import helpers.tensor_msg_io as tensor_msg_io
+  from deeplearningtools.helpers import tensor_msg_io
 except:
-  import tensor_msg_io
+  from . import tensor_msg_io
 
 import tensorflow as tf
 import tensorflow_io as tfio

@@ -1,7 +1,7 @@
 import numpy as np
-from typing import Tuple 
-from .alignment import align_network
-
+from typing import Tuple, List
+from sklearn.metrics.pairwise import cosine_distances
+from deeplearningtools.helpers.alignment import align_network
 
 def percentage_different_signs_gradients(
         first_network: Tuple[np.ndarray],
@@ -52,7 +52,7 @@ def deep_relative_trust(
         second_network, alignment_costs = align_network(first_network, second_network, distance=cost_distance)
 
     distances = np.array(
-        [1 + (np.linalg.norm((layer_b - layer_a)) / np.linalg.norm(layer_a))
+        [1 + (np.linalg.norm((layer_b - layer_a)) / (np.linalg.norm(layer_a)+1e-8))
          for layer_a, layer_b in zip(first_network, second_network)]
     )
     if return_drt_product:
@@ -69,8 +69,6 @@ def deep_relative_trust_similarity(network_weights):
             sim=deep_relative_trust(first_network=network_weights[i],
                                     second_network=network_weights[j],
                                     return_drt_product=True)
-            print('similarity=',sim[0])
-            print('sim.shape',sim[0].shape)
             similarity_matrix[i,j]=sim[0]
     return similarity_matrix
         
@@ -127,3 +125,17 @@ def cosine_similarity(
     ])
 
     return cosine_similarity_matrix if not use_align else (cosine_similarity_matrix, alignment_costs, unit_changes_per_layer)
+
+
+
+def flatten(weights):
+    return np.hstack([w.flatten() for w in weights])
+
+def cosine_distance(w_a: List[np.ndarray], w_b: List[np.ndarray]):
+    return cosine_distances(np.array([flatten(w) for w in [w_a, w_b]]))[0, 1]
+
+def l2(w_a: List[np.ndarray], w_b: List[np.ndarray]):
+    return np.sqrt(np.sum(np.power(flatten(w_a) - flatten(w_b), 2)))
+
+def l1(w_a: List[np.ndarray], w_b: List[np.ndarray]):
+    return np.sum(abs(flatten(w_a) - flatten(w_b)))

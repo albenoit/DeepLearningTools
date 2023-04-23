@@ -8,8 +8,7 @@
 '''
 import os
 import argparse
-import configparser
-import helpers.model_serving_tools as srv_comm_tools
+import deeplearningtools.helpers.model_serving_tools as srv_comm_tools
 
 def get_served_model_info(one_model_path, expected_model_name, tf_server_container_path):
   ''' basic function that checks served model behaviors

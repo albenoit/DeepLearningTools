@@ -3,8 +3,8 @@ import numpy as np
 
 from tensorflow.keras import layers
 from tensorflow.python.layers.core import Dense
-import helpers.loss
-from helpers.distance_network import deep_relative_trust
+from deeplearningtools.helpers import loss
+from deeplearningtools.helpers.distance_network import deep_relative_trust
 
 import os
 

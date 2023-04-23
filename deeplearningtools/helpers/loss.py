@@ -30,7 +30,7 @@ def class_weights(samples_per_class, beta=None):
   #return normalized weights
   return weights/np.nansum(weights)*class_nb
   
-@tf.function(experimental_relax_shapes=True)
+@tf.function(reduce_retracing=True)
 def get_sample_class_probabilities(one_hot_labels):
   ''' returns the vector of class probabilities of 3D [batch, n, labels] one hot encoded labels tensor
       Args: one_hot_labels, a tensor of shape [batchsize, n , one hot labels]
@@ -41,7 +41,7 @@ def get_sample_class_probabilities(one_hot_labels):
   weights = counts/one_hot_labels.shape[1]
   return weights
 
-@tf.function(experimental_relax_shapes=True)
+@tf.function(reduce_retracing=True)
 def get_per_sample_class_weights(y_true):
   ''' returns the vector of class weights of 3D [batch, n, labels] one hot encoded labels tensor
       Args: one_hot_labels, a tensor of shape [batchsize, n , one hot labels]
@@ -52,7 +52,7 @@ def get_per_sample_class_weights(y_true):
   per_sample_class_weights/= tf.reduce_sum(per_sample_class_weights, axis=1, keepdims=True)
   return per_sample_class_weights
 
-@tf.function(experimental_relax_shapes=True)
+@tf.function(reduce_retracing=True)
 def get_batch_flat_tensors(labels, logits):
   '''
     Prepare logits and label batch samples in a per sample flat shape

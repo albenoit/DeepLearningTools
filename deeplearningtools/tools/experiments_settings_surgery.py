@@ -1,5 +1,8 @@
 import numpy as np
 import os
+import re
+
+ADDITIONNAL_PARAMS_FINAL_LINE='#NEXT FOLLOWS THE ORIGINAL SETTINGS FILE\n'
 
 def insert_additionnal_hparams(settings_file, hparams):
 
@@ -13,29 +16,18 @@ def insert_additionnal_hparams(settings_file, hparams):
 
   original_settings_file.close()
   #Here, we prepend the string we want to on first line
-  additionnal_hparams="#IN THE NEXT FEW FOLLOWING LINES SOME ADDITIONNAL HYPERPARAMETERS HAVE BEEN AUTOMATICALY INSERTED\n"+'hparams_addons='+str(hparams)+'\n'
+  additionnal_hparams="#NEXT FOLLOWS SOME ADDITIONNAL HYPERPARAMETERS UPDATES, AUTOMATICALY INSERTED, MAY UPDATE PREVIOUSLY DEFINED VALUES\n"+'hparams_addons='+str(hparams)+'\n'
   #make the link between those added hparams and the expected hand written hparams
   hparams_line_id=0
 
   # FIXME : UGLY file processing follows to insert additionnal hyperparameters...
-  import re
-  def get_next_line_after_last_python_future_line(allLines):
-    last_future_lineID=0
-    for lineID, line in enumerate(allLines):
-      if re.match("^from[\s]__future__",line):
-        last_future_lineID=lineID
-    if last_future_lineID>0:
-      last_future_lineID+=1#propose the next line to enable safe text insertion
-    #print('last_future_lineID='+str(last_future_lineID))
-    return last_future_lineID
-
   def find_line_after_initial_hparams_dict(allLines):
     line_after_hparams_dict=0
     found_hparams_dict=False
     #first find the hparams opening declaration
     hparams_start_line=0
     for lineID, line in enumerate(allLines):
-      if re.match("^hparams[\s]{0,}=[\s]{0,}{",line):
+      if re.match(r"^hparams[\s]{0,}=[\s]{0,}{",line):
         hparams_start_line=lineID
         found_hparams_dict=True
         break
@@ -48,15 +40,31 @@ def insert_additionnal_hparams(settings_file, hparams):
     #raw_input('hparams_stop_line='+str(line_after_hparams_dict))
 
     return found_hparams_dict, line_after_hparams_dict
-
-  hparams_line_insert=0#get_next_line_after_last_python_future_line(updated_settings_data)
+  def find_last_hparams_addons_line(allLines):
+    ''' tries to find ADDITIONNAL_PARAMS_FINAL_LINE within the provided lines
+    returns the line offset that corresponds to the last found occurence
+    '''
+    nb_lines=len(allLines)-1
+    for lineID, line in enumerate(reversed(allLines)):
+      if line == ADDITIONNAL_PARAMS_FINAL_LINE:
+        break
+    if lineID==nb_lines:
+      return 0
+    return nb_lines-lineID +1
+  
+  hparams_line_insert=0
   has_hparams, hand_written_hparam_line=find_line_after_initial_hparams_dict(updated_settings_data[hparams_line_insert:])
+  
+  
+  # also search for already added additional parameters (willing to add some more after them)
+  ADDITIONNAL_PARAMS_FINAL_LINE
   hparams_line_insert+=hand_written_hparam_line
   if has_hparams:
+    hparams_line_insert+=find_last_hparams_addons_line(updated_settings_data[hparams_line_insert:])
     additionnal_hparams+='hparams.update(hparams_addons)'
   else:
     additionnal_hparams+='hparams=hparams_addons'
-  additionnal_hparams+='\n#NEXT FOLLOWS THE ORIGINAL SETTINGS FILE\n\n'
+  additionnal_hparams+='\n'+ADDITIONNAL_PARAMS_FINAL_LINE
   #Prepending string
   updated_settings_data.insert(hparams_line_insert,additionnal_hparams)
   # write the updated settings file to a tmp folder
@@ -64,14 +72,17 @@ def insert_additionnal_hparams(settings_file, hparams):
   updated_settings_filename=os.path.basename(settings_file)+'.withAddedHparams.'+str(randomID)+'.py'
   tmpdir='tmp/'
   #write temporary settings file
-  if not(os.path.exists(tmpdir)):
+  try:
+    print('Creating folder :', tmpdir)
     os.makedirs(tmpdir)
+  except Exception as e:
+    print('Could not create ',tmpdir, 'already exists:', os.path.exists(tmpdir))
   updated_settings_filename=os.path.join(tmpdir, updated_settings_filename)
   print('updated_settings_filename',updated_settings_filename)
   try:
     new_settings_file=open(updated_settings_filename,'w')
   except Exception as e:
-    print('Something went wrong when writing temporary settings file...',e)
+    raise Exception('Something went wrong when writing temporary settings file...',e)
   new_settings_file.writelines(updated_settings_data)
   new_settings_file.close()
   settings_file=updated_settings_filename

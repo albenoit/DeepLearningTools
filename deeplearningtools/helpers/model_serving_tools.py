@@ -166,7 +166,7 @@ def _create_rpc_callback(client, debug):
 
 # fast protobuf answer to numpy array
 
-#@tf.function(jit_compile=True, experimental_relax_shapes=True)
+#@tf.function(jit_compile=True, reduce_retracing=True)
 def deserialize_srv_answer_uint8(proto_single_output):
   """ deserialize a protobuf output into a tensor
   Args:
