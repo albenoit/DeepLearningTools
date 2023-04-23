@@ -1,0 +1,49 @@
+# Please find here a list of commands that allows to start the demos
+# -> These demos suppose that your system has all the tools installed to run them
+# A discussed in the README.md the most convenient approach is to rely on a container using Singularity or Apptainer
+# and using the receipe provided in the install folder.
+# in the following, one expects the following container to exist: /path/to/containers/tf2_addons.2.11.0.sif
+
+# NOTES:
+# -> once run, all demos produce logs in specific timestamped folders in the 'experiments' folder
+# -> have a look at the logs reported on the Tensorboard tool using command
+apptainer exec /path/to/containers/tf2_addons.2.11.0.sif tensorboard --logdir experiments/YOURTARGETSUBFOLDER
+ 
+#####################################################################
+## Classical centralised  model optimisation examples:
+
+# -> regression problem, y~ax**2+b
+apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager  -u examples/regression/mysettings_curve_fitting.py
+
+# -> classification problem on cats and dogs
+apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager  -u examples/classification/mysettings_image_classification.py
+
+# -> timeseries forecasting with advanced csv files preprocessing
+apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager  -u examples/timeseries/mysettings_timeseries_forecasting.py
+
+# -> embedding timeseries with advanced csv files preprocessing
+apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager  -u examples/embedding/mysettings_1D_experiments.py
+
+#####################################################################
+## Decentralised federated model optimisation examples:
+# -> running the previous regression problem example in a federated learning context 
+
+# --> SIMULATION mode, run everything on the same machine: parameter server and clients
+# -- client logs will appear in /tmp/ray/session_last/runtime_resources/working_dir_files/
+apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.start_federated_server -sim --usersettings examples/federated/mysettings_curve_fitting.py 
+
+# --> DISTRIBUTED mode: parameter server and clients run on different processes (and maybe machines)
+# ------> start server (and wait for ready state)
+apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.start_federated_server --usersettings examples/federated/mysettings_curve_fitting.py 
+# ------> start each client
+# -- client logs will appear in experiments/examples/federated, one folder per client
+apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager --procID 1 -u examples/federated/mysettings_curve_fitting.py
+apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager --procID 2 -u examples/federated/mysettings_curve_fitting.py
+apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager --procID 3 -u examples/federated/mysettings_curve_fitting.py
+apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager --procID 4 -u examples/federated/mysettings_curve_fitting.py
+
+#####################################################################
+## Running tests:
+# -> you may want to check regression issues using pytest.
+# some global test cases are defined in the test_framework.py script, run this as follows
+apptainer exec /path/to/containers/tf2_addons.2.11.0.sif pytest test_framework.py
