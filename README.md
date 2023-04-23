@@ -37,7 +37,7 @@ This work has been facilitated by intensive experiments conducted on the JeanZay
 
 ## Approach:
 
-* A single script, experiments_manager.py, that manages all the train/val/export/serve process is provided to let you no more care about it.
+* A single script/module, experiments_manager.py, that manages all the train/val/export/serve process is provided to let you no more care about it.
 * You write the experiment settings file that focuses on the experiment but avoid the machinery. You then define the expected variables and functions (datasets, learning rates, loss, etc.). This is enough work but only focused on the experiment.
 * You write your model in a separate file following a basic function prototype. This will allow you to switch between models but still relying on the same experiment settings.
 * You run the experiment and regularly look at the Tensorboard to monitor indicators, weight distributions, model output embedding, etc.
@@ -67,7 +67,7 @@ sudo apptainer build tf_server.sif tf_server.def               #container for mo
 ```
 ### run the image (as standard user):
   * open a shell on this container, bind to your system folders of interest : `apptainer shell --nv --bind /path/to/your/DeepLearningTools/:DeepLearningTools/ tf2_addons.sif`
-  * run the framework, for example on the curve fitting example: `cd /DeepLearningTools/` followed by `python experiments_manager.py --usersettings examples/regression/mysettings_curve_fitting.py`
+  * run the framework, for example on the curve fitting example: `cd /DeepLearningTools/` followed by `python -m deeplearningtools.experiments_manager --usersettings examples/regression/mysettings_curve_fitting.py`
   * if the gpu is not found (error such as `libcuda reported version is: Invalid argument: expected %d.%d, %d.%d.%d, or %d.%d.%d.%d form for driver version; got "1"`, sometimes, NVIDIA module should be reloaded after a suspend period. Recover it using command `nvidia-modprobe -u -c=0`
 
 ## Manual installation using Anaconda and pip (NOT RECOMMENDED, NOT MAINTAINED).
@@ -93,51 +93,67 @@ conda install -c qiqiao tensorflow_serving_api
 
 The main script is experiments_manager.py can be used in 3 modes, here are some command examples:
 ## 1. Train a model in a context specified in a parameter script such as examples/regression/mysettings_curve_fitting.py (details provided in the following TODO section):
+
+### start training from initial configuration
  * ***RECOMMENDED :if all the libraries are installed in a singularity container located at /path/to/tf2_addons.sif***
 ```
-apptainer run --nv /path/to/tf2_addons.sif experiments_manager.py --usersettings examples/regression/mysettings_curve_fitting.py
+apptainer run --nv /path/to/tf2_addons.sif -m deeplearningtools.experiments_manager --usersettings examples/regression/mysettings_curve_fitting.py
 ```
 
  * ***if all the libraries are system installed***
 ```
-python experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py
+python -m deeplearningtools.experiments_manager --usersettings=examples/regression/mysettings_curve_fitting.py
 ```
+
+### Restart on failure or simply pursue training from interrupted training***
+Model optimization can restart from the ***last best checkpoint***. For instance, suppose suppose your started model optimization as shown above and that the experiment folder is here:
+```
+/path/to/my/experiments/examples/curve_fitting/my_test_hiddenNeurons50_predictSmoothParamsTrue_learningRate0.1_nbEpoch5000_addNoiseTrue_anomalyAtX-3_2023-03-26--20:07:36
+```
+
+Then, retard training with the following command:
+
+```
+python -m deeplearningtools.experiments_manager --restart_interrupted --model_dir /path/to/my/experiments/examples/curve_fitting/my_test_hiddenNeurons50_predictSmoothParamsTrue_learningRate0.1_nbEpoch5000_addNoiseTrue_anomalyAtX-3_2023-03-26--20:07:36
+```
+
+
 ## 2.start a Tensorflow server on the trained/training model :
 
  * ***RECOMMENDED : if tensorflow_model_server is installed on a singularity container located at /path/to/tf_server.sif***
    relying on a lightweight host installation (python3 and standard libs, no more requirements)
 ```
-python3 start_model_serving.py --model_dir=/absolute/path/to/experiments/example/curve_fitting/my_test_2018-01-03--14:40:53 -psi=/absolute/path/to/tf_server.sif
+python3 -m deeplearningtools.start_model_serving --model_dir=/absolute/path/to/experiments/examples/curve_fitting/my_test_2018-01-03--14:40:53 -psi=/absolute/path/to/tf_server.sif
 ```
 
  * ***if tensorflow_model_server is installed on the system as well as the python libraries***
 ```
-python experiments_manager.py --start_server --model_dir=experiments/examples/curve_fitting/my_test_2018-01-03--14:40:53
+python -m deeplearningtools.experiments_manager --start_server --model_dir=experiments/examples/curve_fitting/my_test_2018-01-03--14:40:53
 ```
-   or 
+   or
 ```
-python3 start_model_serving.py --model_dir=experiments/curve_fitting/my_test_2018-01-03--14:40:53
+python3 -m deeplearningtools.start_model_serving --model_dir=experiments/examples/curve_fitting/my_test_2018-01-03--14:40:53
 ```
 
 ## 3. Request Tensorflow model server, sending input buffers and receiving answers
 
  * ***RECOMMENDED : if all the libraries are installed in a singularity container located at /path/to/tf2_addons.sif***
 ```
-apptainer run --nv /path/to/tf2_addons.sif experiments_manager.py --predict_stream=-1 --model_dir=experiments/curve_fitting/my_test_2018-01-03--14\:40\:53/
+apptainer run --nv /path/to/tf2_addons.sif -m deeplearningtools.experiments_manager --predict_stream=-1 --model_dir=experiments/examples/curve_fitting/my_test_2018-01-03--14\:40\:53/
 ```
 
  * ***if all the libraries are system installed***
 ```
-python experiments_manager.py --predict_stream=-1 --model_dir=experiments/curve_fitting/my_test_2018-01-03--14\:40\:53/
+python -m deeplearningtools.experiments_manager --predict_stream=-1 --model_dir=experiments/examples/curve_fitting/my_test_2018-01-03--14\:40\:53/
 ```
 
 ## NOTE :
 
 once trained (or along training), start the Tensorboard parsing logs of
-the experiments folder (provided example is experiments/1Dsignals_clustering):
+the experiments folder (provided example is experiments/examples/curve_fitting):
 from the scripts directory using command:
 ```
-tensorboard  --logdir=experiments/curve_fitting
+tensorboard  --logdir=experiments/examples/curve_fitting
 ```
 Then, open a web browser and reach http://127.0.0.1:6006/ to monitor training
 values and observe the obtained embedding.
@@ -158,12 +174,12 @@ The framework is designed to switch with few changes from the classical centrali
   * Adjust your data sources in the settings file in order to be able to switch from one data surce to another simply relying on the ```hparam['procID']=X``` parameter.
   * Start the federated server with the *start_federated_server.py* python script and go !
   ```
-  apptainer run install/tf2_addons.2.9.1.sif start_federated_server.py --usersettings examples/federated/mysettings_curve_fitting.py
+  apptainer run install/tf2_addons.2.9.1.sif -m deeplearningtools.start_federated_server --usersettings examples/federated/mysettings_curve_fitting.py
   ```
   * Start clients from the command line and update their process ID with the *--procID* option, for instance  *--procID 20*, that will automatically update ```hparam['procID']=20``` for *this* client: 
   
   ```
-  apptainer run  install/tf2_addons.2.9.1.sif experiments_manager.py --procID 20  --usersettings examples/federated/mysettings_curve_fitting.py 
+  apptainer run  install/tf2_addons.2.9.1.sif -m deeplearningtools.experiments_manager --procID 20  --usersettings examples/federated/mysettings_curve_fitting.py 
   ```
 # Notes on Kafka
 Data preprocessing can sometimes be an intensive task that may compete with the training steps such that it should be decentralized. To do so, starting from a working centralized experiment configuration, as for the Federated learning option, Kafka data pipelining should be enabled with minimal changes. The main principle is to decentralise data production and feed a kafka log queue that will be read by a processing node dedicated to the model optimization part, no more managing data preprocessing. 
@@ -171,7 +187,7 @@ The general idea is then to apply few changes on a classical centralized experim
  * suppose that a Kafka server is available somewhere. For a fresh config, maybe check *install/kafka* that provides scripts to build a kafka node on a docker container.
  * On the data production nodes, simply start production process relying on the experiment settings file, that specifies, as you currently do, parameters and more specifically, the *get_input_pipeline* function. Then, start data production using command:
  ```
- apptainer run --nv install/tf2_addons.2.8.0.sif start_kafka_producer.py --server localhost:9092 --procID 0 --usersettings examples/regression/mysettings_curve_fitting.py
+ apptainer run --nv install/tf2_addons.2.8.0.sif -m deeplearningtools.start_kafka_producer --server localhost:9092 --procID 0 --usersettings examples/regression/mysettings_curve_fitting.py
  ```
  with prodID, as for the federated learning discussion above, an integer that could help switch from one dataset to another one.
 
@@ -184,8 +200,8 @@ The general idea is then to apply few changes on a classical centralized experim
 * Scripts is now only dedicated to Tensorflow 2. Last Tensorflow 1.14 supports is tagged v1 in the repository and has been much simplified after the tf2 migration.
 * This framework is intended to help design, optimize and deploy Tensorflow based models with some systematic strategy that stabilizes the workflow and user experience. However, this is built for research and is subject to changes and updates are impacted by the maintainer activities.
 
-# TODO :
+# TODO (YOURS):
 
-To adapt to new case studies, just update the closest example (examples folder) experiment file mysettingsxxx.py and adjust I/O functions.
+To adapt to new case studies, just start from the closest example (examples folder) experiment file mysettingsxxx.py and adjust I/O functions.
 For any experiment, the availability of all the required fields in the settings file is checked by the tools/experiments_settings.py script. Exceptions are raised on errors, have a look in this file to ensure you prepared everything right and compare your settings file to the provided examples.
 
