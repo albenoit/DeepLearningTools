@@ -1,8 +1,8 @@
 ''' a collection of attention modules '''
 
 import tensorflow as tf
-import helpers.loss as loss
-import helpers.model as model
+from deeplearningtools.helpers import loss
+from deeplearningtools.helpers import model
 
 def squeeze_excitation(input_features):
     ''' apply squeeze and exitation auto attention
