@@ -1,17 +1,18 @@
 '''
 @author: Alexandre Benoit, LISTIC lab, FRANCE
-@brief : simple personnal file that defines experiment specific keys to be used with our programs
+@brief : simple experiment file that defines experiment specific keys to be used with our programs
 ==> application : noisy curve regression
 
 FULL PROCESS USE EXAMPLE:
-1. TRAIN/VAL : start a train/val session using command (a singularity container with an optimized version of Tensorflow is used here):
-singularity run --nv /home/alben/install/nvidia/tf2_addons.sif experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py
+1. TRAIN/VAL : start a train/val session using command (a singularity/apptainer container with an optimized version of Tensorflow is used here /path/to/tf2_addons.sif):
+apptainer run --nv /path/to/tf2_addons.sif -m deeplearningtools.experiments_manager --usersettings examples/regression/mysettings_curve_fitting.py
 
-2. SERVE MODEL : start a tensorflow model server on the produced eperiment models using command (the -psi command permits to start tensorflow model server installed in a singularity container):
-python3 experiments_manager.py --start_server --model_dir=/home/alben/workspace/DeepLearningRessources/trunk/TensorFlow/listic-deeptool/experiments/examples/curve_fitting/my_test_hiddenNeurons50_predictSmoothParamsTrue_learningRate0.1_nbEpoch5000_addNoiseTrue_anomalyAtX-3_2020-02-08--06\:51\:21/ -psi /home/alben/install/nvidia/tf_server.sif
+2. SERVE MODEL : start a tensorflow model server on the produced eperiment models using command (the -psi command permits to start tensorflow model server installed in a singularity/apptainer container, /absolute/path/to/tf_server.sif):
+python3 -m deeplearningtools.start_model_serving --model_dir=/absolute/path/to/experiments/examples/curve_fitting/my_test_2018-01-03--14:40:53 -psi=/absolute/path/to/tf_server.sif
 
 3. REQUEST MODEL : start a client that sends continuous requests to the server
-python3 experiments_manager.py --predict_stream=-1 -m=experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2019-12-17--15:04:15
+apptainer run --nv /path/to/tf2_addons.sif -m deeplearningtools.experiments_manager --predict_stream=-1 --model_dir=experiments/examples/curve_fitting/my_test_2018-01-03--14\:40\:53/
+
 
 '''
 

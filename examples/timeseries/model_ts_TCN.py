@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from helpers.model_tcn import TCN
+from deeplearningtools.helpers.model_tcn import TCN
 def model(usersettings):
 
     input_shape=(usersettings.hparams['tsLengthIn'], usersettings.hparams['nbChannels'] )

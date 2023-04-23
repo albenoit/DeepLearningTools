@@ -4,21 +4,23 @@
 ==> application : cats and dogs classification inspired from https://www.tensorflow.org/tutorials/images/classification
 
 FULL PROCESS USE EXAMPLE:
-1. TRAIN/VAL : start a train/val session using command (a singularity container with an optimized version of Tensorflow is used here):
-singularity run --nv /home/alben/install/nvidia/tf2_addons.sif experiments_manager.py --usersettings=examples/classification/mysettings_image_classification.py
+1. TRAIN/VAL : start a train/val session using command (a singularity/apptainer container with an optimized version of Tensorflow is used here: tf2_addons.sif), see README.md to build it:
+apptainer run --nv tf2_addons.sif -m deeplearningtools.experiments_manager --usersettings=examples/classification/mysettings_image_classification.py
+-> once done, check for and use in the following steps the resulting folder, say for example /abs/path/to/deeplearningtools/experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36/
 
-2. SERVE MODEL : start a tensorflow model server on the produced eperiment models using command (the -psi command permits to start tensorflow model server installed in a singularity container):
-python3 experiments_manager.py --start_server -m=experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2019-12-17--15:04:15 -psi=/home/alben/install/nvidia/tf_server.sif
+2. SERVE MODEL : start a tensorflow model server on the produced eperiment models using command (the -psi command permits to start tensorflow model server installed in a singularity/apptainer container, here tf_server.sif):
+python3 -m deeplearningtools.start_model_serving --model_dir /abs/path/to/deeplearningtools/experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36/ -psi /abs/path/to/tf_server.sif 
 
-3. REQUEST MODEL : start a client that sends continuous requests to the server
-python3 experiments_manager.py --predict_stream=-1 -m=experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2019-12-17--15:04:15
+3. REQUEST MODEL : start a client that sends continuous requests to the server making use of a connected webcam
+apptainer run --nv tf2_addons.sif -m deeplearningtools.experiments_manager --predict_stream=-1 --model_dir /abs/path/to/deeplearningtools/experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36
 '''
 
+import os
+import cv2
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-import os
 
 #-> set here your own working folder
 workingFolder='experiments/examples/cats_dogs_classification'
@@ -107,13 +109,7 @@ def get_learningRate():
   ''' define here the learning rate
   Returns a sclalar (float) or a scheduler
   '''
-  '''initial_learning_rate = hparams['learningRate']
-  lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-    initial_learning_rate,
-    decay_steps=100000,
-    decay_rate=0.96,
-    staircase=True)
-  '''
+
   return hparams['learningRate']
 
 def get_optimizer(model, loss, learning_rate):

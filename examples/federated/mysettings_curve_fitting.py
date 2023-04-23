@@ -6,17 +6,20 @@
 FULL PROCESS USE EXAMPLE:
 1. TRAIN/VAL : start a train/val session using command (a singularity container with an optimized version of Tensorflow is used here):
 -> start model parameter server :
-singularity run /home/alben/install/containers/tf2_addons.2.5.0.sif examples/federated/start_server.py 
+apptainer run tf2_addons.sif -m deeplearningtools.start_federated_server --usersettings=examples/federated/mysettings_curve_fitting.py
 
 -> start multiple learning clients
-singularity run --nv /home/alben/install/nvidia/tf2_addons.sif experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py --procID=1
-singularity run --nv /home/alben/install/nvidia/tf2_addons.sif experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py --procID=-1
+apptainer run --nv tf2_addons.sif -m deeplearningtools.experiments_manager --usersettings=examples/federated/mysettings_curve_fitting.py --procID=1
+apptainer run --nv tf2_addons.sif -m deeplearningtools.experiments_manager --usersettings=examples/federated/mysettings_curve_fitting.py --procID=-1
+
+OR simply start a federated session in simulation mode (all processed (parameter server and clients shared on the same machine)
+apptainer run tf2_addons.sif -m deeplearningtools.start_federated_server -sim --usersettings=examples/federated/mysettings_curve_fitting.py
 
 2. SERVE MODEL : start a tensorflow model server on the produced eperiment models using command (the -psi command permits to start tensorflow model server installed in a singularity container):
-python3 start_model_serving.py --model_dir /home/alben/workspace/listic-deeptool/experiments/examples/federated/my_test_hiddenNeurons50_predictSmoothParamsTrue_learningRate0.001_nbEpoch5000_addNoiseTrue_anomalyAtX-4_procID-1_2021-06-13--16\:43\:22/ -psi /home/alben/install/containers/tf_server.cpu.sif
+python3 -m deeplearningtools.start_model_serving --model_dir /home/alben/workspace/listic-deeptool/experiments/examples/federated/my_test_hiddenNeurons50_predictSmoothParamsTrue_learningRate0.001_nbEpoch5000_addNoiseTrue_anomalyAtX-4_procID-1_2021-06-13--16\:43\:22/ -psi /home/alben/install/containers/tf_server.cpu.sif
 
 3. REQUEST MODEL : start a client that sends continuous requests to the server
-singularity run --nv /home/alben/install/containers/tf2_addons.2.5.0.sif experiments_manager.py --predict_stream=-1 --model_dir /home/alben/workspace/listic-deeptool/experiments/examples/federated/my_test_hiddenNeurons50_predictSmoothParamsTrue_learningRate0.001_nbEpoch5000_addNoiseTrue_anomalyAtX-4_procID-1_2021-06-13--16\:43\:22/
+apptainer run --nv tf2_addons.sif -m deeplearningtools.experiments_manager --predict_stream=-1 --model_dir /home/alben/workspace/listic-deeptool/experiments/examples/federated/my_test_hiddenNeurons50_predictSmoothParamsTrue_learningRate0.001_nbEpoch5000_addNoiseTrue_anomalyAtX-4_procID-1_2021-06-13--16\:43\:22/
 '''
 
 import tensorflow as tf
@@ -33,15 +36,17 @@ session_name='my_test'
 ===> Note that this dictionnary will complete the session name
 '''
 hparams={
-         'federated':'fedavg',#fedyogi',#set '' if not making use of federated learning or set the strategy name (lowercase)
-         'flClients':4,#minimum number of clients to allow for federated learning
-         'hiddenNeurons':5,#set the number of neurons per hidden layers
+         'federated':'FedAvg',#set '' if not making use of federated learning or set the flower strategy name of a custom one from deeplearningtools.helpers
+         'minCl':4,#minimum number of clients to allow for federated learning
+         'minFit':4,#minimum number of clients to allow for a federated learning fitting round
+         'hiddenNeurons':50,#set the number of neurons per hidden layers
          'predictSmoothParams':True, #set True to activate parameters moving averages use for prediction
          'learningRate':0.001,
-         'nbEpoch':5000,
+         'nbEpoch':20, #when in federated learning mode, this represents the client number of local epochs to be performed for each round
          'addNoise':True,
-         'range':4,
+         'range':1,
          'procID':0, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
+         'clusteringMethod':'SpectralClustering' #choose among available options, currently SpectralClustering, MADC, EDC
          }
 
 ''''set the list of GPUs involved in the process. HOWTO:
@@ -66,7 +71,7 @@ if len(hparams['federated'])>0:
   enable_federated_learning=True
 
 # define here the used model under variable 'model'
-model_file='examples/regression/model_curve_fitting.py'
+model_file='examples/federated/model_curve_fitting.py'
 
 # activate weight moving averaging over itarations (Polyak-Ruppert)
 weights_moving_averages=False
@@ -104,11 +109,12 @@ served_head_names=['prediction']
 
 ########## LOCAL PARAMETERS (ONLY USED BELOW) SECTION ################
 def target_curve(x):
-    y=(x**2)/30.
+    
+    y = (np.sin(x) + x)/hparams['minCl']
 
     if hparams['addNoise'] is True:
         sigma=2.0
-        noise=np.random.normal(loc=0.0, scale=0.1, size=x.shape).astype(np.float32)
+        noise=np.random.normal(loc=0.0, scale=hparams['minCl'], size=x.shape).astype(np.float32)
         y+=noise
     return y
 

@@ -4,22 +4,20 @@
 
 Application : time series forecasting
 FULL PROCESS USE EXAMPLE:
-1. TRAIN/VAL : start a train/val session using command (a singularity container with an optimized version of Tensorflow is used here):
-singularity run --nv /path/to/containers/tf2_addons.sif experiments_manager.py --usersettings=private/mysettings_embeddings_timeseries.py
+1. TRAIN/VAL : start a train/val session using command (a singularity container with an optimized version of Tensorflow is used here /path/to/tf2_addons.sif):
+apptainer run --nv /path/to/tf2_addons.sif -m deeplearningtools.experiments_manager --usersettings=examples/timeseries/mysettings_timeseries_forecasting.py
 ---> this will create an experiment folder with all model checkpoints and training parameters history, say: /path/to/experiments/examples/timeseries/TS_trials_depth3_nstacks1_nlayers2_nneurons32_smoothedParamsTrue_nbEpoch2_bottleneckSize2_learningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize10_2022-12-05--18:01:39
 
-2. SERVE MODEL : start a tensorflow model server on the produced eperiment models using command (the -psi command permits to start tensorflow model server installed in a singularity container):
-python3 start_model_serving.py --model_dir=/path/to/experiments/examples/timeseries/TS_trials_depth3_nstacks1_nlayers2_nneurons32_smoothedParamsTrue_nbEpoch2_bottleneckSize2_learningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize10_2022-12-05--18:01:39 -psi /path/to/containers/tf_server.cpu.sif
-OR
-singularity run --nv /path/to/containers/tf_server.cpu.sif --port=9000 --model_name=model_ts_AE --model_base_path=/path/to/experiments/examples/timeseries/TS_trials_depth3_nstacks1_nlayers2_nneurons32_smoothedParamsTrue_nbEpoch2_bottleneckSize2_learningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize10_2022-12-05--18:01:39/exported_models
+2. SERVE MODEL : start a tensorflow model server on the produced eperiment models using command (the -psi command permits to start tensorflow model server installed in a singularity/apptainer container, /absolute/path/to/tf_server.sif):
+python3 -m deeplearningtools.start_model_serving --model_dir=/absolute/path/to/experiments/examples/timeseries/TS_trials_depth3_nstacks1_nlayers2_nneurons32_smoothedParamsTrue_nbEpoch100_bottleneckSize2_learningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize10_2023-04-04--07:46:31/ -psi=/absolute/path/to/tf_server.sif
 
 3. REQUEST MODEL : start a client that sends continuous requests to the server
-singularity run --nv /path/to/containers/tf2_addons.2.2.0.sif experiments_manager.py --predict_stream=-1 --model_dir experiments/examples/timeseries/TS_trials_depth3_nstacks1_nlayers2_nneurons32_smoothedParamsTrue_nbEpoch2_bottleneckSize2_learningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize10_2022-12-05--18:01:39
+apptainer run --nv /path/to/tf2_addons.sif -m deeplearningtools.experiments_manager --predict_stream=-1 --model_dir=/absolute/path/to/experiments/examples/timeseries/TS_trials_depth3_nstacks1_nlayers2_nneurons32_smoothedParamsTrue_nbEpoch100_bottleneckSize2_learningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize10_2023-04-04--07:46:31/
 '''
 
 #my imports
-from helpers import loss as helpers_loss
-from helpers import model as helpers_model
+from deeplearningtools.helpers import loss as helpers_loss
+from deeplearningtools.helpers import model as helpers_model
 
 #libs imports
 import tensorflow as tf
@@ -190,7 +188,7 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     @param raw_data_files_folder : the folder where files are stored
     @param shuffle_batches : a boolean that activates batch shuffling
     '''
-    import DataProvider_input_pipeline #only import here to reduce dependencies in serving mode
+    from deeplearningtools import DataProvider_input_pipeline #only import here to reduce dependencies in serving mode
     #load all csv files to use for training
     raw_data_files=DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_files_folder, file_extension=raw_data_filename_extension)
     #sort files in numeric order wrt the last integer before file extension

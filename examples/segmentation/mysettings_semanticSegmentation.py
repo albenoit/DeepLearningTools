@@ -13,7 +13,7 @@ singularity run --nv /home/alben/install/nvidia/tf2_addons.sif experiments_manag
 
 '''
 
-import DataProvider_input_pipeline
+import deeplearningtools.DataProvider_input_pipeline
 import tensorflow as tf
 import numpy as np
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
