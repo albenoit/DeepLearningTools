@@ -300,8 +300,8 @@ def imread_from_opencv(filename, cv_imreadMode):
   '''
   if len(image.shape)==3: ##reorder channels, from the loaded opencv BGR to tensorflow RGB use
     if image.shape[2]==3:
-        return cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
-  return image.astype(np.float32)
+        return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+  return image
 
 @tf.function
 def normalised_entropy(counts):
@@ -496,7 +496,7 @@ class FileListProcessor_Semantic_Segmentation:
             def load_from_tf(raw_ref_img_filenames):
               #first split filenames into two strings
               splitted_filenames = tf.strings.split(tf.expand_dims(raw_ref_img_filenames,0), sep=filenames_separator)
-              print('splitted_filenames.values[0]=',splitted_filenames.values[0])
+              #print('splitted_filenames.values[0]=',splitted_filenames.values[0])
               raw_img_filename=splitted_filenames.values[0]
               ref_img_filename=splitted_filenames.values[1]
               #-> read raw data
@@ -580,7 +580,7 @@ class FileListProcessor_Semantic_Segmentation:
                   crops=crops_bb.map(get_crop)#, num_parallel_calls=tf.data.AUTOTUNE, deterministic=not(self.shuffle_samples))
                   
                   # return the per image dataset BUT filter out unnecessary crops BEFORE
-                  return crops.filter(self._crop_filter).prefetch(1)
+                  return crops.filter(self._crop_filter).prefetch(tf.data.AUTOTUNE)
         print("++++++++++++++++++++++++++++++++", sample_filename)
         return crops_dataset(sample_filename)
 
