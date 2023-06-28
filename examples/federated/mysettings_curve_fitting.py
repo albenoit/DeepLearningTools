@@ -20,6 +20,9 @@ python3 -m deeplearningtools.start_model_serving --model_dir /home/alben/workspa
 
 3. REQUEST MODEL : start a client that sends continuous requests to the server
 apptainer run --nv tf2_addons.sif -m deeplearningtools.experiments_manager --predict_stream=-1 --model_dir /home/alben/workspace/listic-deeptool/experiments/examples/federated/my_test_hiddenNeurons50_predictSmoothParamsTrue_learningRate0.001_nbEpoch5000_addNoiseTrue_anomalyAtX-4_procID-1_2021-06-13--16\:43\:22/
+
+Check training logs : apptainer exec --nv /path/to/tf2_addons.sif tensorboard --logdir experiments/examples/federated/regression
+if running in simulation mode, logs are placed in /tmp/ray/session_latest/runtime_resources/working_dir_files/_ray_pkg_blahblah/logs
 '''
 
 import tensorflow as tf
@@ -27,7 +30,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #-> set here your own working folder
-workingFolder='experiments/examples/federated/'
+workingFolder='experiments/examples/federated/regression'
 
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='my_test'
@@ -46,7 +49,6 @@ hparams={
          'addNoise':True,
          'range':1,
          'procID':0, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
-         'clusteringMethod':'SpectralClustering' #choose among available options, currently SpectralClustering, MADC, EDC
          }
 
 ''''set the list of GPUs involved in the process. HOWTO:
@@ -74,7 +76,7 @@ if len(hparams['federated'])>0:
 model_file='examples/federated/model_curve_fitting.py'
 
 # activate weight moving averaging over itarations (Polyak-Ruppert)
-weights_moving_averages=False
+weights_moving_averages=True
 
 # random seed used to init weights, etc. Use an integer value to make experiments reproducible
 random_seed=41
@@ -144,10 +146,6 @@ def get_optimizer(model, loss, learning_rate):
     Returns a tensorflow optimizer object
     '''
     optimizer=tf.keras.optimizers.RMSprop(learning_rate=learning_rate)
-    '''optim_op = optimizer.get_updates(
-        loss,
-        model.trainable_variables)[0]
-    '''
     return optimizer
 
 def get_metrics(model, loss):

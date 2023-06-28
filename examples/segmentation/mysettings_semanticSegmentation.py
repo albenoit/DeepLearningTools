@@ -11,6 +11,7 @@ singularity run --nv /home/alben/install/nvidia/tf2_addons.sif experiments_manag
 
 3. REQUEST MODEL : start a client that sends continuous requests to the server
 
+Check training logs : apptainer exec --nv /path/to/tf2_addons.sif tensorboard --logdir experiments/examples/semantic_segmentation
 '''
 
 import deeplearningtools.DataProvider_input_pipeline

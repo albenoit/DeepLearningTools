@@ -375,7 +375,7 @@ def build_run_training_session(cid: str=''):
   #-> as a printed log and write the network summary to file in the session folder
   with open(os.path.join(os.getcwd(), model_name_str+'.txt'),'w') as fh:
     # Pass the file handle in as a lambda function to make it callable
-    print('model.summary', model.summary())
+    model.summary()
     model.summary(print_fn=lambda x: fh.write(x + '\n'))
  
   if usersettings.debug:
@@ -462,6 +462,14 @@ def build_run_training_session(cid: str=''):
   return history
 
 def run_experiment(usersettings):
+  ''' 
+  Run a single training experiment
+  arguments:
+    usersettings: an experiment settings object initialized from the user experiment file (my_settings_xxx.py in the provided examples). This object is defined in deeplearningtools.tools.experiment_settings.py that applies some default values when not specified in the experiment file and looks for som errors.
+  returns:
+    final_result: a dict containing the final result of the experiment
+    model_export_filename: the filename of the model to be exported
+  '''
   print('Running an experiment....')
 
   #####################################

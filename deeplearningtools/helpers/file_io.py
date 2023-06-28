@@ -19,7 +19,7 @@ def extractFilenames(root_dir, file_extension="*.jpg", raiseOnEmpty=True):
     msg='extractFilenames: from working directory {wd}, looking for files {path} with extension {ext}'.format(wd=os.getcwd(),
                                                                                                                 path=root_dir,
                                                                                                                 ext=file_extension)
-    print(msg)
+    #print(msg)
     for root, dirnames, filenames in os.walk(root_dir):
         file_proto=os.path.join(root, file_extension)
         print('-> Parsing folder : '+file_proto)
@@ -37,6 +37,6 @@ def extractFilenames(root_dir, file_extension="*.jpg", raiseOnEmpty=True):
 def count_lines(path, skip_header):
   lines=0
   for file in glob.glob(path):
-    print('file=', file)
+    #print('file=', file)
     lines+=int(check_output(["wc", "-l", file]).split()[0])-int(skip_header)
   return lines 

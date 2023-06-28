@@ -149,10 +149,10 @@ def _create_rpc_callback(client, debug):
     Args:
       result_future: Result future of the RPC.
     """
-    print('Received response:'+str(result_future))
+    #print('Received response:'+str(result_future))
     exception = result_future.exception()
     if exception:
-      #result_counter.inc_error()
+      result_counter.inc_error()
       print(exception)
     else:
       try:

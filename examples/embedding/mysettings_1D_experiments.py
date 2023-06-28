@@ -13,6 +13,8 @@ python3 -m deeplearningtools.start_model_serving --model_dir=/absolute/path/to/e
 
 3. REQUEST MODEL : start a client that sends continuous requests to the server
 apptainer run --nv /path/to/tf2_addons.sif -m deeplearningtools.experiments_manager --predict_stream=-1 --model_dir=/absolute/path/to/experiments/examples/embedding/TS_trials_depth3_nstacks1_nlayers2_nneurons32_smoothedParamsTrue_nbEpoch100_bottleneckSize2_learningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize10_2023-04-04--07:46:31/
+
+Check training logs : apptainer exec --nv /path/to/tf2_addons.sif tensorboard --logdir experiments/examples/timeseries
 '''
 
 
@@ -229,17 +231,11 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
         print('ts_all', ts_all)
         print('timestamps',timestamps)
         #stacking labels
-        stack = [timestamps[0,0],
-                 timestamps[hparams['tsLengthIn']-1,-1],
-                 tf.as_string(yesterday_isfree),
-                 tf.as_string(today_isfree),
-                 tf.as_string(tomorrow_isfree)]
-
-        stack=(ts_all[:hparams['tsLengthIn'],:],
-                yesterday_isfree,
-                today_isfree,
-                tomorrow_isfree
-                ), ts_all[hparams['tsLengthIn']:,:] #try here to predict all features future #alternative, focus on a single feature : tf.slice(ts_all, begin=[hparams['tsLengthIn'], 0], size=[hparams['tsLengthOut'],1])
+        stack={'input_time_series':ts_all[:hparams['tsLengthIn'],:],
+                'input_yesterday_isfree':yesterday_isfree,
+                'input_today_isfree':today_isfree,
+                'input_tomorrow_isfree':tomorrow_isfree,
+        }, ts_all[hparams['tsLengthIn']:,:] #try here to predict all features future #alternative, focus on a single feature : tf.slice(ts_all, begin=[hparams['tsLengthIn'], 0], size=[hparams['tsLengthOut'],1])
         print("sample content", stack)
         print('### per_sample_process_function END')
         return stack

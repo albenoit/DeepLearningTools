@@ -17,18 +17,18 @@ def squeeze_excitation(input_features):
     with tf.name_scope('Squeeze_and_excitation'):
         #reduction_ratio=16 #default reduction factor used to reduce the dimension of the first channel interractions
         #first apply gobal average pooling to obtain channel average activation
-        print('input features shape', input_features.shape)
+        #print('input features shape', input_features.shape)
         features_dim=len(input_features.get_shape().as_list())
         if features_dim==4:
-            print('2D squeeze and axcitation module')
+            #print('2D squeeze and axcitation module')
             features_averages= tf.keras.layers.GlobalAveragePooling2D()(input_features)
         elif features_dim==5:
-            print('3D squeeze and axcitation module')
+            #print('3D squeeze and axcitation module')
             features_averages= tf.keras.layers.GlobalAveragePooling3D()(input_features)
         else:
             raise ValueError('Input features are expected to be 4D(2D data) or 5D(3D, volumetric data)')
 
-        print('pooled features shape', features_averages.shape)
+        #print('pooled features shape', features_averages.shape)
         #excitation model
         first_interractions=tf.keras.layers.Dense(units=input_features.shape[-1]//16,
                                 activation=tf.keras.activations.relu,
@@ -58,22 +58,22 @@ def spatial_attention(input_features):
     from https://arxiv.org/pdf/2001.07645.pdf
     '''
     with tf.name_scope('Spatial_attention'):
-        print('input features shape', input_features.shape)
+        #print('input features shape', input_features.shape)
         features_dim=len(input_features.get_shape().as_list())
         if features_dim==4:
-            print('2D spatial attention module')
+            #print('2D spatial attention module')
             conv_op=tf.keras.layers.Conv2D
             kernel=[1,1]
             strides=(1,1)
             dilation_rate=(1, 1)
         elif features_dim==5:
-            print('3D attention module')
+            #print('3D attention module')
             conv_op=tf.keras.layers.Conv3D
             kernel=(1,1,1)
             dilation_rate=(1, 1, 1)
         else:
             raise ValueError('Input features are expected to be 4D(2D data) or 5D(3D, volumetric data)')
-        print('input features shape', input_features.shape)
+        #print('input features shape', input_features.shape)
         #excitation model
         first_interractions=conv_op(
                         filters=input_features.shape[-1]//2,
@@ -145,7 +145,7 @@ def aconv(input_features, sampling_rate=8):
     features_upscaler=None
     with tf.name_scope('attention_convolution'):
         if features_dim==4:
-            print('2D spatial attention module')
+            #print('2D spatial attention module')
             conv_op=tf.keras.layers.Conv2D
             features_subsampler=tf.keras.layers.AveragePooling2D
             features_upscaler=tf.keras.layers.UpSampling2D
@@ -154,7 +154,7 @@ def aconv(input_features, sampling_rate=8):
             strides=(1,1)
             dilation_rate=(1, 1)
         elif features_dim==5:
-            print('3D attention module')
+            #print('3D attention module')
             conv_op=tf.keras.layers.Conv3D
             features_subsampler=tf.keras.layers.AveragePooling3D
             features_upscaler=tf.keras.layers.UpSampling3D
@@ -168,15 +168,15 @@ def aconv(input_features, sampling_rate=8):
 
         
         #Attention convolution operator definition
-        print('Attention convolution module')
+        #print('Attention convolution module')
         
-        print('input features',input_features)
+        #print('input features',input_features)
         #squeeze
         features_subsampled=features_subsampler(pool_size=sampler_rate,
                                                 strides=None,
                                                 padding='valid',
                                                 data_format=None)(input_features)
-        print('subsampled features',features_subsampled)
+        #print('subsampled features',features_subsampled)
 
         #Excite
         first_interractions=conv_op( #CVPR paper considers 2 groups of convolution
@@ -237,7 +237,7 @@ def aconv2(input_features, sampling_rate=8):
     features_subsampler=None
     with tf.name_scope('attention_convolution'):
         if features_dim==4:
-            print('2D spatial attention module')
+            #print('2D spatial attention module')
             conv_op=tf.keras.layers.Conv2D
             features_subsampler=tf.keras.layers.AveragePooling2D
             sampler_rate=(sampling_rate, sampling_rate)
@@ -245,7 +245,7 @@ def aconv2(input_features, sampling_rate=8):
             strides=(1, 1)
             dilation_rate=(1, 1)
         elif features_dim==5:
-            print('3D attention module')
+            #print('3D attention module')
             conv_op=tf.keras.layers.Conv3D
             features_subsampler=tf.keras.layers.AveragePooling3D
             sampler_rate=(sampling_rate, sampling_rate, sampling_rate)
@@ -258,15 +258,15 @@ def aconv2(input_features, sampling_rate=8):
 
         
         #Attention convolution operator definition
-        print('REVISED attention convolution module')
+        #print('REVISED attention convolution module')
 
-        print('input features',input_features)
+        #print('input features',input_features)
         #squeeze
         features_subsampled=features_subsampler(pool_size=sampler_rate,
                                                 strides=None,
                                                 padding='valid',
                                                 data_format=None)(input_features)
-        print('subsampled features',features_subsampled)
+        #print('subsampled features',features_subsampled)
 
         #Excite
         first_interractions=conv_op( #CVPR paper considers 2 groups of convolution

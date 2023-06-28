@@ -13,6 +13,8 @@ python3 -m deeplearningtools.start_model_serving --model_dir=/absolute/path/to/e
 
 3. REQUEST MODEL : start a client that sends continuous requests to the server
 apptainer run --nv /path/to/tf2_addons.sif -m deeplearningtools.experiments_manager --predict_stream=-1 --model_dir=/absolute/path/to/experiments/examples/timeseries/TS_trials_depth3_nstacks1_nlayers2_nneurons32_smoothedParamsTrue_nbEpoch100_bottleneckSize2_learningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize10_2023-04-04--07:46:31/
+
+Check training logs : apptainer exec --nv /path/to/tf2_addons.sif tensorboard --logdir experiments/examples/timeseries
 '''
 
 #my imports

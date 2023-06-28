@@ -13,7 +13,7 @@ python3 -m deeplearningtools.start_model_serving --model_dir=/absolute/path/to/e
 3. REQUEST MODEL : start a client that sends continuous requests to the server
 apptainer run --nv /path/to/tf2_addons.sif -m deeplearningtools.experiments_manager --predict_stream=-1 --model_dir=experiments/examples/curve_fitting/my_test_2018-01-03--14\:40\:53/
 
-
+Check training logs : apptainer exec --nv /path/to/tf2_addons.sif tensorboard --logdir experiments/examples/curve_fitting
 '''
 
 import tensorflow as tf

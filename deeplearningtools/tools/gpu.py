@@ -9,7 +9,6 @@ def check_GPU_available(usersettings):
      Raises SystemError if no GPU available
   '''
   gpu_workers_nb=0
-  print()
   print('*** GPU devices detection ***')
   # let ensorFlow automatically choose an existing and supported device to run the operations in case the specified one doesn't exist
   tf.config.set_soft_device_placement(True)

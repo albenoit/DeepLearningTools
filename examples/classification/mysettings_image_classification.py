@@ -13,6 +13,8 @@ python3 -m deeplearningtools.start_model_serving --model_dir /abs/path/to/deeple
 
 3. REQUEST MODEL : start a client that sends continuous requests to the server making use of a connected webcam
 apptainer run --nv tf2_addons.sif -m deeplearningtools.experiments_manager --predict_stream=-1 --model_dir /abs/path/to/deeplearningtools/experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36
+
+Check training logs : apptainer exec --nv tf2_addons.sif tensorboard --logdir experiments/examples/cats_dogs_classification
 '''
 
 import os

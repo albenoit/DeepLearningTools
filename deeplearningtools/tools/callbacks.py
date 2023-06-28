@@ -82,7 +82,7 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
       signatures={'serving_default':model_concrete_function, self.settings.model_name:model_concrete_function}
       try:
         module_graph= model_concrete_function
-        print(module_graph.pretty_printed_signature(verbose=True))
+        print(module_graph.pretty_printed_signature(verbose=False))
           
         #module_graph[self.settings.model_name]=exported_module.served_model
         print('Exporting RAW serving model relying on tf.saved_model.save')
@@ -101,13 +101,13 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
           print('Now exporting model for inference with TensorRT...')
           try:
             from tensorflow.python.compiler.tensorrt import trt_convert as trt
-            print(os.listdir(output_path))
+            #print(os.listdir(output_path))
             conversion_params = trt.DEFAULT_TRT_CONVERSION_PARAMS
             if self.settings.enable_mixed_precision:
               #TODO, refine precision conversion, see : https://colab.research.google.com/github/vinhngx/tensorrt/blob/vinhn-tf20-notebook/tftrt/examples/image-classification/TFv2-TF-TRT-inference-from-Keras-saved-model.ipynb?hl=en#scrollTo=qKSJ-oizkVQY
               # and official doc https://docs.nvidia.com/deeplearning/frameworks/tf-trt-user-guide/index.html#tf-trt-api-20
               conversion_params = conversion_params._replace(precision_mode="FP16")
-            print('Export for inference conversion_params:', conversion_params)
+            #print('Export for inference conversion_params:', conversion_params)
             converter = trt.TrtGraphConverterV2(input_saved_model_dir=output_path)
             converter.convert()
             converter.summary()
@@ -200,7 +200,7 @@ def define_callbacks(usersettings, model, train_iterations_per_epoch, file_write
 
 
   if callable(usersettings.custom_tensorboard_logs):
-    print('Adding custom Tensorboard logger ON EPOCH END. keep some time, have a look at existing tools in tools/custom_display_tensorboard.py')
+    #print('Adding custom Tensorboard logger ON EPOCH END. keep some time, have a look at existing tools in tools/custom_display_tensorboard.py')
     with file_writer.as_default():
       def custom_logger_fn(epoch, logs):
         usersettings.custom_tensorboard_logs(model, epoch, logs)
