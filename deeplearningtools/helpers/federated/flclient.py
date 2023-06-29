@@ -121,7 +121,8 @@ class FlClient(fl.client.NumPyClient):
         )
         
         self.model.track_weights_change(parameters, self.round)
-        print('FlClient.fit round result, history=', self.round,history.history)
+        print('Client fit step done')
+        print('-> FlClient.fit round result, history=', self.round,history.history)
 
         if len(history.history)>0:
             self.history=history
@@ -136,11 +137,11 @@ class FlClient(fl.client.NumPyClient):
         fit_log['l2_distance'] = float(l2(last_model_parameters, parameters))
         fit_log['l1_distance'] = float(l1(last_model_parameters, parameters))
         fit_log['client_id'] = self.settings.hparams['procID']
-        print('==> fit log=', fit_log)
+        #print('==> fit log=', fit_log)
 
         #save last fit log values that will allow for updated restart
-        print('LAST MONITORED VALUE=', (self.settings.monitored_loss_name,
-                                       self.all_callbacks_dict['checkpoint_callback'].best))
+        #print('LAST MONITORED VALUE=', (self.settings.monitored_loss_name,
+        #                               self.all_callbacks_dict['checkpoint_callback'].best))
         self.write_restart_config(self.all_callbacks_dict['checkpoint_callback'].best)
 
         #update self.initial_value_threshold wrt last monitored value
