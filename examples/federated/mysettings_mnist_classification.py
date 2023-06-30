@@ -187,21 +187,20 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
         dataframe = load_dataframes(raw_data_files_folder)
         features = dataframe.iloc[:,1:]
         targets = dataframe.iloc[:,:1]
-        dataset = tf.data.Dataset.from_tensor_slices((features, targets))
     else:
         # a single test dataset is used here for all clients and the federated server
         # -> TODO, personnalize this behavior if required
         dataframe = load_dataframes(raw_data_files_folder + '/mnist_test.csv')
 
-        print("\n")
+        '''print("\n")
         print(dataframe)
         print(raw_data_files_folder)
         print("\n")
-
+        '''
         features = dataframe.iloc[:,1:]
         targets = dataframe.iloc[:,:1]
 
-        dataset = tf.data.Dataset.from_tensor_slices((features, targets))
+    dataset = tf.data.Dataset.from_tensor_slices((features, targets))
 
     return dataset.batch(batch_size, drop_remainder=True).prefetch(1)
 
