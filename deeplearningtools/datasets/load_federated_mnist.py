@@ -29,30 +29,14 @@ def maybe_download_data():
         val_info: dataframe of information about the test dataset : client names and number of samples
     '''
     raw_path = "https://raw.githubusercontent.com/MilowB/federated_MNIST_datasets/main/MNIST/" # config1/client1/client1.csv
-    configs = ["config1/", "config2/", "config3/"]
-    clients = ["client" + str(i) for i in range(1, 11)]
-
-    dataset_path = os.path.join(os.path.expanduser("~"),'.keras/datasets/federated_mnist')
-    # check if 1 csv of the datasets exists. If it does not, other csv files probably don't exist too, so we download the whole dataset
-    for config in configs:
-        for client in clients:
-            target_file=os.path.join(dataset_path, config, client+".csv")
-            print('looking for file', target_file)
-            if not(os.path.exists(target_file)):
+    raw_path = "https://zenodo.org/record/8094225/files/mnist-data-Federated-Learning.zip" # config1/client1/client1.csv
+    dataset_path = os.path.join(os.path.expanduser("~"),'.keras/datasets')
     
-                download_cmd='wget ' + raw_path + config + client + "/" + client + ".csv" + ' --directory-prefix '+ dataset_path + "/" + config
-                p = subprocess.run(download_cmd, shell=True)
-                client_number = int(client.split("t")[1])
-                new_number = "client" + str(client_number - 1)
-                mv_cmd = 'mv ' + dataset_path + "/" + config + client + ".csv" + " " + dataset_path + "/" + config + new_number + ".csv"
-                p = subprocess.run(mv_cmd, shell=True)
-
-    target_file=os.path.join(dataset_path, "mnist_test.csv")
-    print('looking for test file', target_file)
-    if not(os.path.exists(target_file)):
-        download_cmd='wget ' + raw_path + "/mnist_test.csv" + ' --directory-prefix '+ dataset_path + "/"
+    if not(os.path.exists(os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data-Federated-Learning.zip'))):
+        download_cmd='wget ' + raw_path + ' --directory-prefix '+ dataset_path
         p = subprocess.run(download_cmd, shell=True)
-
+        unzip_cmd = "unzip " + os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data-Federated-Learning.zip') + " -d " + dataset_path
+        p = subprocess.run(unzip_cmd, shell=True)
 
 
 # main function for testing and tf.dataset rewriting purposes

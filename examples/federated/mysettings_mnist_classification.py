@@ -95,8 +95,9 @@ addon_callbacks=[]
 #set here paths to your data used for train, val -> only for config1
 # -> the hyperparameter hparams['procID'] (i.e. federated client ID) is used to select the right data
 maybe_download_data()
-raw_data_dir_train = os.path.join(os.path.expanduser("~"),'.keras/datasets/federated_mnist/', 'config1/client' + str(hparams['procID']) + ".csv")
-raw_data_dir_val = os.path.join(os.path.expanduser("~"),'.keras/datasets/federated_mnist')
+client_nmb = str(hparams['procID'] + 1)
+raw_data_dir_train = os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data/', 'config1/client' + client_nmb + '/client1_config' + client_nmb + ".csv")
+raw_data_dir_val = os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data')
 
 raw_data_filename_extension=''
 nb_train_samples=2000 #manually adjust here the number of temporal items out of the temporal block size
