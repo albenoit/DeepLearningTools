@@ -27,3 +27,8 @@ In this example, we rely on the same settings script but specify a process id (-
 
  singularity run  /path/to/singularity/container/tf2_addons.sif experiments_manager.py --usersettings examples/federated/mysettings_curve_fitting.py --procID 3
 
+# Adding your own federated learning ideas
+
+You may want to add and test a new strategy or client behavior. To do so, look at python files in deeplearningtools/helpers/federated:
+ . update the client behaviors in flclient.py
+ . create a new strategy following template_strategy.py (follow the official Flwr guidelines)
