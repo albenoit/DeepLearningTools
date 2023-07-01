@@ -12,6 +12,7 @@ import tensorflow as tf
 import deeplearningtools
 from deeplearningtools import experiments_manager # make use of all the standard tools of the framework
 from deeplearningtools import tools
+from deeplearningtools.tools.flower_utils import plot_metric_from_history
 
 global monitored_value_threshold # monitored discrepancy value (loss or other) used to trigger logging on better model
 
@@ -113,6 +114,9 @@ def run(FLAGS):
   # -> any file writen in the process in os.getcwd() is kept in the experiment folder
   initial_wd=os.getcwd()
   os.chdir(job_session_folder)
+  # path where flower results synthesis will be saved
+  flower_report_path=f"flower_results"
+  os.makedirs(flower_report_path, exist_ok=True)
   #load a model ready for training and more especially evaluation on the server side
   usersettings, model, train_data, val_data, file_writer = experiments_manager.build_run_training_session()
   strategy_name=None
@@ -218,6 +222,18 @@ def run(FLAGS):
       ray_init_args=ray_server_config
     )
     os.symlink(os.path.realpath("/tmp/ray/session_latest/"), os.path.join(os.getcwd(), 'ray_logs'))
+
+  #finally build and save Flwr results synthesis:
+  np.save(
+        flower_report_path+f'/results.npy',
+        result,  # type: ignore
+    )
+
+  plot_metric_from_history(
+        result,
+        flower_report_path,
+        "flower_report",
+    )
 
   #end of the job, recover initial working directory
   os.chdir(initial_wd)

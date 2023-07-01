@@ -9,16 +9,31 @@ import numpy as np
 
 def model(usersettings):
     
-    model = tf.keras.Sequential([
-        tf.keras.layers.Flatten(input_shape=(784, 1)), # input layer
-        
-        # tf.keras.layers.Dense is basically implementing: output = activation(dot(input, weight) + bias)
-        # it takes several arguments, but the most important ones for us are the hidden_layer_size and the activation function
-        tf.keras.layers.Dense(200, activation='relu'), # 1st hidden layer
-        tf.keras.layers.Dense(200, activation='relu'), # 2nd hidden layer
-        
-        # the final layer is no different, we just make sure to activate it with softmax
-        tf.keras.layers.Dense(10, activation='softmax') # output layer
-    ])
+    if usersettings.hparams['model'] == 'cnn':
+      #below is proposed a classical convolutional neural network
+      x=tf.keras.layers.Input(shape=(28,28,1))
+      h=tf.keras.layers.Conv2D(filters=32, kernel_size=(5,5), padding='same', activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001))(x)
+      h=tf.keras.layers.MaxPooling2D(pool_size=(2, 2), padding='same')(h)
+      h=tf.keras.layers.Conv2D(filters=64, kernel_size=(5,5), padding='same', activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001))(h)
+      h=tf.keras.layers.Dropout(usersettings.hparams['dropout'])(h)
+      h=tf.keras.layers.MaxPooling2D(pool_size=(2, 2), padding='same')(h)
+      h=tf.keras.layers.Flatten()(h)
+      h=tf.keras.layers.Dense(units=512, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001))(h)
+      p=tf.keras.layers.Dense(units=10, activation='softmax')(h)
+      my_model= tf.keras.Model(inputs=x, outputs=p)
+      
+    else:
+      #below is proposed a classical fully connected neural network
+      my_model = tf.keras.Sequential([
+          tf.keras.layers.Flatten(input_shape=(784, 1)), # input layer
+          
+          # tf.keras.layers.Dense is basically implementing: output = activation(dot(input, weight) + bias)
+          # it takes several arguments, but the most important ones for us are the hidden_layer_size and the activation function
+          tf.keras.layers.Dense(200, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)), # 1st hidden layer
+          tf.keras.layers.Dense(200, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)), # 2nd hidden layer
+          tf.keras.layers.Dropout(usersettings.hparams['dropout']), # dropout layer
+          # the final layer is no different, we just make sure to activate it with softmax
+          tf.keras.layers.Dense(10, activation='softmax') # output layer
+      ])
+    return my_model
 
-    return model

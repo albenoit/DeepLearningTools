@@ -24,11 +24,13 @@ Check training logs : apptainer exec --nv tf2_addons.sif tensorboard --logdir ex
 import subprocess
 import numpy as np
 import pandas as pd
+import glob
 import matplotlib.pyplot as plt
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import tensorflow as tf
 import os
 from deeplearningtools.datasets.load_federated_mnist import maybe_download_data
+from deeplearningtools.DataProvider_input_pipeline import extractFilenames
 
 #-> set here your own working folder
 workingFolder='experiments/examples/federated/mnist/'
@@ -42,13 +44,13 @@ session_name='my_trials'
 hparams={
          'federated':'FedAvg',#set '' if not making use of federated learning or set the flower strategy name of a custom one from deeplearningtools.helpers
          'minCl':10,#minimum number of clients to allow for federated learning
-         'minFit':3,#minimum number of clients to allow for a federated learning fitting round
-         'clusteringMethod':'SpectralClustering', #choose among available options, currently SpectralClustering, MADC, EDC
-         'learningRate':0.001,
-         'nbEpoch':15,
+         'minFit':5,#minimum number of clients to allow for a federated learning fitting round
+         'learningRate':0.0001,
+         'nbEpoch':1,#sets either the number of epoch per cleint for each federated round OR sets the total number of epoch for centralised learning
          'procID':0, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
-         'clusteringMethod':'SpectralClustering', #choose among available options, currently SpectralClustering, MADC, EDC
-         'dropout':0.2 #used in the model definition 0.0 mean, no unit is dropped out (all data is kept)
+         'dropout':0.2, #used in the model definition 0.0 mean, no unit is dropped out (all data is kept)
+         'dataConfig':2, #set the data samples configuration to use, 1, 2 or 3
+         'model':'cnn',#set the model to use, 'cnn' to use a convnet model or 'mlp' to rely on a sompler multilayer perceptron
         }
 
 ''''set the list of GPUs involved in the process. HOWTO:
@@ -64,8 +66,9 @@ used_gpu_IDs=[]
 
 #activate federated learning if the 'federated' key appears in the hparams dictionnary 
 enable_federated_learning=False
-if len(hparams['federated'])>0:
-    enable_federated_learning=True
+if 'federated' in hparams.keys():
+    if len(hparams['federated'])>0:
+        enable_federated_learning=True
 
 #activate XLA graph optimisation, if True, GPU AND CPU XLA is applied
 useXLA=False
@@ -85,8 +88,12 @@ weights_moving_averages=True
 # random seed used to init weights, etc. Use an integer value to make experiments reproducible
 random_seed=42
 
-# stop condition, taking into account if val_loss does not decrease for early_stopping_patience epoch
+# WARNING, maybe adjust the number of epochs here
+#-> in centralised learning, the number of epochs is the total number of epochs for a single training session
+#-> in federated learning, the number of epochs is the total number of epochs for a single training round
 nbEpoch=hparams['nbEpoch']
+
+# stop condition, taking into account if val_loss does not decrease for early_stopping_patience epoch
 early_stopping_patience=10
 
 # add here any additionnal callback to use along the train/val process
@@ -95,8 +102,14 @@ addon_callbacks=[]
 #set here paths to your data used for train, val -> only for config1
 # -> the hyperparameter hparams['procID'] (i.e. federated client ID) is used to select the right data
 maybe_download_data()
-client_nmb = str(hparams['procID'] + 1)
-raw_data_dir_train = os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data/', 'config1/client' + client_nmb + '/client1_config' + client_nmb + ".csv")
+#switch from federated learning to centralised depending on hyperparameter setting
+if enable_federated_learning:
+    client_id = int(hparams['procID']) + 1
+    #look for a single file related to a specific client
+    raw_data_dir_train = os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data/', 'config'+str(hparams['dataConfig'])+'/client' + str(client_id) + '/client'+str(client_id) +'_config' + str(hparams['dataConfig']) + ".csv")
+else:
+    #look for all client files as a single dataset as for centralised learning
+    raw_data_dir_train = os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data/', 'config'+str(hparams['dataConfig']))
 raw_data_dir_val = os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data')
 
 raw_data_filename_extension=''
@@ -142,7 +155,7 @@ def get_optimizer(model, loss, learning_rate):
     Returns a tensorflow optimizer object or a string defined in Tensorflow that targets a specific optimizer with default config
     '''
 
-    optimizer=tf.keras.optimizers.Adam(0.001)
+    optimizer=tf.keras.optimizers.Adam(hparams['learningRate'])
 
     return optimizer
 
@@ -158,8 +171,8 @@ def get_total_loss(model):#inputs, model_outputs_dict, labels, weights_loss):
         => it is recommended to return a tensor named 'loss' in order to enable some
         useful default options such as early stopping
     '''
-    reconstruction_loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-    return reconstruction_loss
+    loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
+    return loss
 
 def read_data(path, dropna=True):
     dataframe = pd.read_csv(path)
@@ -171,7 +184,12 @@ def load_dataframes(path, dropna=True) -> list:
     if path.endswith('.csv') and os.path.isfile(path):
         return read_data(path, dropna=dropna)
     else:
-        return []
+        print('Looking for csv files in target folder ', path)
+        files=extractFilenames(path, '*.csv')
+        print('Agagating multiple csv files: ', files)
+        dataframes=[read_data(file, dropna=dropna) for file in files]
+        #concatenate dataframes
+        return pd.concat(dataframes)
 
 '''Define here the input pipelines :
 -1. a common function for train and validation modes
@@ -191,7 +209,7 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     else:
         # a single test dataset is used here for all clients and the federated server
         # -> TODO, personnalize this behavior if required
-        dataframe = load_dataframes(raw_data_files_folder + '/mnist_test.csv')
+        dataframe = load_dataframes(os.path.join(raw_data_files_folder,'mnist_test.csv'))
 
         '''print("\n")
         print(dataframe)
@@ -201,7 +219,11 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
         features = dataframe.iloc[:,1:]
         targets = dataframe.iloc[:,:1]
 
+    #convert each sample from shape (784,1) to (28,28,1) to allow for convolutional layers processing
     dataset = tf.data.Dataset.from_tensor_slices((features, targets))
+    def reshape_to_2D(sample, label):
+        return tf.reshape(sample, [28, 28, 1]), label
+    dataset=dataset.map(reshape_to_2D)
 
     return dataset.batch(batch_size, drop_remainder=True).prefetch(1)
 
@@ -222,7 +244,7 @@ def get_served_module(model, model_name):
             super().__init__()
             self.model=model
 
-        @tf.function(input_signature=[tf.TensorSpec(shape=[1,28, 28, 3], dtype=tf.uint8, name=served_input_names[0])])
+        @tf.function(input_signature=[tf.TensorSpec(shape=[1,28, 28, 1], dtype=tf.uint8, name=served_input_names[0])])
         def served_model(self, input):
             ''' a decorated function that specifies the input data format, processing and output dict
             Args: input tensor(s)
