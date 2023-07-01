@@ -246,13 +246,13 @@ def get_served_module(model, model_name):
             self.model=model
 
         @tf.function(input_signature=[tf.TensorSpec(shape=[1,28, 28, 1], dtype=tf.uint8, name=served_input_names[0])])
-        def served_model(self, input):
+        def served_model(self, input_frame):
             ''' a decorated function that specifies the input data format, processing and output dict
             Args: input tensor(s)
             Returns a dictionnary of {'output key':tensor}
             '''
-            pred=model(tf.cast(input, tf.float32))
-            return {served_head_names[0]:tf.argmax(pred, axis=-1)}
+            pred=model(tf.cast(input_frame, tf.float32))
+            return {served_head_names[0]:pred}
     return ExportedModule(model)
 
 
@@ -293,10 +293,10 @@ class Client_IO:
           Raises ValueError if no frame available
       '''
 
-      frame_is_ok, frame = self.video_capture.read()
+      frame_is_ok, self.frame = self.video_capture.read()
       if not(frame_is_ok):
         raise ValueError('No input image available')
-      return frame
+      return self.frame
 
     def getInputData(self, idx):
         ''' method that returns data samples complying with the placeholder
@@ -306,12 +306,14 @@ class Client_IO:
         Returns:
            the data sample with shape and type complying with the server input
         '''
-        #here, capture a frame from the webcam
+        #here, capture a frame from the webcam and apply a specific transform to comply with model expected input 
+        #->see get_served_module function above: input should be of dimemsions (1,28,28,1)
         
         frame = cv2.resize(self.read_frame(), (28, 28))
-
-        self.frame = np.expand_dims(frame, 0)
-        return {served_input_names[0]:self.frame}
+        #convert to grayscale and add batch and color channel dimensions
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame = np.expand_dims(frame, (0,-1))
+        return {served_input_names[0]:frame}
 
     def decodeResponse(self, result):
         ''' receive the server response and decode as requested
@@ -329,11 +331,11 @@ class Client_IO:
             #print('Answer shape='+str(response.shape))
         self.ax1.cla()
         self.ax2.cla()
-        self.ax1.imshow(self.frame[0])
+        self.ax1.imshow(cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB))
         #self.ax1.title('Input image')
         objects = tuple([i for i in range(10)])
         y_pos = np.arange(len(objects))
-        self.ax2.bar(y_pos, np.array([response, 1.0-response]), tick_label=objects)#, align='center', alpha=0.5)
+        self.ax2.bar(y_pos, response, tick_label=objects)#, align='center', alpha=0.5)
         self.ax2.set_title('Class probabilities')
         plt.pause(0.1)
 
