@@ -1,7 +1,7 @@
 '''
 @author: Alexandre Benoit & Mickaël Bettinelli, LISTIC lab, FRANCE
 @brief : simple personnal file that defines experiment specific keys to be used with our programs
-==> application : a personal MNIST dataset designed for clustered federated learning
+==> application : a personalized MNIST dataset designed for federated learning
 
 FULL PROCESS USE EXAMPLE:
 1. TRAIN/VAL : 
@@ -17,6 +17,10 @@ python3 -m deeplearningtools.start_model_serving --model_dir /abs/path/to/deeple
 
 3. REQUEST MODEL : start a client that sends continuous requests to the server making use of a connected webcam
 apptainer run --nv tf2_addons.sif -m deeplearningtools.experiments_manager --predict_stream=-1 --model_dir /abs/path/to/deeplearningtools/experiments/examples/federated/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36
+
+If you need to compare federated learning approaches with centralized learning, you can use the following options:
+-> federated learning : set the 'federated' key in the following hparams dictionnary to 'FedAvg' or to the name of a custom strategy defined in Flwr or deeplearningtools.helpers.federated and use the above instructions
+-> centralized learning : let the 'federated' key empty in the hparams dictionnary then, run the experiment as usual using the deeplearningtools.experiments_manager module (see the other centralized learning examples)
 
 Check training logs : apptainer exec --nv tf2_addons.sif tensorboard --logdir experiments/examples/federated/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36
 '''
