@@ -65,6 +65,9 @@ I consider here Singularity or the open source fork Apptainer very close to Dock
 sudo apptainer build tf2_addons.sif tf2_addons.def #container for model training and validation
 sudo apptainer build tf_server.sif tf_server.def               #container for model serving only
 ```
+
+**Recommendation:** move the resulting container files (tf2_addons.sif and tf_server.sif) outside of the DeepLearningTools framework source files. Those containers can be used for other purposes related to machine learning with Tensorflow and the installed tools.
+
 ### run the image (as standard user):
   * open a shell on this container, bind to your system folders of interest : `apptainer shell --nv --bind /path/to/your/DeepLearningTools/:DeepLearningTools/ tf2_addons.sif`
   * run the framework, for example on the curve fitting example: `cd /DeepLearningTools/` followed by `python -m deeplearningtools.experiments_manager --usersettings examples/regression/mysettings_curve_fitting.py`
