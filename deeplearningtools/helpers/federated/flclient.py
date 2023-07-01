@@ -79,7 +79,7 @@ class FlClient(fl.client.NumPyClient):
         return self.model.get_weights()
 
     def fit(self, parameters, config):
-        print('#################### FlClient.fit new round')
+        print('#################### FlClient.fit new round with config:', config)
         #try to load warm start info
         self.load_restart_config()
         print('### => server sent config:', config)
