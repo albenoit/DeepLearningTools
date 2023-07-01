@@ -200,7 +200,7 @@ def run(FLAGS):
               "ignore_reinit_error": True, #default arg
               "include_dashboard": True, # default is False but you may need this for tracking
               #"_temp_dir":job_session_folder+"/ray",
-              "num_cpus": 8,
+              "num_cpus": 6,
               "num_gpus": 1,
               #"_memory": 16000 * 1024 * 1024,#16Gb
               "runtime_env":{ "working_dir":os.path.join(initial_wd,job_session_folder),

@@ -31,6 +31,7 @@ import tensorflow as tf
 import os
 from deeplearningtools.datasets.load_federated_mnist import maybe_download_data
 from deeplearningtools.DataProvider_input_pipeline import extractFilenames
+import cv2 #only used on the ClientIO side to capture and display images
 
 #-> set here your own working folder
 workingFolder='experiments/examples/federated/mnist/'
@@ -48,8 +49,8 @@ hparams={
          'learningRate':0.0001,
          'nbEpoch':1,#sets either the number of epoch per cleint for each federated round OR sets the total number of epoch for centralised learning
          'procID':0, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
-         'dropout':0.2, #used in the model definition 0.0 mean, no unit is dropped out (all data is kept)
-         'dataConfig':2, #set the data samples configuration to use, 1, 2 or 3
+         'dropout':0.1, #used in the model definition 0.0 mean, no unit is dropped out (all data is kept)
+         'dataConfig':1, #set the data samples configuration to use, 1, 2 or 3
          'model':'cnn',#set the model to use, 'cnn' to use a convnet model or 'mlp' to rely on a sompler multilayer perceptron
         }
 
@@ -279,7 +280,11 @@ class Client_IO:
         self.fig, (self.ax1, self.ax2) = plt.subplots(1, 2, sharex=False, sharey=False)
 
         #setup webcam and read a first frame (may init the camera)
-        self.video_capture=cv2.VideoCapture(0)
+        print('Trying to open a video stream...')
+        self.video_capture=cv2.VideoCapture(0)#TODO, maybe replace value 0 by another camera index or a string targetting a video file
+        #check if stream is correctely loaded
+        assert self.video_capture.isOpened(), "Error opening video stream or file"
+        print('Video stream opened')
         self.read_frame()
 
     def read_frame(self):
@@ -303,7 +308,7 @@ class Client_IO:
         '''
         #here, capture a frame from the webcam
         
-        frame = cv2.resize(self.read_frame(), (hparams['imgHeight'], hparams['imgWidth']))
+        frame = cv2.resize(self.read_frame(), (28, 28))
 
         self.frame = np.expand_dims(frame, 0)
         return {served_input_names[0]:self.frame}
@@ -326,10 +331,9 @@ class Client_IO:
         self.ax2.cla()
         self.ax1.imshow(self.frame[0])
         #self.ax1.title('Input image')
-        objects = ('Cat', 'Dog')
+        objects = tuple([i for i in range(10)])
         y_pos = np.arange(len(objects))
         self.ax2.bar(y_pos, np.array([response, 1.0-response]), tick_label=objects)#, align='center', alpha=0.5)
-        #self.ax2.set_xticklabels(['Cat', 'Dog'])
         self.ax2.set_title('Class probabilities')
         plt.pause(0.1)
 
