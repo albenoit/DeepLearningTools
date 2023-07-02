@@ -50,7 +50,7 @@ hparams={
          'federated':'FedAvg',#set '' if not making use of federated learning or set the flower strategy name of a custom one from deeplearningtools.helpers
          'minCl':10,#minimum number of clients to allow for federated learning
          'minFit':5,#minimum number of clients to allow for a federated learning fitting round
-         'learningRate':0.0001,
+         'learningRate':0.001,
          'nbEpoch':1,#sets either the number of epoch per cleint for each federated round OR sets the total number of epoch for centralised learning
          'procID':0, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
          'dropout':0.1, #used in the model definition 0.0 mean, no unit is dropped out (all data is kept)
@@ -109,17 +109,17 @@ addon_callbacks=[]
 maybe_download_data()
 #switch from federated learning to centralised depending on hyperparameter setting
 if enable_federated_learning:
-    client_id = int(hparams['procID']) + 1
+    client_id = int(hparams['procID']) + 1 #client ID is 0-based while dataset is 1-based
     #look for a single file related to a specific client
-    raw_data_dir_train = os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data/', 'config'+str(hparams['dataConfig'])+'/client' + str(client_id) + '/client'+str(client_id) +'_config' + str(hparams['dataConfig']) + ".csv")
+    raw_data_dir_train = os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data/', 'config'+str(hparams['dataConfig'])+'/client' + str(client_id) + '/data.csv')
 else:
     #look for all client files as a single dataset as for centralised learning
     raw_data_dir_train = os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data/', 'config'+str(hparams['dataConfig']))
 raw_data_dir_val = os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data')
 
 raw_data_filename_extension=''
-nb_train_samples=2000 #manually adjust here the number of temporal items out of the temporal block size
-nb_val_samples=1000
+nb_train_samples=6000 #manually adjust here the number of temporal items out of the temporal block size
+nb_val_samples=10000
 batch_size=32
 steps_per_epoch=nb_train_samples//batch_size
 validation_steps=nb_val_samples//batch_size
@@ -230,7 +230,7 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
         return tf.reshape(sample, [28, 28, 1]), label
     dataset=dataset.map(reshape_to_2D)
 
-    return dataset.batch(batch_size, drop_remainder=True).prefetch(1)
+    return dataset.shuffle(batch_size*20).batch(batch_size, drop_remainder=True).prefetch(1)
 
 '''
 ################################################################################

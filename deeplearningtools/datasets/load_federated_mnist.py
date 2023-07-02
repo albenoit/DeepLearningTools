@@ -18,24 +18,15 @@ from collections import defaultdict
 
 def maybe_download_data():
     '''
-    try to load the datasets for the federated learning framework
-    if datasets are not available then prepare them
-    arguments:
-        hparams: dictionary of hyperparameters
-        batch_size: batch size
-        need_resampling: boolean indicating if the data needs to be resampled (default: False)
-    returns:
-        train_info: dataframe of information about the train dataset : client names and number of samples
-        val_info: dataframe of information about the test dataset : client names and number of samples
+    try to download and unzip the demo datasets for the federated learning framework
     '''
-    raw_path = "https://raw.githubusercontent.com/MilowB/federated_MNIST_datasets/main/MNIST/" # config1/client1/client1.csv
-    raw_path = "https://zenodo.org/record/8094225/files/mnist-data-Federated-Learning.zip" # config1/client1/client1.csv
+    raw_path = "https://zenodo.org/record/8104408/files/mnist-data-federated-learning.zip"
     dataset_path = os.path.join(os.path.expanduser("~"),'.keras/datasets')
     
-    if not(os.path.exists(os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data-Federated-Learning.zip'))):
+    if not(os.path.exists(os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data-federated-learning.zip'))):
         download_cmd='wget ' + raw_path + ' --directory-prefix '+ dataset_path
         p = subprocess.run(download_cmd, shell=True)
-        unzip_cmd = "unzip " + os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data-Federated-Learning.zip') + " -d " + dataset_path
+        unzip_cmd = "unzip " + os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data-federated-learning.zip') + " -d " + dataset_path
         p = subprocess.run(unzip_cmd, shell=True)
 
 
