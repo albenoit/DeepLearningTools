@@ -208,3 +208,19 @@ The general idea is then to apply few changes on a classical centralized experim
 To adapt to new case studies, just start from the closest example (examples folder) experiment file mysettingsxxx.py and adjust I/O functions.
 For any experiment, the availability of all the required fields in the settings file is checked by the tools/experiments_settings.py script. Exceptions are raised on errors, have a look in this file to ensure you prepared everything right and compare your settings file to the provided examples.
 
+# RUN SOME FRAMEWORK TESTING
+
+Some unit tests are proposed to run testing scenarios of the deeplearningtools framework.
+When applying some framework changes or when testing a new system configuration or container, you may run the following command to ensure your config is still OK:
+
+Using the proposed containers:
+ ```
+ apptainer exec /path/to/tf2_addons.sif pytest test_framework.py
+ ```
+
+Relying on full system install:
+ ```
+ pytest test_framework.py
+ ```
+
+
