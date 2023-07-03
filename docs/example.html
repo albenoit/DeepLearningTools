@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Reference manual" href="reference.html" /><link rel="prev" title="Installation" href="installation.html" />
 
     <link rel="shortcut icon" href="_static/logo_listic.png"/><!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20 -->
-        <title>Example and demonstration - DeepLearningTools 0.1.0 documentation</title>
+        <title>Examples and demonstrations - DeepLearningTools 0.1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
@@ -141,7 +141,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -170,7 +170,7 @@
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Example and demonstration</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Examples and demonstrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="reference.html">Reference manual</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Reference manual</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="reference_index.html">DeepLearningTools package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of DeepLearningTools package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="main_script.html">Main subpackage</a></li>
@@ -220,23 +220,143 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main">
-          <section id="example-and-demonstration">
-<h1>Example and demonstration<a class="headerlink" href="#example-and-demonstration" title="Permalink to this heading">#</a></h1>
-<p># Please find here a list of commands that allows to start the demos
-# -&gt; These demos suppose that your system has all the tools installed to run them
-# A discussed in the README.md the most convenient approach is to rely on a container using Singularity or Apptainer
-# and using the receipe provided in the install folder.
-# in the following, one expects the following container to exist: /path/to/containers/tf2_addons.2.11.0.sif</p>
-<p># NOTES:
-# -&gt; once run, all demos produce logs in specific timestamped folders in the ‘experiments’ folder
-# -&gt; have a look at the logs reported on the Tensorboard tool using command
-apptainer exec /path/to/containers/tf2_addons.2.11.0.sif tensorboard –logdir experiments/YOURTARGETSUBFOLDER</p>
+          <section class="justify" id="examples-and-demonstrations">
+<h1>Examples and demonstrations<a class="headerlink" href="#examples-and-demonstrations" title="Permalink to this heading">#</a></h1>
+<p>Please find here a list of commands that allows to start the demos. These demos suppose that your system has all the tools installed to run them.</p>
+<p>As indicated in the README.md the most convenient approach is to rely on a container using Singularity or Apptainer
+and use the receipe provided in the install folder. In this case, one expects the following container to exist:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>/path/to/containers/tf2_addons.2.11.0.sif
+</pre></div>
+</div>
+<dl>
+<dt>NOTES:</dt><dd><ul class="simple">
+<li><p>Once run, all demos produce logs in specific timestamped folders in the <cite>experiments</cite> folder.</p></li>
+<li><p>Have a look at the logs reported on the Tensorboard tool using command</p></li>
+</ul>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>apptainer<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>/path/to/containers/tf2_addons.2.11.0.sif<span class="w"> </span>tensorboard
+<span class="go">--logdir experiments/YOURTARGETSUBFOLDER</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<section id="classical-centralised-model-optimisation">
+<h2>Classical centralised model optimisation<a class="headerlink" href="#classical-centralised-model-optimisation" title="Permalink to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Regression problem, a simple case with <span class="math notranslate nohighlight">\(y = ax^2 + b\)</span>.</p></li>
+</ul>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>apptainer<span class="w"> </span>run<span class="w"> </span>/path/to/containers/tf2_addons.2.11.0.sif<span class="w"> </span>-m<span class="w"> </span>deeplearningtools.experiments_manager
+<span class="go">-u examples/regression/mysettings_curve_fitting.py</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Classification problem on cats and dogs</p></li>
+</ul>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>apptainer<span class="w"> </span>run<span class="w"> </span>/path/to/containers/tf2_addons.2.11.0.sif<span class="w"> </span>-m<span class="w"> </span>deeplearningtools.experiments_manager
+<span class="go">-u examples/classification/mysettings_image_classification.py</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Timeseries forecasting with advanced csv files preprocessing</p></li>
+</ul>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>apptainer<span class="w"> </span>run<span class="w"> </span>/path/to/containers/tf2_addons.2.11.0.sif<span class="w"> </span>-m<span class="w"> </span>deeplearningtools.experiments_manager
+<span class="go">-u examples/timeseries/mysettings_timeseries_forecasting.py</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Embedding timeseries with advanced csv files preprocessing</p></li>
+</ul>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>apptainer<span class="w"> </span>run<span class="w"> </span>/path/to/containers/tf2_addons.2.11.0.sif<span class="w"> </span>-m<span class="w"> </span>deeplearningtools.experiments_manager
+<span class="go">-u examples/embedding/mysettings_1D_experiments.py</span>
+</pre></div>
+</div>
+</section>
+<section id="decentralised-federated-model-optimisation">
+<h2>Decentralised federated model optimisation<a class="headerlink" href="#decentralised-federated-model-optimisation" title="Permalink to this heading">#</a></h2>
+<p>Running the previous regression problem example in a federated learning context.</p>
+<ul class="simple">
+<li><p>Simulation mode</p></li>
+</ul>
+<p>Run everything on the same machine: parameter server and clients.</p>
+<p>Client logs will appear in <cite>/tmp/ray/session_last/runtime_resources/working_dir_files/</cite></p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>apptainer<span class="w"> </span>run<span class="w"> </span>/path/to/containers/tf2_addons.2.11.0.sif<span class="w"> </span>-m<span class="w"> </span>deeplearningtools.start_federated_server
+<span class="go">-sim --usersettings examples/federated/mysettings_curve_fitting.py</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Distributed mode</p></li>
+</ul>
+<p>Parameter server and clients run on different processes (and maybe machines).</p>
+<ol class="arabic simple">
+<li><p>Start server (and wait for ready state)</p></li>
+</ol>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">#</span>On<span class="w"> </span><span class="nb">command</span><span class="w"> </span>panel<span class="w"> </span><span class="m">0</span>:
+<span class="gp">$ </span>apptainer<span class="w"> </span>run<span class="w"> </span>/path/to/containers/tf2_addons.2.11.0.sif<span class="w"> </span>-m<span class="w"> </span>deeplearningtools.start_federated_server
+<span class="go">--usersettings examples/federated/mysettings_curve_fitting.py</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Start each client into a specific command panel. Client logs will appear in experiments/examples/federated, one folder per client.</p></li>
+</ol>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">#</span>On<span class="w"> </span><span class="nb">command</span><span class="w"> </span>panel<span class="w"> </span><span class="m">1</span>:
+<span class="gp">$ </span>apptainer<span class="w"> </span>run<span class="w"> </span>/path/to/containers/tf2_addons.2.11.0.sif<span class="w"> </span>-m<span class="w"> </span>deeplearningtools.experiments_manager
+<span class="go">--procID 1 -u examples/federated/mysettings_curve_fitting.py</span>
+
+<span class="gp">#</span>On<span class="w"> </span><span class="nb">command</span><span class="w"> </span>panel<span class="w"> </span><span class="m">2</span>:
+<span class="gp">$ </span>apptainer<span class="w"> </span>run<span class="w"> </span>/path/to/containers/tf2_addons.2.11.0.sif<span class="w"> </span>-m<span class="w"> </span>deeplearningtools.experiments_manager
+<span class="go">--procID 2 -u examples/federated/mysettings_curve_fitting.py</span>
+
+<span class="gp">#</span>On<span class="w"> </span><span class="nb">command</span><span class="w"> </span>panel<span class="w"> </span><span class="m">3</span>:
+<span class="gp">$ </span>apptainer<span class="w"> </span>run<span class="w"> </span>/path/to/containers/tf2_addons.2.11.0.sif<span class="w"> </span>-m<span class="w"> </span>deeplearningtools.experiments_manager
+<span class="go">--procID 3 -u examples/federated/mysettings_curve_fitting.py</span>
+
+<span class="gp">#</span>On<span class="w"> </span><span class="nb">command</span><span class="w"> </span>panel<span class="w"> </span><span class="m">4</span>:
+<span class="gp">$ </span>apptainer<span class="w"> </span>run<span class="w"> </span>/path/to/containers/tf2_addons.2.11.0.sif<span class="w"> </span>-m<span class="w"> </span>deeplearningtools.experiments_manager
+<span class="go">--procID 4 -u examples/federated/mysettings_curve_fitting.py</span>
+</pre></div>
+</div>
+</section>
+<section id="running-tests">
+<h2>Running tests<a class="headerlink" href="#running-tests" title="Permalink to this heading">#</a></h2>
+<p>You may want to check regression issues using pytest. Some global test cases are defined in the <cite>test_framework.py</cite> script, run this as follows:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>apptainer<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>/path/to/containers/tf2_addons.2.11.0.sif<span class="w"> </span>pytest<span class="w"> </span>test_framework.py
+</pre></div>
+</div>
+</section>
+<section id="application-case-cats-and-dogs-classification">
+<h2>Application case: Cats and dogs classification<a class="headerlink" href="#application-case-cats-and-dogs-classification" title="Permalink to this heading">#</a></h2>
+<p>Reference: inspired from <a class="reference external" href="https://www.tensorflow.org/tutorials/images/classification">https://www.tensorflow.org/tutorials/images/classification</a></p>
+<section id="training-and-validation">
+<h3>1. Training and validation<a class="headerlink" href="#training-and-validation" title="Permalink to this heading">#</a></h3>
+<p>Start a train/val session using command (a singularity/apptainer container with an optimized version of Tensorflow is used here: <cite>tf2_addons.2.11.0.sif</cite>), see README.md to build it:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>apptainer<span class="w"> </span>run<span class="w"> </span>--nv<span class="w"> </span>tf2_addons.2.11.0.sif.sif<span class="w"> </span>-m<span class="w"> </span>deeplearningtools.experiments_manager
+<span class="go">--usersettings=examples/classification/mysettings_image_classification.py</span>
+</pre></div>
+</div>
+<p>Once done, check for and use in the following steps the resulting folder, say for example <cite>/abs/path/to/deeplearningtools/experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03–22:05:36/</cite>.</p>
+</section>
+<section id="serve-the-trained-model">
+<h3>2. Serve the trained model<a class="headerlink" href="#serve-the-trained-model" title="Permalink to this heading">#</a></h3>
+<p>Start a tensorflow model server on the produced experiment models using command (the -psi command permits to start tensorflow model server installed in a singularity/apptainer container, here tf_server.2.11.0.sif):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python3<span class="w"> </span>-m<span class="w"> </span>deeplearningtools.start_model_serving
+<span class="go">--model_dir /abs/path/to/deeplearningtools/experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36/ -psi /abs/path/to/tf2_addons.2.11.0.sif.sif</span>
+</pre></div>
+</div>
+</section>
+<section id="request-the-model">
+<h3>3. Request the model<a class="headerlink" href="#request-the-model" title="Permalink to this heading">#</a></h3>
+<p>Start a client that sends continuous requests to the server making use of a connected webcam</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>apptainer<span class="w"> </span>run<span class="w"> </span>--nv<span class="w"> </span>tf2_addons.2.11.0.sif.sif<span class="w"> </span>-m<span class="w"> </span>deeplearningtools.experiments_manager
+<span class="go">--predict_stream=-1 --model_dir /abs/path/to/deeplearningtools/experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36</span>
+</pre></div>
+</div>
+</section>
+</section>
 </section>
 
         </article>
@@ -282,8 +402,35 @@ apptainer exec /path/to/containers/tf2_addons.2.11.0.sif tensorboard –logdir e
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Examples and demonstrations</a><ul>
+<li><a class="reference internal" href="#classical-centralised-model-optimisation">Classical centralised model optimisation</a></li>
+<li><a class="reference internal" href="#decentralised-federated-model-optimisation">Decentralised federated model optimisation</a></li>
+<li><a class="reference internal" href="#running-tests">Running tests</a></li>
+<li><a class="reference internal" href="#application-case-cats-and-dogs-classification">Application case: Cats and dogs classification</a><ul>
+<li><a class="reference internal" href="#training-and-validation">1. Training and validation</a></li>
+<li><a class="reference internal" href="#serve-the-trained-model">2. Serve the trained model</a></li>
+<li><a class="reference internal" href="#request-the-model">3. Request the model</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
@@ -292,5 +439,6 @@ apptainer exec /path/to/containers/tf2_addons.2.11.0.sif tensorboard –logdir e
     <script src="_static/doctools.js"></script>
     <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/scripts/furo.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     </body>
 </html>

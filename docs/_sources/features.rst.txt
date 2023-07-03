@@ -4,35 +4,44 @@
 Features
 =================
 
-Our framework offers a full range of features to suit different needs in machine learning and data analysis. Here's an overview of the main features supported:
+Our framework offers a full range of features to suit different needs in machine learning and data analysis. Here's an overview of the main features supported.
 
 Ease of experiment running
 ------------------------------
 
 DeepLearningTools is meant to be used as a command-line tool.
 
+    - A single script/module, `experiments_manager.py`, that manages all the train/val/export/serve process is provided to let you no more care about it.
 
+    - You write the experiment settings file that focuses on the experiment but avoid the machinery. You then define the expected variables and functions (datasets, learning rates, loss, etc.). This is enough work but only focused on the experiment.
 
+    - You write your model in a separate file following a basic function prototype. This will allow you to switch between models but still relying on the same experiment settings.
 
 Dataset handling
 --------------------
 
-
-
-
+`In progress ...`
 
 
 Analysis of experiments results
 -----------------------------------
 
+For each experiment, a file (named by experiment type, hyperparameters and times) is produced, grouping together several metadata informations. It contains, among other things, model outputs, logs and a copy of the scripts used.
 
+You can regularly look at the Tensorboard to monitor indicators, weight distributions, model output embedding, etc.
 
+Once trained (or along training), start the Tensorboard parsing logs of the experiments folder (provided example is experiments/examples/curve_fitting) using:
 
+.. code-block:: shell
+
+    tensorboard  --logdir=experiments/examples/curve_fitting
+
+Then, open a web browser and reach http://127.0.0.1:6006/ to monitor training values and observe the obtained embedding.
 
 Reproducibility
 ------------------
 
-
+Reproducibility of results is ensured by the use of containers which freeze the software environment. Nevertheless, calculation times will still depend on hardware resources. 
 
 
 Use of additional tools

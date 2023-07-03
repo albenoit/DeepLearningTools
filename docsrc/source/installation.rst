@@ -15,7 +15,7 @@ No stable release yet since it's still in development.
 Source files
 -------------------
 
-The sources for Deeplearningtools can be downloaded from the `Github repo`_.
+The sources for DeepLearningTools can be downloaded from the `Github repo`_.
 
 .. _Github repo: https://github.com/albenoit
 
@@ -28,6 +28,10 @@ You can either clone the public repository:
 
 Virtual environment
 ---------------------------
+
+.. warning::
+
+    This features is no longer supported.
 
 Recommended installation process is to rely on containers as shown below. Frozen Python package dependency list is reported in file `requirements.txt` and is used to build containers. Then you can also perform a classical but much less reproducible and stable standard Python (Anaconda) installation using that file too. 
 
@@ -52,18 +56,18 @@ I consider here Singularity or the open source fork Apptainer very close to Dock
 
 **build the image with GPU (as root):**
 
-- build a custom image with the provided `install/tf2_addons.def` file that includes all python packages to build the container.
+- build a custom image with the provided `install/tf2_addons.2.11.0.def` file that includes all python packages to build the container.
 - the `install/tf_server.def` file is also provided to build a Tensorflow model server container.
 
-::
+.. code-block:: console
 
-   sudo apptainer build tf2_addons.sif tf2_addons.def #container for model training and validation
-   sudo apptainer build tf_server.sif tf_server.def   #container for model serving only
+   $ sudo apptainer build tf2_addons.2.11.0.sif tf2_addons.2.11.0.def #container for model training and validation
+   $ sudo apptainer build tf_server.sif tf_server.def   #container for model serving only
 
 
 **run the image (as standard user):**
 
-- open a shell on this container, bind to your system folders of interest: ``apptainer shell --nv --bind /path/to/your/DeepLearningTools/:DeepLearningTools/ tf2_addons.sif``
+- open a shell on this container, bind to your system folders of interest: ``apptainer shell --nv --bind /path/to/your/DeepLearningTools/:DeepLearningTools/ tf2_addons.2.11.0.sif``
 - run the framework, for example on the curve fitting example: ``cd /DeepLearningTools/`` followed by ``python -m deeplearningtools.experiments_manager --usersettings examples/regression/mysettings_curve_fitting.py``
 - if the GPU is not found (error such as ``libcuda reported version is: Invalid argument: expected %d.%d, %d.%d.%d, or %d.%d.%d.%d form for driver version; got "1"``, sometimes, the NVIDIA module should be reloaded after a suspend period. Recover it using command ``nvidia-modprobe -u -c=0``
 

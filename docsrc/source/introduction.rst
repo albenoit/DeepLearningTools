@@ -23,6 +23,8 @@ A quick presentation of the system is available `here <https://docs.google.com/p
 Acknowledgements
 ####################
 
+- This work has been facilitated by intensive experiments conducted on the JeanZay French supercomputer (Grants 2020-AD011011418 and 2021-AD011011418R1) (http://www.idris.fr/jean-zay/)
+
 - We would like to express our gratitude to our colleagues for their support and valuable discussions throughout the development process.
     - Alexandre Benoit
     - Faiza Loukil

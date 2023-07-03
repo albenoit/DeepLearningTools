@@ -141,7 +141,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -170,7 +170,7 @@
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example.html">Example and demonstration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">Examples and demonstrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="reference.html">Reference manual</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Reference manual</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="reference_index.html">DeepLearningTools package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of DeepLearningTools package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="main_script.html">Main subpackage</a></li>
@@ -220,7 +220,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -228,6 +228,27 @@
         <article role="main">
           <section id="frequently-asked-questions">
 <h1>Frequently asked questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this heading">#</a></h1>
+<section id="unable-to-load-a-module">
+<h2>Unable to load a module.<a class="headerlink" href="#unable-to-load-a-module" title="Permalink to this heading">#</a></h2>
+<p>Question 1: Why I have this error?</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>:/usr/bin/python3<span class="w"> </span>:<span class="w"> </span>Error<span class="w"> </span><span class="k">while</span><span class="w"> </span>finding<span class="w"> </span>module<span class="w"> </span>specification<span class="w"> </span><span class="k">for</span>
+<span class="go">&#39;deeplearningtools.experiments_manager&#39; (ModuleNotFoundError : No module named &#39;deeplearningtools&#39;)</span>
+</pre></div>
+</div>
+<p>Answer 1: Bind mounts use.</p>
+<p>When a container is launched, it has its own file system, usually based on a base image.
+By default, the working directory in the container is usually the root directory (/) of the container file system.
+However, to facilitate interaction with the host, it is common practice to bind a host directory to a container directory.
+The bind mount allows a host directory to be mounted in a specified container location.
+This allows the application inside the container to access files and resources on the host, while maintaining the container’s isolation.
+A bind is established by adding these parameters below to the command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>apptainer<span class="w"> </span>shell<span class="w"> </span>--nv<span class="w"> </span>--bind<span class="w"> </span>/path/to/your/DeepLearningTools/:DeepLearningTools/<span class="w"> </span>tf2_addons.sif
+<span class="gp">#</span>or
+<span class="gp">$ </span>apptainer<span class="w"> </span>run<span class="w"> </span>--nv<span class="w"> </span>--bind<span class="w"> </span>/path/to/your/DeepLearningTools/:DeepLearningTools/<span class="w"> </span>tf2_addons.sif<span class="w"> </span>-m
+<span class="go">deeplearningtools.experiments_manager -u examples/regression/mysettings_curve_fitting.py</span>
+</pre></div>
+</div>
+</section>
 </section>
 
         </article>
@@ -273,8 +294,27 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Frequently asked questions</a><ul>
+<li><a class="reference internal" href="#unable-to-load-a-module">Unable to load a module.</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>

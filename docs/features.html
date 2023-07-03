@@ -170,7 +170,7 @@
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example.html">Example and demonstration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">Examples and demonstrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="reference.html">Reference manual</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Reference manual</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="reference_index.html">DeepLearningTools package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of DeepLearningTools package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="main_script.html">Main subpackage</a></li>
@@ -228,19 +228,35 @@
         <article role="main">
           <section class="justify" id="features">
 <h1>Features<a class="headerlink" href="#features" title="Permalink to this heading">#</a></h1>
-<p>Our framework offers a full range of features to suit different needs in machine learning and data analysis. Here’s an overview of the main features supported:</p>
+<p>Our framework offers a full range of features to suit different needs in machine learning and data analysis. Here’s an overview of the main features supported.</p>
 <section id="ease-of-experiment-running">
 <h2>Ease of experiment running<a class="headerlink" href="#ease-of-experiment-running" title="Permalink to this heading">#</a></h2>
 <p>DeepLearningTools is meant to be used as a command-line tool.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>A single script/module, <cite>experiments_manager.py</cite>, that manages all the train/val/export/serve process is provided to let you no more care about it.</p></li>
+<li><p>You write the experiment settings file that focuses on the experiment but avoid the machinery. You then define the expected variables and functions (datasets, learning rates, loss, etc.). This is enough work but only focused on the experiment.</p></li>
+<li><p>You write your model in a separate file following a basic function prototype. This will allow you to switch between models but still relying on the same experiment settings.</p></li>
+</ul>
+</div></blockquote>
 </section>
 <section id="dataset-handling">
 <h2>Dataset handling<a class="headerlink" href="#dataset-handling" title="Permalink to this heading">#</a></h2>
+<p><cite>In progress …</cite></p>
 </section>
 <section id="analysis-of-experiments-results">
 <h2>Analysis of experiments results<a class="headerlink" href="#analysis-of-experiments-results" title="Permalink to this heading">#</a></h2>
+<p>For each experiment, a file (named by experiment type, hyperparameters and times) is produced, grouping together several metadata informations. It contains, among other things, model outputs, logs and a copy of the scripts used.</p>
+<p>You can regularly look at the Tensorboard to monitor indicators, weight distributions, model output embedding, etc.</p>
+<p>Once trained (or along training), start the Tensorboard parsing logs of the experiments folder (provided example is experiments/examples/curve_fitting) using:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>tensorboard<span class="w">  </span>--logdir<span class="o">=</span>experiments/examples/curve_fitting
+</pre></div>
+</div>
+<p>Then, open a web browser and reach <a class="reference external" href="http://127.0.0.1:6006/">http://127.0.0.1:6006/</a> to monitor training values and observe the obtained embedding.</p>
 </section>
 <section id="reproducibility">
 <h2>Reproducibility<a class="headerlink" href="#reproducibility" title="Permalink to this heading">#</a></h2>
+<p>Reproducibility of results is ensured by the use of containers which freeze the software environment. Nevertheless, calculation times will still depend on hardware resources.</p>
 </section>
 <section id="use-of-additional-tools">
 <h2>Use of additional tools<a class="headerlink" href="#use-of-additional-tools" title="Permalink to this heading">#</a></h2>

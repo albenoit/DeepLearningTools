@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Example and demonstration" href="example.html" /><link rel="prev" title="Features" href="features.html" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Examples and demonstrations" href="example.html" /><link rel="prev" title="Features" href="features.html" />
 
     <link rel="shortcut icon" href="_static/logo_listic.png"/><!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20 -->
         <title>Installation - DeepLearningTools 0.1.0 documentation</title>
@@ -170,7 +170,7 @@
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example.html">Example and demonstration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">Examples and demonstrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="reference.html">Reference manual</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Reference manual</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="reference_index.html">DeepLearningTools package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of DeepLearningTools package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="main_script.html">Main subpackage</a></li>
@@ -234,7 +234,7 @@
 </section>
 <section id="source-files">
 <h2>Source files<a class="headerlink" href="#source-files" title="Permalink to this heading">#</a></h2>
-<p>The sources for Deeplearningtools can be downloaded from the <a class="reference external" href="https://github.com/albenoit">Github repo</a>.</p>
+<p>The sources for DeepLearningTools can be downloaded from the <a class="reference external" href="https://github.com/albenoit">Github repo</a>.</p>
 <p>You can either clone the public repository:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/albenoit/DeepLearningTools
 </pre></div>
@@ -242,6 +242,10 @@
 </section>
 <section id="virtual-environment">
 <h2>Virtual environment<a class="headerlink" href="#virtual-environment" title="Permalink to this heading">#</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This features is no longer supported.</p>
+</div>
 <p>Recommended installation process is to rely on containers as shown below. Frozen Python package dependency list is reported in file <cite>requirements.txt</cite> and is used to build containers. Then you can also perform a classical but much less reproducible and stable standard Python (Anaconda) installation using that file too.</p>
 </section>
 <section id="container">
@@ -258,16 +262,16 @@
 </ul>
 <p><strong>build the image with GPU (as root):</strong></p>
 <ul class="simple">
-<li><p>build a custom image with the provided <cite>install/tf2_addons.def</cite> file that includes all python packages to build the container.</p></li>
+<li><p>build a custom image with the provided <cite>install/tf2_addons.2.11.0.def</cite> file that includes all python packages to build the container.</p></li>
 <li><p>the <cite>install/tf_server.def</cite> file is also provided to build a Tensorflow model server container.</p></li>
 </ul>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apptainer<span class="w"> </span>build<span class="w"> </span>tf2_addons.sif<span class="w"> </span>tf2_addons.def<span class="w"> </span><span class="c1">#container for model training and validation</span>
-sudo<span class="w"> </span>apptainer<span class="w"> </span>build<span class="w"> </span>tf_server.sif<span class="w"> </span>tf_server.def<span class="w">   </span><span class="c1">#container for model serving only</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>sudo<span class="w"> </span>apptainer<span class="w"> </span>build<span class="w"> </span>tf2_addons.2.11.0.sif<span class="w"> </span>tf2_addons.2.11.0.def<span class="w"> </span><span class="c1">#container for model training and validation</span>
+<span class="gp">$ </span>sudo<span class="w"> </span>apptainer<span class="w"> </span>build<span class="w"> </span>tf_server.sif<span class="w"> </span>tf_server.def<span class="w">   </span><span class="c1">#container for model serving only</span>
 </pre></div>
 </div>
 <p><strong>run the image (as standard user):</strong></p>
 <ul class="simple">
-<li><p>open a shell on this container, bind to your system folders of interest: <code class="docutils literal notranslate"><span class="pre">apptainer</span> <span class="pre">shell</span> <span class="pre">--nv</span> <span class="pre">--bind</span> <span class="pre">/path/to/your/DeepLearningTools/:DeepLearningTools/</span> <span class="pre">tf2_addons.sif</span></code></p></li>
+<li><p>open a shell on this container, bind to your system folders of interest: <code class="docutils literal notranslate"><span class="pre">apptainer</span> <span class="pre">shell</span> <span class="pre">--nv</span> <span class="pre">--bind</span> <span class="pre">/path/to/your/DeepLearningTools/:DeepLearningTools/</span> <span class="pre">tf2_addons.2.11.0.sif</span></code></p></li>
 <li><p>run the framework, for example on the curve fitting example: <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">/DeepLearningTools/</span></code> followed by <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">deeplearningtools.experiments_manager</span> <span class="pre">--usersettings</span> <span class="pre">examples/regression/mysettings_curve_fitting.py</span></code></p></li>
 <li><p>if the GPU is not found (error such as <code class="docutils literal notranslate"><span class="pre">libcuda</span> <span class="pre">reported</span> <span class="pre">version</span> <span class="pre">is:</span> <span class="pre">Invalid</span> <span class="pre">argument:</span> <span class="pre">expected</span> <span class="pre">%d.%d,</span> <span class="pre">%d.%d.%d,</span> <span class="pre">or</span> <span class="pre">%d.%d.%d.%d</span> <span class="pre">form</span> <span class="pre">for</span> <span class="pre">driver</span> <span class="pre">version;</span> <span class="pre">got</span> <span class="pre">&quot;1&quot;</span></code>, sometimes, the NVIDIA module should be reloaded after a suspend period. Recover it using command <code class="docutils literal notranslate"><span class="pre">nvidia-modprobe</span> <span class="pre">-u</span> <span class="pre">-c=0</span></code></p></li>
 </ul>
@@ -286,7 +290,7 @@ sudo<span class="w"> </span>apptainer<span class="w"> </span>build<span class="w
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Example and demonstration</div>
+                <div class="title">Examples and demonstrations</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
