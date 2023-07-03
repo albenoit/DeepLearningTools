@@ -1,7 +1,12 @@
-'''
-@author : Alexandre Benoit, LISTIC lab, FRANCE
-@brief  : a set of tools to validate the load and check experiments settings file used to train and serve a given model
-'''
+# ========================================
+# FileName: experiment_settings.py
+# Date: 29 june 2023 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: A set of tools to validate the load and check experiments settings file used to train and serve a given model
+# for DeepLearningTools.
+# =========================================
 
 import os, sys, importlib, datetime
 import tensorflow as tf
@@ -9,10 +14,16 @@ import tensorflow as tf
 SETTINGSFILE_COPY_NAME='experiment_settings.py'
 
 def loadModel_def_file(usersettings, absolute_path=False):
-  ''' basic method to load the model targeted by usersettings.model_file
-  Args: sessionFolder, the path to the model file
-  Returns: a keras model
-  '''
+  """
+  Basic method to load the model targeted by usersettings.model_file.
+
+  :param usersettings: The user (sessionFolder) settings object that contains the model file path.
+  :type usersettings: object
+  :param absolute_path: Flag indicating whether the model_file path is an absolute path. Defaults to False.
+  :type absolute_path: bool, optional
+  :return: The loaded Keras model.
+  :rtype: keras.Model
+  """
   if absolute_path == False:
     model_path=os.path.basename(usersettings.model_file)
   if absolute_path == True:
@@ -28,62 +39,74 @@ def loadModel_def_file(usersettings, absolute_path=False):
   print('loaded model file {file}'.format(file=model_path))
   return model
 
-
 def loadExperimentsSettings(filename, call_from_session_folder=False, restart_from_sessionFolder=None, isServingModel=False):
-    ''' load experiments parameters from the mysettingsxxx.py script
-        also mask GPUs to only use the ones specified in the settings file
-      Args:
-        filename: the settings file, if restarting an interrupted training session, you should target the experiments_settings.py copy available in the experiment folder to restart"
-        restart_from_sessionFolder: [OPTIONNAL] set the  session folder of a previously interrupted training session to restart
-        isServingModel: [OPTIONNAL] set True in the case of using model serving (server or client mode) so that some settings are not checked
-    '''
+  """
+  Load experiments parameters from the mysettingsxxx.py script.
+  Also mask GPUs to only use the ones specified in the settings file.
 
-    if restart_from_sessionFolder is not None:
-      if os.path.exists(restart_from_sessionFolder):
-        print('Attempting to restart a previously ran training job...')
-        sessionFolder=restart_from_sessionFolder
-        #target the initial experiments settings file
-        filename=os.path.join(restart_from_sessionFolder, SETTINGSFILE_COPY_NAME)
-        print('From working folder'+str(os.getcwd()))
-        print('looking for '+str(filename))
-        if os.path.exists(filename):
-          print('Found')
-        else:
-          raise ValueError('Could not find experiment_settings.py file in the experiment folder:'+str(sessionFolder))
+  :param filename: The settings file. If restarting an interrupted training session, you should target the experiments_settings.py copy available in the experiment folder to restart.
+  :type filename: str
+  :param call_from_session_folder: Flag indicating whether the function is called from the session folder. Defaults to False.
+  :type call_from_session_folder: bool, optional
+  :param restart_from_sessionFolder: [OPTIONAL] Set the session folder of a previously interrupted training session to restart.
+  :type restart_from_sessionFolder: str, optional
+  :param isServingModel: [OPTIONAL] Set True in the case of using model serving (server or client mode) so that some settings are not checked.
+  :type isServingModel: bool, optional
+  :return: The loaded ExperimentSettings object and the session folder.
+  :rtype: Tuple[ExperimentSettings, str]
+  """
+  
+  if restart_from_sessionFolder is not None:
+    if os.path.exists(restart_from_sessionFolder):
+      print('Attempting to restart a previously ran training job...')
+      sessionFolder=restart_from_sessionFolder
+      #target the initial experiments settings file
+      filename=os.path.join(restart_from_sessionFolder, SETTINGSFILE_COPY_NAME)
+      print('From working folder'+str(os.getcwd()))
+      print('looking for '+str(filename))
+      if os.path.exists(filename):
+        print('Found')
       else:
-        raise ValueError('Could not restart interrupted training session, working folder not found:'+str(restart_from_sessionFolder))
+        raise ValueError('Could not find experiment_settings.py file in the experiment folder:'+str(sessionFolder))
     else:
-      print('Process starts...')
+      raise ValueError('Could not restart interrupted training session, working folder not found:'+str(restart_from_sessionFolder))
+  else:
+    print('Process starts...')
 
-    usersettings=ExperimentSettings(filename, isServingModel, call_from_session_folder)
+  usersettings=ExperimentSettings(filename, isServingModel, call_from_session_folder)
 
-    if isServingModel:
-      sessionFolder=os.path.dirname(filename)
+  if isServingModel:
+    sessionFolder=os.path.dirname(filename)
 
-    #manage the working folder in the case of a new experiment
-    workingFolder=usersettings.workingFolder
-    if restart_from_sessionFolder is None:
-      sessionFolder=os.path.join(workingFolder, usersettings.session_name+'_'+datetime.datetime.now().strftime("%Y-%m-%d--%H:%M:%S"))
-      usersettings.recoverFromCheckpoint=False
-    else:
-      usersettings.recoverFromCheckpoint=True
+  #manage the working folder in the case of a new experiment
+  workingFolder=usersettings.workingFolder
+  if restart_from_sessionFolder is None:
+    sessionFolder=os.path.join(workingFolder, usersettings.session_name+'_'+datetime.datetime.now().strftime("%Y-%m-%d--%H:%M:%S"))
+    usersettings.recoverFromCheckpoint=False
+  else:
+    usersettings.recoverFromCheckpoint=True
 
-    print('Considered usersettings.hparams=',str(usersettings.hparams))
-    return usersettings, sessionFolder
+  print('Considered usersettings.hparams=',str(usersettings.hparams))
+  return usersettings, sessionFolder
 
 
 class ExperimentSettings(object):
-  '''an experiment settings object with some validators
-  '''
+  """
+  An experiment settings object with some validators
+  """
   def __init__(self, settingsFile, isServingModel, call_from_session_folder=False):
-    ''' loads a python script file that describes an experiment setup
-    and loads its required parameters
-      Args:
-        settingsFile, the settings filename
-        isServingModel, boolean, True if loading file to serve the target model
-      Raises:
-        ValueError if the expected parameters are missing or wrong
-    '''
+    """
+    Loads a python script file that describes an experiment setup and loads its required parameters
+
+    :param settingsFile: The settings filename.
+    :type settingsFile: str
+    :param isServingModel: Boolean value indicating whether the file is loaded to serve the target model.
+    :type isServingModel: bool
+    :param call_from_session_folder: Optional parameter to indicate if the method is called from the session folder. Defaults to False.
+    :type call_from_session_folder: bool, optional
+
+    :raises ValueError: If the expected parameters are missing or wrong.
+    """
     # load the settings file
     print('Trying to load experiments settings file : '+str(settingsFile))
     try:
@@ -203,7 +226,6 @@ class ExperimentSettings(object):
     self.reference_labels=self.assertType('reference_labels', list, 'a list of strings THAT MUST BE of the same length as the number of model output tensors')
     self.addon_callbacks=self.has('addon_callbacks', 'a function that receives tf.keras.model and train and val input pipelines as parameters and retruns a list of tf.keras.callbacks ')
 
-
     for key in vars(self).keys():
       assert getattr(self,key)!=None, 'Parameter '+key+' not initialized'
 
@@ -213,36 +235,100 @@ class ExperimentSettings(object):
     print('******************************************************')
 
   def hasOrDefault(self, param, defaultValue, message=None):
-      if hasattr(self.experiment_settings,param):
-        return getattr(self.experiment_settings,param)
-      else:
-        print('Did not find parameter', param, 'using as default', str(defaultValue))
-        if message is not None:
-          print('->',message)
-        return defaultValue
+    """
+    Checks if a parameter exists in the experiment settings object and returns its value if it exists, or a default value if it doesn't.
+
+    :param param: The name of the parameter to check.
+    :type param: str
+    :param defaultValue: The default value to return if the parameter doesn't exist.
+    :type defaultValue: Any
+    :param message: Optional message to print when the parameter is not found. Defaults to None.
+    :type message: str, optional
+
+    :return: The value of the parameter if it exists, or the default value if it doesn't.
+    :rtype: Any
+    """
+    if hasattr(self.experiment_settings,param):
+      return getattr(self.experiment_settings,param)
+    else:
+      print('Did not find parameter', param, 'using as default', str(defaultValue))
+      if message is not None:
+        print('->',message)
+      return defaultValue
 
   def __get_model_name(self):
-          return self.model_file.split('.')[0].split('/')[-1]
+    return self.model_file.split('.')[0].split('/')[-1]
 
   def assertPositive_above_zero(self, param, param_description):
-          message='Specification error on variable {param}: {descr}. It must be set and be above 0'.format(param=param, descr=param_description)
-          assert hasattr(self.experiment_settings,param), message
-          assert getattr(self.experiment_settings,param)>0, message
-          return getattr(self.experiment_settings,param)
+    """
+    Asserts that a parameter exists in the experiment settings object and its value is positive and above zero.
+
+    :param param: The name of the parameter to check.
+    :type param: str
+    :param param_description: Description of the parameter for the error message.
+    :type param_description: str
+
+    :return: The value of the parameter if it exists and is positive and above zero.
+
+    :raises AssertionError: If the parameter is not found or its value is not positive and above zero.
+    """
+    message='Specification error on variable {param}: {descr}. It must be set and be above 0'.format(param=param, descr=param_description)
+    assert hasattr(self.experiment_settings,param), message
+    assert getattr(self.experiment_settings,param)>0, message
+    return getattr(self.experiment_settings,param)
+  
   def assertPositive_above_equal_zero(self, param, param_description):
-          message='Specification error on variable {param}: {descr}. It must be set and be above 0'.format(param=param, descr=param_description)
-          assert hasattr(self.experiment_settings,param), message
-          assert getattr(self.experiment_settings,param)>=0, message
-          return getattr(self.experiment_settings,param)
+    """
+    Asserts that a parameter exists in the experiment settings object and its value is positive and above or equal to zero.
+    
+    :param param: The name of the parameter to check.
+    :type param: str
+    :param param_description: Description of the parameter for the error message.
+    :type param_description: str
+
+    :return: The value of the parameter if it exists and is positive and above or equal to zero.
+
+    :raises AssertionError: If the parameter is not found or its value is not positive and above or equal to zero.
+    """
+    message='Specification error on variable {param}: {descr}. It must be set and be above 0'.format(param=param, descr=param_description)
+    assert hasattr(self.experiment_settings,param), message
+    assert getattr(self.experiment_settings,param)>=0, message
+    return getattr(self.experiment_settings,param)
 
   def assertType(self, param, type, param_description):
-          message='Specification error on variable {param}: {descr}. It must be of type '.format(param=param, descr=type)
-          assert isinstance(getattr(self.experiment_settings,param), type), message
-          return getattr(self.experiment_settings,param)
+    """
+    Asserts that a parameter exists in the experiment settings object and its value is of the specified type.
+
+    :param param: The name of the parameter to check.
+    :type param: str
+    :param type: The expected type of the parameter's value.
+    :type type: type
+    :param param_description: Description of the parameter for the error message.
+    :type param_description: str
+
+    :return: The value of the parameter if it exists and is of the specified type.
+
+    :raises AssertionError: If the parameter is not found or its value is not of the specified type.
+    """
+    message='Specification error on variable {param}: {descr}. It must be of type '.format(param=param, descr=type)
+    assert isinstance(getattr(self.experiment_settings,param), type), message
+    return getattr(self.experiment_settings,param)
 
   def has(self, param, error_message):
-      assert hasattr(self.experiment_settings, param), 'Missing {param} : {msg}'.format(param=param, msg=error_message)
-      return getattr(self.experiment_settings,param)
+    """
+    Checks if a parameter exists in the experiment settings object.
+    
+    :param param: The name of the parameter to check.
+    :type param: str
+    :param error_message: The error message to display if the parameter is missing.
+    :type error_message: str
+
+    :return: The value of the parameter if it exists.
+
+    :raises AssertionError: If the parameter is missing in the experiment settings object.
+    """
+    assert hasattr(self.experiment_settings, param), 'Missing {param} : {msg}'.format(param=param, msg=error_message)
+    return getattr(self.experiment_settings,param)
 
   def summary(self):
     print('******************************************************')

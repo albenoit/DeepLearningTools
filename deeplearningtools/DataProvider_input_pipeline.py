@@ -1,3 +1,12 @@
+# ========================================
+# FileName: DataProvider_input_pipeline.py
+# Date: 29 june 2020 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: A set of tools to preprocess data and build up input data pipelines
+# for DeepLearningTools.
+# =========================================
 '''
 @author : Alexandre Benoit, LISTIC lab, FRANCE (plus some colleagues and interns such as Louis Klein on spring 2017)
 @brief  : a set of tools to preprocess data and build up input data pipelines

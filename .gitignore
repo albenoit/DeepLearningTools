@@ -1,8 +1,13 @@
 .idea
 
-# Results folders
-experiments/
+
+
+.cache
+.config
+.flwr
+.keras
 tmp/
+experiments/examples/
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template

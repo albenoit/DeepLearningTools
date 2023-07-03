@@ -1,14 +1,20 @@
+# ========================================
+# FileName: start_kafka_producer.py
+# Date: 29 june 2020 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: A set of functionnalities to start a federated server
+# for DeepLearningTools.
+# =========================================
 # main parameter server, should be started first
+
 import numpy as np
 import os, importlib
 from typing import Dict, Optional, Tuple
-
-
 import flwr as fl
 from flwr.common import NDArrays, Scalar
-
 import tensorflow as tf
-
 import deeplearningtools
 from deeplearningtools import experiments_manager # make use of all the standard tools of the framework
 from deeplearningtools import tools
@@ -16,7 +22,9 @@ from deeplearningtools import tools
 global monitored_value_threshold # monitored discrepancy value (loss or other) used to trigger logging on better model
 
 def get_commands():
-  ''' defines the command line argument parser dedicated to this script'''
+  """
+  Defines the command line argument parser dedicated to running session.
+  """
   # retreive command line arguents, all the standard commands 
   parser=tools.command_line_parser.get_commands()
   # add script specific arguments
@@ -41,6 +49,17 @@ def get_commands():
   return parser
 
 def get_custom_strategy(strategy_name):
+  """
+  Retrieve a custom strategy class based on the strategy_name.
+
+  :param strategy_name: Name of the strategy.
+  :type strategy_name: str
+
+  :return: The custom strategy class.
+  :rtype: str
+
+  :raises ValueError: If the strategy fails to load.
+  """
   strategy_cl=None
   print('Trying to load stategy from standard Flower strategies:', strategy_name)
   try:
@@ -58,8 +77,24 @@ def get_custom_strategy(strategy_name):
   return strategy_cl
 
 def get_evaluate_fn(usersettings, model, val_data, file_writer, log_dir):
-    """inspired from https://flower.dev/docs/evaluation.html
-    Return an evaluation function for server-side evaluation.
+    """
+    Return evaluation metrics results for server-side evaluation.
+
+    Reference: inspired from https://flower.dev/docs/evaluation.html
+
+    :param usersettings: User settings for the evaluation function.
+    :type usersettings: object
+    :param model: The model to be evaluated.
+    :type model: keras.Model
+    :param val_data: Validation data for evaluation.
+    :type val_data: dict
+    :param file_writer: File writer for logging into tensorBoard.
+    :type file_writer: object tf.summary.FileWriter
+    :param log_dir: Directory for logging.
+    :type log_dir: str
+
+    :return: The evaluation metrics result for each out.
+    :rtype: tuple
     """
     # The `evaluate` function will be called after every round
     def evaluate(
@@ -89,6 +124,16 @@ def get_evaluate_fn(usersettings, model, val_data, file_writer, log_dir):
     return evaluate
 
 def run(FLAGS):
+  """
+  Run the federated learning server.
+
+  :param FLAGS: Command line arguments and flags.
+  :type FLAGS: object
+
+  :return: The result of the server run.
+  :rtype: object
+
+  """
   global monitored_value_threshold
   monitored_value_threshold=np.inf # indicator that triggers model checkpointing initially set to maximum value 
   #get experiment settings filename path
@@ -141,7 +186,6 @@ def run(FLAGS):
     min_eval_clients=min_fit_clients
     print('Experiment settings does not specify the minimum number of evaluated clients (hparams[\'minEval\'] -> automatically set to the min_fit_clients value')
   
-
   if os.path.exists(FLAGS.pretrainedmodelcheckpointpath):
     print('centralized model is pretrained... loading from ', FLAGS.pretrainedmodelcheckpointpath)
     from helpers.model import load_model

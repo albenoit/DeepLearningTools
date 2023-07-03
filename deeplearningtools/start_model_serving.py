@@ -1,22 +1,34 @@
-''' A set of tools to help running tensorflow model server
-  Alexandre Benoit, LISTIC, 2020
-
-  Use example : start model server on an experiment using command:
+# ========================================
+# FileName: start_model_serving.py
+# Date: 29 june 2020 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: A set of tools to help running tensorflow model server
+# for DeepLearningTools.
+# =========================================
+"""
+Use example : start model server on an experiment using command:
   -> note the use of the optionnal -psi option that relies on tensorflow_model_server installed in a singularity container (build from definition file tf_server.def provided in the repository)
   python3 start_model_serving.py --model_dir=/home/alben/workspace/listic-deeptool/experiments/examples/curve_fitting/my_test_hiddenNeurons50_predictSmoothParamsTrue_learningRate0.1_nbEpoch5000_addNoiseTrue_anomalyAtX-3_2020-03-10--21\:59\:52/ -psi /home/alben/install/containers/tf_server.cpu.sif
+"""
 
-'''
 import os
 import argparse
 import deeplearningtools.helpers.model_serving_tools as srv_comm_tools
 
 def get_served_model_info(one_model_path, expected_model_name, tf_server_container_path):
-  ''' basic function that checks served model behaviors
-  Args:
-  one_model_path: the path to a servable model directory
-  expected_model_name: the model name that is expected to be found on the server
-  Returns:
-    Nothing for now
+  '''
+  Basic function that checks served model behaviors.
+
+  :param one_model_path: The path to a servable model directory
+  :type one_model_path: str
+  :param expected_model_name: The model name that is expected to be found on the server
+  :type expected_model_name: str
+  :param tf_server_container_path: the path to an apptainer (ex. singularity) container.
+  :type tf_server_container_path: str
+  
+  :return: None
   '''
   import subprocess
   #get the first subfolder of the served models directory
@@ -34,6 +46,9 @@ def get_served_model_info(one_model_path, expected_model_name, tf_server_contain
     raise ValueError('Target model {target} name NOT found in the command answer'.format(target=expected_model_name))
 
 def start_model_serving(flags):
+  """
+  Starts a TensorFlow model server for serving trained models, get trained model config, check server, and start it from host of container.
+  """
   # get trained model config
   config=srv_comm_tools.get_model_server_cfg(flags.model_dir)
   print('model_name', config['SERVER']['model_name'])

@@ -1,13 +1,36 @@
-# a set of helpers facilitating the implementation of federated learning with the flower library
+# ========================================
+# FileName: federated.py
+# Date: 29 june 2023 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: A set of helpers facilitating the implementation of federated learning with the flower library
+# for DeepLearningTools.
+# =========================================
+
 import tensorflow as tf
 import flwr as fl
 import numpy as np
-from tools.experiment_settings import define_callbacks
+from deeplearningtools.tools.callbacks import define_callbacks
 
 # Define Flower client
 class FlClient(fl.client.NumPyClient):
     def __init__(self, cid, settings, model, train_data, train_iterations_per_epoch, val_data, val_iterations_per_epoch, workers, file_writer, log_dir):
-        self.cid = cid #an interger client identifier, may be None or empty if not in simulation mode
+        """
+        Constructor for the FlClient class.
+
+        :param cid: Client identifier.
+        :param settings: Settings object.
+        :param model: Model object.
+        :param train_data: Training data.
+        :param train_iterations_per_epoch: Number of training iterations per epoch.
+        :param val_data: Validation data.
+        :param val_iterations_per_epoch: Number of validation iterations per epoch.
+        :param workers: Number of workers.
+        :param file_writer: File writer object.
+        :param log_dir: Log directory.
+        """
+        self.cid = cid #an integer client identifier, may be None or empty if not in simulation mode
         self.history=None
         self.round=0
         self.last_val_loss=np.inf
@@ -23,9 +46,21 @@ class FlClient(fl.client.NumPyClient):
         self.all_callbacks_dict=define_callbacks(self.settings, self.model, self.train_iterations_per_epoch, self.file_writer, self.log_dir)
 
     def get_parameters(self):
+        """
+        Get the client model parameters.
+
+        :return: Model parameters.
+        """
         return self.model.get_weights()
 
     def fit(self, parameters, config):
+        """
+        Fit the client model.
+
+        :param parameters: Model parameters.
+        :param config: Configuration dictionary.
+        :return: Tuple containing updated model parameters, number of training samples, and a dictionary of log metrics.
+        """
         print('#################### FlClient.fit new round', self.round)
         #set updated weights
         self.model.set_weights(parameters)
@@ -68,6 +103,13 @@ class FlClient(fl.client.NumPyClient):
         return self.model.get_weights(), self.train_iterations_per_epoch*self.settings.batch_size, logs_last_epoch#{}
 
     def evaluate(self, parameters, config):
+        """
+        Evaluate the client model.
+
+        :param parameters: Model parameters.
+        :param config: Configuration dictionary.
+        :return: Tuple containing loss, number of validation samples, and a dictionary with accuracy.
+        """
         print('Evaluating model from received parameters...')
         self.model.set_weights(parameters)
         losses = self.model.evaluate(x=self.val_data,
@@ -85,28 +127,57 @@ class FlClient(fl.client.NumPyClient):
         print('FlClient.evaluate losses:',losses)
 
         return losses[self.settings.monitored_loss_name], self.val_iterations_per_epoch*self.settings.batch_size, losses#self.history.history#loss_dict
+    
+# -------------------------------------------------------------------------------------------------------------------------------------
+# A generic Flower client class, from https://github.com/adap/flower/blob/main/examples/simulation_tensorflow/sim.ipynb
+# -------------------------------------------------------------------------------------------------------------------------------------
 
-# a generic Flower client class, from https://github.com/adap/flower/blob/main/examples/simulation_tensorflow/sim.ipynb
 class FlowerClient_(fl.client.NumPyClient):
     def __init__(self, model, x_train, y_train, x_val, y_val) -> None:
-        ''' generic constructor that merges a model and data sources
-          allocated externally into a single Flower client'''
+        """
+        Constructor for the FlowerClient. It merges a model and data sources
+        allocated externally into a single Flower client.
+
+        :param model: Model object.
+        :param x_train: Training data features.
+        :param y_train: Training data labels.
+        :param x_val: Validation data features.
+        :param y_val: Validation data labels.
+        """
         self.model = model
         self.x_train, self.y_train = x_train, y_train
         self.x_val, self.y_val = x_val, y_val
 
     def get_parameters(self, config):
+        """
+        Get the FL client model parameters.
+
+        :param config: Configuration dictionary.
+        :return: Model parameters.
+        """
         return self.model.get_weights()
 
     def fit(self, parameters, config):
+        """
+        Fit the FL client model.
+
+        :param parameters: Model parameters.
+        :param config: Configuration dictionary.
+        :return: Tuple containing updated model parameters, number of training samples, 'and an empty dictionary'. TODO utility of this empty dict
+        """
         self.model.set_weights(parameters)
         self.model.fit(self.x_train, self.y_train, epochs=1, verbose=2)
         return self.model.get_weights(), len(self.x_train), {}
 
     def evaluate(self, parameters, config):
+        """
+        Evaluate the FL client model.
+
+        :param parameters: Model parameters.
+        :param config: Configuration dictionary.
+        :return: Tuple containing loss, number of validation samples, and a dictionary with accuracy.
+        """
         self.model.set_weights(parameters)
         loss, acc = self.model.evaluate(self.x_val, self.y_val, verbose=2)
         return loss, len(self.x_val), {"accuracy": acc}
-
-
 

@@ -1,5 +1,14 @@
-# a set of helpers to convert tensors to their serialized binary strings to facilitate message io accross processes
+# ========================================
+# FileName: tensor_msg_io.py
+# Date: 29 june 2023 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: A set of helpers to convert tensors to their serialized binary strings to facilitate message io accross processes
 # from https://www.tensorflow.org/tutorials/load_data/tfrecord?hl=en
+# for DeepLearningTools.
+# =========================================
+
 import tensorflow as tf
 
 def _bytes_feature(value):
@@ -36,9 +45,23 @@ def _tensor_feature(tensor):
   #next integrate into a tf.train.Feature
   return tf.train.Feature(bytes_list=tf.train.BytesList(value=[serialized_nonscalar.numpy()]))
 
+#-----------------------------------------------------------------
 # Create a dictionary with features that may be relevant.
+#-----------------------------------------------------------------
+
 def serialize_image_float_example(image_tensor, label_id=None):
-  
+  """
+  Creates a tf.train.Example string message ready to be written to a file or sent as a message.
+
+  :param image_tensor: The image tensor to be serialized.
+  :type image_tensor: tf.Tensor
+
+  :param label_id: The label associated with the image (optional).
+  :type label_id: str
+
+  :return: A dictionary mapping the feature name to the tf.train.Example-compatible.
+  :rtype: str
+  """
   feature = {
       'image_raw': _tensor_feature(image_tensor)#simpler and keeps dimensions info compared to _float_list_feature(image_tensor.numpy().flatten().tolist()),
   }
@@ -48,7 +71,18 @@ def serialize_image_float_example(image_tensor, label_id=None):
   return tf.train.Example(features=tf.train.Features(feature=feature)).SerializeToString()
 
 def serialize_tensor_label_example(tensor, label):
-  
+  """
+  Creates a tf.train.Example string message ready to be written to a file or sent as a message.
+
+  :param tensor: The tensor to be serialized.
+  :type tensor: tf.Tensor
+
+  :param label: The label associated with the tensor.
+  :type label: str
+
+  :return: A dictionary mapping the feature name to the tf.train.Example-compatible.
+  :rtype: str
+  """
   feature = {
       'value': _tensor_feature(tensor),
       'label': _tensor_feature(label),
@@ -59,9 +93,16 @@ def serialize_tensor_label_example(tensor, label):
 def serialize_float_with_text_label(values, label):
   """
   Creates a tf.train.Example string message ready to be written to a file or sent as a message.
+
+  :param values: The list of floating-point values to be serialized.
+  :type values: list[float]
+
+  :param label: The text label associated with the values.
+  :type label: str
+
+  :return: A dictionary mapping the feature name to the tf.train.Example-compatible.
+  :rtype: str
   """
-  # Create a dictionary mapping the feature name to the tf.train.Example-compatible
-  # data type.
   feature = {
       'values': _float_feature(values),
       'label': _bytes_feature(label),
@@ -69,9 +110,22 @@ def serialize_float_with_text_label(values, label):
 
   return tf.train.Example(features=tf.train.Features(feature=feature)).SerializeToString()
 
-###### Simple tensor + string label encode/decode helpers
-def serialize_tensor_with_label(tensor, label):
+#-----------------------------------------------------------
+# Simple tensor + string label encode/decode helpers
+#-----------------------------------------------------------
 
+def serialize_tensor_with_label(tensor, label):
+  """
+  Creates a tf.train.Example string message ready to be written to a file or sent as a message.
+
+  :param tensor: Input tensor to be serialized.
+  :type tensor: tf.Tensor
+
+  :param label: Corresponding label associated with the tensor.
+  :type label: str
+
+  :return: Create a dictionary describing the expected features.
+  """
   feature = {
       'values': _tensor_feature(tensor),
       'label': _bytes_feature(label),
@@ -79,8 +133,14 @@ def serialize_tensor_with_label(tensor, label):
   return tf.train.Example(features=tf.train.Features(feature=feature)).SerializeToString()
    
 def decode_tensor_with_label_example(example_proto, dtype=tf.float32):
-  ''' decode a tf.train.Example, supposing its structure is known '''
-  # Create a dictionary describing the expected features.
+  """
+  Decode a tf.train.Example, supposing its structure is known.
+
+  :param example_proto: Input tensor to be serialized.
+  :type example_proto: tf.Tensor
+
+  :return: Create a dictionary describing the expected features.
+  """
   data_feature_description = {
       'values': tf.io.FixedLenFeature([], tf.string),
       'label': tf.io.FixedLenFeature([], tf.string),
@@ -93,9 +153,20 @@ def decode_tensor_with_label_example(example_proto, dtype=tf.float32):
 
   return instance_label, instance_tensor
 
-###### Simple tensor encode/decode helpers
+#------------------------------------------------------
+# Simple tensor encode/decode helpers
+#------------------------------------------------------
+
 def serialize_tensor(tensor):
-  ''' simply serialize a single tensor as a tf.Example '''
+  """
+  Simply serialize a single tensor as a tf.Example.
+
+  :param tensor: A tensor to be serialized.
+  :type tensor: tf.Tensor
+  
+  :return: Create a dictionary describing the expected features.
+
+  """
   if isinstance(tensor, (list,tuple)):
     #tf.print('*** input tensor is list or tuple')
     feature={'values_'+str(keyID):_tensor_feature(item) for keyID, item in enumerate(tensor)}
@@ -111,8 +182,14 @@ def serialize_tensor(tensor):
   return tf.train.Example(features=tf.train.Features(feature=feature)).SerializeToString()
 
 def decode_tensor_proto(example_proto, dtype):
-  ''' decode a tf.train.Example, supposing its structure is a simple tensor '''
-  # Create a dictionary describing the expected features.
+  """
+  Decode a tf.train.Example, supposing its structure is a simple tensor.
+
+  :param example_proto: A dataset to be serialized.
+  :type example_proto: tf.Tensor
+
+  :return: A dictionary describing the expected features.
+  """
   data_feature_description = {
       'values': tf.io.FixedLenFeature([], tf.string),
   }
@@ -125,7 +202,14 @@ def decode_tensor_proto(example_proto, dtype):
 
 
 def decode_multitensor_proto(data_feature_descriptions, example_proto):
-  ''' decode a tf.train.Example, supposing its structure is known '''
+  """
+  Decode a tf.train.Example, supposing its structure is known.
+
+  :param data_feature_descriptions: A dataset to be serialized.
+  :type data_feature_descriptions: tf.Tensor
+  
+  :return: Create a dictionary describing the expected features.
+  """
   #print('+++++++++++++data_feature_descriptions', data_feature_descriptions['feature_specs'])
   features_dict = tf.io.parse_single_example(example_proto, data_feature_descriptions['feature_specs'])
   #print('features_dict', features_dict)
@@ -136,9 +220,14 @@ def decode_multitensor_proto(data_feature_descriptions, example_proto):
   return instance_tensor
 
 def get_data_label_features_from_dataset(dataset):
-  '''
-  construct a dictionnary of feature description to decode serialized tensors
-  '''  
+  """
+  Construct a dictionnary of feature description to decode serialized tensors.
+
+  :param dataset: A dataset to be serialized.
+  :type dataset: tf.Tensor
+  
+  :return: Create a dictionary describing the expected features.
+  """
   def get_features_specs(dataset_col_specs, default_name):
     data_feature_descriptions={}
     feature_types={}
@@ -165,9 +254,6 @@ def get_data_label_features_from_dataset(dataset):
   print('data_specs=', data_specs)
   return data_specs, label_specs
   
-
-
-
 ############### EXAMPLES ###################
 #encoding example 1 (float scalar, label)
 if __name__ == "__main__":

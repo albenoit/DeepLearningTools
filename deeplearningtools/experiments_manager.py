@@ -1,3 +1,12 @@
+# ========================================
+# FileName: experiments_manager.py
+# Date: 29 june 2020 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: A set of script that demonstrate the use of Tensorflow experiments and estimators on different data types for various tasks
+# for DeepLearningTools.
+# =========================================
 """
 #What's that ?
 A set of script that demonstrate the use of Tensorflow experiments and estimators on different data types for various tasks
@@ -103,7 +112,7 @@ from tensorflow.keras import mixed_precision
 #local imports
 from deeplearningtools.helpers import model_serving_tools
 from deeplearningtools.helpers.model import track_weights_change
-from deeplearningtools.helpers.federated.flclient import FlClient
+from deeplearningtools.helpers.federated_utils.flclient import FlClient
 from deeplearningtools.helpers import tensor_msg_io
 from deeplearningtools.helpers import kafka_io
 from deeplearningtools.tools import experiments_settings_surgery
