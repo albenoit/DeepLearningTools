@@ -185,9 +185,11 @@ WEIGHTS_MOVING_AVERAGE_DECAY=0.998
 def build_run_training_session(cid: str=''):
   """
   Define and run the optimisation process.
+
   This function loads settings from the working directory and builds/run the optimisation.
-    This process can be the full training procedure OR this can be an ephemeral intermediate training step
-    as for transfer learning or federated learning
+
+  This process can be the full training procedure OR this can be an ephemeral intermediate training step
+  as for transfer learning or federated learning.
   """
   print('Starting a single training session...')
   # load configuration, expects the process working directory
@@ -197,15 +199,14 @@ def build_run_training_session(cid: str=''):
   settings_file=os.path.join(os.getcwd(), SETTINGSFILE_COPY_NAME)
   if cid!='':
     message='\nINFO: cid {cid} with cwd={cwd} and job_session_folder in locals={l} or job_session_folder in globals={g}'.format(cid=cid,
-                                                                                                                        cwd=os.getcwd(),
-                                                                                                                        l='job_session_folder' in locals(),
-                                                                                                                        g='job_session_folder' in globals())
+                                                                                                                                cwd=os.getcwd(),
+                                                                                                                                l='job_session_folder' in locals(),
+                                                                                                                                g='job_session_folder' in globals())
     print(message) 
     settings_file=experiments_settings_surgery.insert_additionnal_hparams(settings_file, {'procID':cid, 'cid':cid, 'isFLserver':False})
 
   #load experiment settings from current working directory
-  usersettings, _ =loadExperimentsSettings(filename=settings_file,
-                                           call_from_session_folder=True)
+  usersettings, _ =loadExperimentsSettings(filename=settings_file,call_from_session_folder=True)
   
   #------------------------------------------------------------
   #prepare session
@@ -524,7 +525,6 @@ def run_experiment(usersettings):
   #check GPU requirements vs availability
   if usersettings.debug:
     tf.debugging.set_log_device_placement(True)
-
 
   os.environ['TF_GPU_THREAD_MODE']='gpu_private'
  
