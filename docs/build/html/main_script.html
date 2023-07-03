@@ -1,0 +1,1028 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Test script" href="unit_test.html" /><link rel="prev" title="DeepLearningTools package" href="reference_index.html" />
+
+    <link rel="shortcut icon" href="_static/logo_listic.png"/><!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20 -->
+        <title>Main subpackage - DeepLearningTools 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  --font-stack: Roboto, sans-serif;
+  --font-stack--monospace: Open Sans, monospace;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<div class="announcement">
+  <aside class="announcement-content">
+     <em>Deeplearningtools is currently in development.</em> 
+  </aside>
+</div>
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">DeepLearningTools 0.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="_static/main_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="_static/main_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">DeepLearningTools 0.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">Example and demonstration</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="reference.html">Reference manual</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Reference manual</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="reference_index.html">DeepLearningTools package</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of DeepLearningTools package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Main subpackage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="unit_test.html">Test script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference_helpers.html">deeplearningtools.helpers subpackage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference_tools.html">deeplearningtools.tools subpackage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Community involvement and contributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="version.html">Release notes</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/albenoit/DeepLearningTools" title="Edit this page">
+    <svg aria-hidden="true" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4" />
+      <line x1="13.5" y1="6.5" x2="17.5" y2="10.5" />
+    </svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section class="left" id="main-subpackage">
+<h1>Main subpackage<a class="headerlink" href="#main-subpackage" title="Permalink to this heading">#</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">#</a></h2>
+</section>
+<section id="module-deeplearningtools.DataProvider_input_pipeline">
+<span id="deeplearningtools-dataprovider-input-pipeline-module"></span><h2>deeplearningtools.DataProvider_input_pipeline module<a class="headerlink" href="#module-deeplearningtools.DataProvider_input_pipeline" title="Permalink to this heading">#</a></h2>
+<dl class="simple">
+<dt>Warning:</dt><dd><ul class="simple">
+<li><p>These are advanced datapipelines =&gt; simpler versions are shown as tutorials is examples/data_pipelines</p></li>
+<li><p>You may have to remove one of the cv2 or gdal import depending on your machine compatibility</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">FileListProcessor_Semantic_Segmentation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filelist_raw_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filelist_reference_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nbEpoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shuffle_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_ratio_vs_input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_patches_per_image</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_area_coverage_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_reader_threads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_random_flip_left_right</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_random_flip_up_down</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_random_rot90</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_random_brightness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_random_saturation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_random_contrast</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_whitening</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_alternative_imread</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">balance_classes_distribution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classes_entropy_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opencv_read_flags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_of_view</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manage_nan_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">additionnal_filters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crops_postprocess</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">tf.float16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">42</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation" title="Permalink to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation.dataprovider_namescope">
+<span class="sig-name descname"><span class="pre">dataprovider_namescope</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'data_input_pipeline/FileListProcessor_Semantic_Segmentation'</span></em><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation.dataprovider_namescope" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation.get_config">
+<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation.get_config" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.FileListProcessor_csv_time_series">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">FileListProcessor_csv_time_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">csv_field_delim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">record_defaults_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temporal_series_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">windowing_shift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">na_value_string</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'N/A'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels_cols_nb</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">per_sample_preprocess_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shuffle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_proc_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.FileListProcessor_csv_time_series" title="Permalink to this definition">#</a></dt>
+<dd><p>A standard data pipeline dedicated to time series stored in collections of csv files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>files</strong> – A python list of filenames.</p></li>
+<li><p><strong>csv_field_delim</strong> – The column separator.</p></li>
+<li><p><strong>record_defaults_values</strong> – A python list of default values to be used when csv columns are empty (ex for a 2 columns float table: [[0.0], 0.0]]).</p></li>
+<li><p><strong>batch_size</strong> – Number of samples to be considered in a data batch.</p></li>
+<li><p><strong>epochs</strong> – The number of epoch the dataset should be read.</p></li>
+<li><p><strong>temporal_series_length</strong> – The number of successive lines to be read as a sequence of timesteps for a single sample.</p></li>
+<li><p><strong>windowing_shift</strong> – The minimal temporal window/number of time steps that separate two overlapping samples.</p></li>
+<li><p><strong>na_value_string='N/A'</strong> – The string used in the csv file that indicated nan values.</p></li>
+<li><p><strong>labels_cols_nb</strong> – The number of FIRST columns that represent labels (may be string dates or so).</p></li>
+<li><p><strong>per_sample_preprocess_fn</strong> – If some specific sample level processing should be performed, privide here the function that does this (def mypost_proc(Tensor sample) returns Tensor).</p></li>
+<li><p><strong>selected_cols</strong> – The python list of indexes of data columns of interest.</p></li>
+<li><p><strong>shuffle=False</strong> – Set True to activate samples shuffling (best for training).</p></li>
+<li><p><strong>post_proc_filter</strong> – If some specific sample filtering should be performed, specify here a dedicated function (def mypost_proc(Tensor sample) returns Binary Tensor).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.FileListProcessor_image_classification">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">FileListProcessor_image_classification</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sourceFolder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_extension</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_alternative_imread</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_reader_flags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shuffle_batches</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.FileListProcessor_image_classification" title="Permalink to this definition">#</a></dt>
+<dd><p>Loads a set of images from a folder with associated labels for image classification.</p>
+<p>:param sourceFolder : The parent folder of the target files.
+:param file_extension : The target file extension.
+:param use_alternative_imread : Set False to read from Tensorflow native ops or set ‘gdal’ or ‘opencv’ to read with those tools.
+:param image_reader_flags : Set -1 to use defaults or add specific flags to provide to the image readers.
+:param shuffle_batches : Set True to shuffle false to keep order.
+:param batch_size : An indicatr batch size to dimension the prefectch queue.
+:param device : The device where to put the dataset provider (better to set on CPU (“/cpu:0”)).
+:param debug: Boolean, if True, prints additionnal logs.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.convert_semanticMap_contourMap">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">convert_semanticMap_contourMap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">crops</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.convert_semanticMap_contourMap" title="Permalink to this definition">#</a></dt>
+<dd><p>Convert a semantic map into a contour Map using Sobel operator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>crops</strong> – the semantic reference map to obtain contour (expecting 4D tensor).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.debug_show_data">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">debug_show_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.debug_show_data" title="Permalink to this definition">#</a></dt>
+<dd><p>Used for data debugging.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>tf.Tensor</em>) – The tensor to show.</p></li>
+<li><p><strong>message</strong> – A string to describe the debug message.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Example usage:</dt><dd><p>tf.py_function(debug_show_data, [raw_sample_crops, ‘raw_sample crop’], tf.float32)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.extractFilenames">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">extractFilenames</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_extension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'*.jpg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raiseOnEmpty</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.extractFilenames" title="Permalink to this definition">#</a></dt>
+<dd><p>Utility function which given a root directory and file extension, walk through folderfiles to
+create a list of searched files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>root_dir</strong> (<em>str</em>) – The root folder from which files should be searched.</p></li>
+<li><p><strong>file_extension</strong> – The extension of the files.</p></li>
+<li><p><strong>raiseOnEmpty</strong> – A boolean, set True if an exception should be raised if no file is found</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.extract_feature_columns">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">extract_feature_columns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features_labels</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.extract_feature_columns" title="Permalink to this definition">#</a></dt>
+<dd><p>Function that creates feature columns interpreters and applies them on
+the input data to prepare a dense tensor that will feed a model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_dict</strong> – A batch of samples where columns are aggregated into a dictionary.</p></li>
+<li><p><strong>features_labels</strong> – <p>A dictionary following architecture:
+features_labels={‘all_cols’:{‘names’:colnames, ‘record_defaults’:record_defaults},</p>
+<blockquote>
+<div><p>’data_cols’:{‘names_opt_categories_or_buckets’:data_cols, ‘indexes’:data_idx},
+‘labels_cols’:{‘names’:label_cols,’indexes’:label_idx}}</p>
+</div></blockquote>
+<p>where names_opt_categories_or_buckets is a dictionnary that contains at
+least key ‘name’ and has an optionnal LIST specified by key :</p>
+<blockquote>
+<div><p>’vocabulary_list’ if column is categorial and should be one hot encoded according to the specified vocabulary
+‘buckets_boundaries’ if column numeric but should be should be one hot encoded according to the specified boundarie values
+‘normalizer_fn’ if the column is numeric and should be normalized</p>
+</div></blockquote>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a dense data tensor.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.get_sample_entropy">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">get_sample_entropy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.get_sample_entropy" title="Permalink to this definition">#</a></dt>
+<dd><p>Return the entropy of the input tensor.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.get_sample_entropy_int">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">get_sample_entropy_int</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.get_sample_entropy_int" title="Permalink to this definition">#</a></dt>
+<dd><p>Basic entropy computation relying on input sample histogram, making the hypothesis of a specific data range (here [0, 1000]).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The entropy of the input tensor.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.get_sample_entropy_test">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">get_sample_entropy_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0,</span> <span class="pre">0,</span> <span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.get_sample_entropy_test" title="Permalink to this definition">#</a></dt>
+<dd><p>Test function of get_sample_entropy(sample) which entropy is being computed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>values</strong> – Optionnal parameter to be filled with an array of values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.get_samples_entropies">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">get_samples_entropies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">samples_batch</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.get_samples_entropies" title="Permalink to this definition">#</a></dt>
+<dd><p>From a batch of 2D image labels, select a subset that ensures a minimum entropy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>samples_batch</strong> – The batch of input data.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The vector of size (batchsize) with sample entropy values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.image_tfrecords_dataset">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">image_tfrecords_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hasLabels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">tf.float32</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.image_tfrecords_dataset" title="Permalink to this definition">#</a></dt>
+<dd><p>Assuming a set of tfrecords file is pointed by filename, ex:’images.tfrecords’,
+create a data provider that loads them for training/testing models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – A path to the tfrecord files</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tf.data.Dataset WITHOUT PREFETCH NOR BATCH, specify your own.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.imread_from_gdal">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">imread_from_gdal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.imread_from_gdal" title="Permalink to this definition">#</a></dt>
+<dd><p>Read an image using gdal.</p>
+<p>Image is loaded as is. In case of a 3 channels image, a BGR to RGB conversion is applied.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> – A numpy array (coming from Tensorflow)</p></li>
+<li><p><strong>debug_mode</strong> – Print more logs on this image read step</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.imread_from_opencv">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">imread_from_opencv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cv_imreadMode</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.imread_from_opencv" title="Permalink to this definition">#</a></dt>
+<dd><p>Read an image using opencv.</p>
+<p>Image is loaded as is. In case of a 3 channels image, a BGR to RGB conversion is applied.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> – A numpy array (coming from Tensorflow)</p></li>
+<li><p><strong>debug_mode</strong> – Print more logs on this image read step</p></li>
+<li><p><strong>cv_imreadMode</strong> – As described in the official opencv doc. Note: cv2.IMREAD_UNCHANGED=-1</p></li>
+</ul>
+</dd>
+</dl>
+<p>ISSUES :</p>
+<p><a class="reference external" href="https://github.com/tensorflow/tensorflow/issues/33400">https://github.com/tensorflow/tensorflow/issues/33400</a></p>
+<p><a class="reference external" href="https://github.com/tensorflow/tensorflow/issues/27519">https://github.com/tensorflow/tensorflow/issues/27519</a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.imread_from_rasterio">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">imread_from_rasterio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.imread_from_rasterio" title="Permalink to this definition">#</a></dt>
+<dd><p>Read an image using rasterio.</p>
+<p>Image is loaded as is. In case of a 3 channels image, a BGR to RGB conversion is applied.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> – A numpy array (coming from Tensorflow)</p></li>
+<li><p><strong>debug_mode</strong> – Print more logs on this image read step</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.make_images_coarse">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">make_images_coarse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_images</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downscale_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.make_images_coarse" title="Permalink to this definition">#</a></dt>
+<dd><p>Downscale and upscale a batch of images using nearest neighbors interpolation
+to make those images “coarse”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_images</strong> (<em>tf.Tensor</em>) – The original images to make coarse (expecting 4D tensor)</p></li>
+<li><p><strong>downscale_factor</strong> (<em>int</em>) – The downscaling factor to apply.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A batch of images of the same size as the input but made coarser spatially.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.normalised_entropy">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">normalised_entropy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">counts</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.normalised_entropy" title="Permalink to this definition">#</a></dt>
+<dd><p>Calculates the normalized entropy based on the counts of different classes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>counts</strong> – A tensor representing the counts of each class.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>entropy_normalized: The normalized entropy value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.plot_sample_channel_histograms">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">plot_sample_channel_histograms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filenameID</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.plot_sample_channel_histograms" title="Permalink to this definition">#</a></dt>
+<dd><p>Basic data analysis.</p>
+<p>Plot the histogram of each channel of a data sample.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_sample</strong> (<em>np.array</em>) – The numpy matrix to process.</p></li>
+<li><p><strong>filenameID</strong> (<em>str</em>) – The histogram filename prefix to be used.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.scaleImg_0_255">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">scaleImg_0_255</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">img</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.scaleImg_0_255" title="Permalink to this definition">#</a></dt>
+<dd><p>Simply scale input values to range [0,255] to enable display using OpenCV.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>img</strong> (<em>np.array</em>) – The numpy ndarray to rescale.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the rescaled array, type remains the same.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.test_image_tfrecords_dataset">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">test_image_tfrecords_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'test_dataset.tfrecords'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.test_image_tfrecords_dataset" title="Permalink to this definition">#</a></dt>
+<dd><p>Suppose a dataset pointed by files ‘test_dataset.tfrecords’ exists, load it
+and display the recorded samples_saving_queuet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – A path to the tfrecord files.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.DataProvider_input_pipeline.the_ugly_string_manager">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.DataProvider_input_pipeline.</span></span><span class="sig-name descname"><span class="pre">the_ugly_string_manager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.DataProvider_input_pipeline.the_ugly_string_manager" title="Permalink to this definition">#</a></dt>
+<dd><p>Horribly ugly code to ensure that a filename string complies with gdal and opencv 
+when dealing with python 2 or 3 and pure python or tensorflow py_function.</p>
+<p>Convert to input to unicode to recover properly to string.</p>
+<p>FIXME : … maybe just wait for the death of python2 and hope for a more elegant python3… but still waiting…</p>
+</dd></dl>
+
+</section>
+<section id="module-deeplearningtools.experiments_manager">
+<span id="deeplearningtools-experiments-manager-module"></span><h2>deeplearningtools.experiments_manager module<a class="headerlink" href="#module-deeplearningtools.experiments_manager" title="Permalink to this heading">#</a></h2>
+<p>What’s that ? A set of script that demonstrate the use of Tensorflow experiments and estimators on different data types for various tasks.</p>
+<p>Brief: The main script that enables training, validation and serving Tensorflow based models merging all needs in a single script to train, evaluate, export and serve. taking large inspirations of official tensorflow demos.</p>
+<p>Author: Alexandre Benoit, LISTIC lab, FRANCE</p>
+<dl>
+<dt>Several ideas are put together:</dt><dd><p>estimators to manage training, valiation and export in a easier way</p>
+<p>using moving averages to store parameters with values smoothed along the last training steps (FIXME : ensure those values are used for real by the estimator, actually the graph shows 2 parameter savers…).</p>
+<p>visualization including embeddings projections to observe some data projections on the TensorBoard</p>
+<p>tensorflow-serving api use to serve the model and dynamically load updated models</p>
+<p>some tensorflow-serving client codes to reuse the trained model on single or streaming data</p>
+</dd>
+</dl>
+<p>How tu use it ?
+The main script is <cite>experiments_manager.py</cite> and can be used in 3 modes. Here are some command examples:</p>
+<ol class="arabic simple">
+<li><p>Train a model in a specific context specified in a parameter script such as <cite>mysettings_1D_experiments.py</cite>:</p></li>
+</ol>
+<blockquote>
+<div><p># python experiments_manager.py –usersettings=mysettings_1D_experiments.py</p>
+</div></blockquote>
+<ol class="arabic" start="2">
+<li><p>Start a TensorFlow server on the trained/training model:</p>
+<p>2.a If <cite>tensorflow_model_server</cite> is installed on the system:</p>
+<blockquote>
+<div><p># python experiments_manager.py –start_server –model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03–14:40:53</p>
+</div></blockquote>
+<p>2.b If <cite>tensorflow_model_server</cite> is installed in a Singularity container:</p>
+<blockquote>
+<div><p># python experiments_manager.py –start_server –model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03–14:40:53 -psi=/path/to/tf_server.sif</p>
+</div></blockquote>
+</li>
+<li><p>Interact with the TensorFlow server, sending input buffers and receiving answers:</p></li>
+</ol>
+<blockquote>
+<div><p># python experiments_manager.py –predict –model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03–14:40:53/</p>
+</div></blockquote>
+<p>NOTE : once trained (or along training), start the Tensorbdownscaledoard to parse logs of
+the experiments folder (provided example is experiments/1Dsignals_clustering):
+from the scripts directory using command:</p>
+<blockquote>
+<div><p># tensorboard  –logdir=experiments/1Dsignals_clustering</p>
+</div></blockquote>
+<p>Then, open a web brwser and reach <a class="reference external" href="http://127.0.0.1:6006/">http://127.0.0.1:6006/</a> to monitor training
+values and observe the obtained embeddings</p>
+<p>DESIGN:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>The main code for training, validation and prediction is specified in the main script (experiments_manager.py).</p></li>
+</ol>
+<p>2. Most of the use case specific parameters and Input/Output functions have been
+moved to a separated settings script such as ‘mysettings_1D_experiments.py’ that
+is targeted when starting the script (this filename is set in var FLAGS.usersettings in the main script).</p>
+<ol class="arabic simple" start="3">
+<li><p>The model to be trained and served is specified in a different script targetted in the settings file.</p></li>
+</ol>
+</div></blockquote>
+<p>KNOWN ISSUES:</p>
+<p>This script has some known problems, any suggestion is welcome:</p>
+<blockquote>
+<div><p>moving average parameters reloading for model serving is not optimized, this should be enhanced.</p>
+<p>for now tensorflow_server only works on CPU so using GPU only for training and validation. Track : <a class="reference external" href="https://github.com/tensorflow/serving/issues/668">https://github.com/tensorflow/serving/issues/668</a></p>
+</div></blockquote>
+<p>TODO:</p>
+<p>To adapt to new use case, just duplicate the closest mysettingsxxx file presented in the examples folder and adjust the configuration.
+For any experiment, the availability of all the required fields in the settings file is checked by the tools/experiments_settings.py script.
+You can have a look there to ensure you prepared everything right, some variables and functions must exist while some others are optionnal.</p>
+<p>As a reminder, here are the functions prototypes:</p>
+<blockquote>
+<div><p>Define a model to be trained and served in a specific file and follow this prototype:</p>
+<blockquote>
+<div><p>report model name in the settings file using variable name model_file or thecify a premade estimator using variable name premade_estimator</p>
+<dl>
+<dt>def model( usersettings) #receives the external parameters that may be used to setup the model (number of classes and so depending on the task)</dt><dd><blockquote>
+<div><p>mode), #mode set to switch between train, validate and inference mode
+wrt tf.estimator.tf.estimator.ModeKeys values</p>
+</div></blockquote>
+<p>=&gt; the returns a tf.keras.Model
+NOTE : custom models with specific loss can be used, tutorial here  <a class="reference external" href="https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit">https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit</a></p>
+</dd>
+</dl>
+<p>def data_preprocess(features, model_placement)</p>
+<p>def postprocessing_before_export_code(code)</p>
+<p>def postprocessing_before_export_predictions(predictions)</p>
+<p>def getOptimizer(model, loss, learning_rate, global_step)</p>
+<p>def get_total_loss(inputs, predictions, labels, embedding_code, weights_loss)</p>
+<p>def get_validation_summaries(inputs, predictions, labels, embedding_code)</p>
+<p>def get_eval_metric_ops(inputs, predictions, labels, embedding_code)</p>
+<p>def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batches)</p>
+<p>def get_input_pipeline_serving()</p>
+<p>define the Client_IO class that presents at least those three methods:</p>
+<blockquote>
+<div><p>def __init__(self, debugMode):</p>
+<p>def getInputData(self, idx):</p>
+<p>def decodeResponse(self, result):</p>
+<p>def finalize():</p>
+<blockquote>
+<div><p>Note, the finalize method will be called once the number of expected iterations is reached and if any StopIteration exception is sent by the client</p>
+</div></blockquote>
+</div></blockquote>
+<p>OPTIONNAL: add the dictionnary named ‘hparams’ in this settings file to carry those specific hyperparameters to the model
+and to complete the session name folder to facilitate experiments tracking and comparison</p>
+</div></blockquote>
+</div></blockquote>
+<p>Some examples of such functions are put in the README.md and in the versionned examples folder.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.experiments_manager.build_run_training_session">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.experiments_manager.</span></span><span class="sig-name descname"><span class="pre">build_run_training_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.experiments_manager.build_run_training_session" title="Permalink to this definition">#</a></dt>
+<dd><p>Define and run the optimisation process.</p>
+<p>This function loads settings from the working directory and builds/run the optimisation.</p>
+<p>This process can be the full training procedure OR this can be an ephemeral intermediate training step
+as for transfer learning or federated learning.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.experiments_manager.do_inference">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.experiments_manager.</span></span><span class="sig-name descname"><span class="pre">do_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experiment_settings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">host</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clientIO_InitSpecs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concurrency</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_tests</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.experiments_manager.do_inference" title="Permalink to this definition">#</a></dt>
+<dd><p>Tests PredictionService with concurrent requests.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>experiment_settings</strong> (<em>object</em>) – The experiment settings loaded from the function loadExperimentsSettings.</p></li>
+<li><p><strong>host</strong> (<em>str</em>) – The TensorFlow server address.</p></li>
+<li><p><strong>port</strong> (<em>int</em>) – The port address of the PredictionService.</p></li>
+<li><p><strong>model_name</strong> (<em>str</em>) – The model name ID.</p></li>
+<li><p><strong>clientIO_InitSpecs</strong> (<em>dict</em>) – A dictionary to pass to the ClientIO constructor.</p></li>
+<li><p><strong>concurrency</strong> (<em>int</em>) – Maximum number of concurrent requests.</p></li>
+<li><p><strong>num_tests</strong> (<em>int</em>) – Number of test images to use. If negative, it indicates an infinite prediction loop.</p></li>
+<li><p><strong>debug</strong> (<em>bool</em>) – Flag to enable debug mode.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>IOError</strong> – An error occurred processing the test data set.</p>
+</dd>
+</dl>
+<p>Hint: Have a look here to track API use updates: <a class="reference external" href="https://github.com/tensorflow/serving/blob/master/tensorflow_serving/example/mnist_client.py">https://github.com/tensorflow/serving/blob/master/tensorflow_serving/example/mnist_client.py</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Always returns 0.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.experiments_manager.run">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.experiments_manager.</span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">FLAGS</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_config_script</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">external_hparams</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.experiments_manager.run" title="Permalink to this definition">#</a></dt>
+<dd><p>The main script function that can receive hyperparameters as a dictionary to run an experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>FLAGS</strong> – The input flags specifying the mode of operation.</p></li>
+<li><p><strong>train_config_script</strong> – Path to the training configuration script (optional).</p></li>
+<li><p><strong>external_hparams</strong> – A dictionary containing additional hyperparameters (optional).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>experiments_output: A dictionary summarizing the last model states at the end of the training (if training is done).</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If the provided settings or configurations are incorrect.</p>
+</dd>
+</dl>
+<p>Notes:
+This function can start training, model serving, or model client requesting depending on the <cite>FLAGS</cite> values:</p>
+<ul class="simple">
+<li><p>If <cite>FLAGS.start_server</cite> is True: starts a server that hosts the target model.</p></li>
+<li><p>If <cite>FLAGS.predict</cite> is True: starts a client that will send requests to a model via gRPC.</p></li>
+<li><p>Otherwise, starts a training session relying on a settings file provided by <cite>train_config_script</cite> or <cite>FLAGS.usersettings</cite>.</p></li>
+</ul>
+<p>In this mode, the function returns a dictionary that summarizes the last model states at the end of the training.
+If calling with a non-empty <cite>train_config_script</cite> and with non-empty <cite>external_hparams</cite>,
+then <cite>external_hparams</cite> will update hyperparameters already specified in the <cite>train_config_script</cite> script.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.experiments_manager.run_experiment">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.experiments_manager.</span></span><span class="sig-name descname"><span class="pre">run_experiment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">usersettings</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.experiments_manager.run_experiment" title="Permalink to this definition">#</a></dt>
+<dd><p>Run an experiment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>usersettings</strong> (<em>object</em>) – The experiment settings.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tuple containing the final result and the model export filename.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-deeplearningtools.start_federated_server">
+<span id="deeplearningtools-start-federated-server-module"></span><h2>deeplearningtools.start_federated_server module<a class="headerlink" href="#module-deeplearningtools.start_federated_server" title="Permalink to this heading">#</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.start_federated_server.get_commands">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.start_federated_server.</span></span><span class="sig-name descname"><span class="pre">get_commands</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.start_federated_server.get_commands" title="Permalink to this definition">#</a></dt>
+<dd><p>Defines the command line argument parser dedicated to running session.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.start_federated_server.get_custom_strategy">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.start_federated_server.</span></span><span class="sig-name descname"><span class="pre">get_custom_strategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strategy_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.start_federated_server.get_custom_strategy" title="Permalink to this definition">#</a></dt>
+<dd><p>Retrieve a custom strategy class based on the strategy_name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>strategy_name</strong> (<em>str</em>) – Name of the strategy.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The custom strategy class.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the strategy fails to load.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.start_federated_server.get_evaluate_fn">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.start_federated_server.</span></span><span class="sig-name descname"><span class="pre">get_evaluate_fn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">usersettings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_writer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_dir</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.start_federated_server.get_evaluate_fn" title="Permalink to this definition">#</a></dt>
+<dd><p>Return evaluation metrics results for server-side evaluation.</p>
+<p>Reference: inspired from <a class="reference external" href="https://flower.dev/docs/evaluation.html">https://flower.dev/docs/evaluation.html</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>usersettings</strong> (<em>object</em>) – User settings for the evaluation function.</p></li>
+<li><p><strong>model</strong> (<em>keras.Model</em>) – The model to be evaluated.</p></li>
+<li><p><strong>val_data</strong> (<em>dict</em>) – Validation data for evaluation.</p></li>
+<li><p><strong>file_writer</strong> (<em>object tf.summary.FileWriter</em>) – File writer for logging into tensorBoard.</p></li>
+<li><p><strong>log_dir</strong> (<em>str</em>) – Directory for logging.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The evaluation metrics result for each out.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.start_federated_server.run">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.start_federated_server.</span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">FLAGS</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.start_federated_server.run" title="Permalink to this definition">#</a></dt>
+<dd><p>Run the federated learning server.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>FLAGS</strong> (<em>object</em>) – Command line arguments and flags.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The result of the server run.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-deeplearningtools.start_kafka_producer">
+<span id="deeplearningtools-start-kafka-producer-module"></span><h2>deeplearningtools.start_kafka_producer module<a class="headerlink" href="#module-deeplearningtools.start_kafka_producer" title="Permalink to this heading">#</a></h2>
+<p>Standardized script that loads an experiment in order to use the ‘get_input_pipeline’ function as a data provider to a kafka log queue</p>
+<p>use example:
+-&gt; writing to queue ‘samples’ on server ‘’</p>
+<p># tested with kafka install and config:
+wget  <a class="reference external" href="https://downloads.apache.org/kafka/2.7.1/kafka_2.13-2.7.1.tgz">https://downloads.apache.org/kafka/2.7.1/kafka_2.13-2.7.1.tgz</a>
+tar -xzf kafka_2.13-2.7.1.tgz</p>
+<p>#-&gt; start zookeeper and kafka
+./kafka_2.13-2.7.1/bin/zookeeper-server-start.sh -daemon ./kafka_2.13-2.7.1/config/zookeeper.properties
+./kafka_2.13-2.7.1/bin/kafka-server-start.sh -daemon ./kafka_2.13-2.7.1/config/server.properties
+echo “Waiting for 10 secs until kafka and zookeeper services are up and running”
+sleep 10</p>
+<p>#-&gt; create the ‘demo-pics’ topic, no worry, this script creates its own topics, relying on the experiments config</p>
+<p>#-&gt; check topic behaviors (ex: demo-pics)
+./kafka_2.13-2.7.1/bin/kafka-topics.sh –describe –bootstrap-server 127.0.0.1:9092 –topic demo-pics</p>
+<p>#-&gt; not forget to delete topic to keep disk space…
+./kafka_2.13-2.7.1/bin/kafka-topics.sh  –bootstrap-server 127.0.0.1:9092 –delete –topic demo-pics</p>
+<p>#-&gt; list all available topics on a server:
+./kafka_2.13-2.7.1/bin/kafka-topics.sh  –list –bootstrap-server 127.0.0.1:9092</p>
+<p>#-&gt; get topic details:
+./kafka_2.13-2.7.1/bin/kafka-topics.sh  –bootstrap-server=localhost:9092 –describe –topic demo-pics</p>
+<p># LOGS LOCATION : by default, queues/logs are stored here : /tmp/kafka-logs</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.start_kafka_producer.get_commands">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.start_kafka_producer.</span></span><span class="sig-name descname"><span class="pre">get_commands</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.start_kafka_producer.get_commands" title="Permalink to this definition">#</a></dt>
+<dd><p>Defines the command line argument parser dedicated to the running session.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.start_kafka_producer.run">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.start_kafka_producer.</span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">commands</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.start_kafka_producer.run" title="Permalink to this definition">#</a></dt>
+<dd><p>Main function that applies runs kafka library to push/read data to/from a kafka server.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>commands</strong> – The decoded expected flags defined in the get_commands() function.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-deeplearningtools.start_model_serving">
+<span id="deeplearningtools-start-model-serving-module"></span><h2>deeplearningtools.start_model_serving module<a class="headerlink" href="#module-deeplearningtools.start_model_serving" title="Permalink to this heading">#</a></h2>
+<dl class="simple">
+<dt>Use example<span class="classifier">start model server on an experiment using command:</span></dt><dd><p>-&gt; note the use of the optionnal -psi option that relies on tensorflow_model_server installed in a singularity container (build from definition file tf_server.def provided in the repository)
+python3 start_model_serving.py –model_dir=/home/alben/workspace/listic-deeptool/experiments/examples/curve_fitting/my_test_hiddenNeurons50_predictSmoothParamsTrue_learningRate0.1_nbEpoch5000_addNoiseTrue_anomalyAtX-3_2020-03-10–21:59:52/ -psi /home/alben/install/containers/tf_server.cpu.sif</p>
+</dd>
+</dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.start_model_serving.get_served_model_info">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.start_model_serving.</span></span><span class="sig-name descname"><span class="pre">get_served_model_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">one_model_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tf_server_container_path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.start_model_serving.get_served_model_info" title="Permalink to this definition">#</a></dt>
+<dd><p>Basic function that checks served model behaviors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>one_model_path</strong> (<em>str</em>) – The path to a servable model directory</p></li>
+<li><p><strong>expected_model_name</strong> (<em>str</em>) – The model name that is expected to be found on the server</p></li>
+<li><p><strong>tf_server_container_path</strong> (<em>str</em>) – the path to an apptainer (ex. singularity) container.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deeplearningtools.start_model_serving.start_model_serving">
+<span class="sig-prename descclassname"><span class="pre">deeplearningtools.start_model_serving.</span></span><span class="sig-name descname"><span class="pre">start_model_serving</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flags</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deeplearningtools.start_model_serving.start_model_serving" title="Permalink to this definition">#</a></dt>
+<dd><p>Starts a TensorFlow model server for serving trained models, get trained model config, check server, and start it from host of container.</p>
+</dd></dl>
+
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="unit_test.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Test script</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="reference_index.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">DeepLearningTools package</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, Alexandre Benoit
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Main subpackage</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-deeplearningtools.DataProvider_input_pipeline">deeplearningtools.DataProvider_input_pipeline module</a><ul>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation"><code class="docutils literal notranslate"><span class="pre">FileListProcessor_Semantic_Segmentation</span></code></a><ul>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation.dataprovider_namescope"><code class="docutils literal notranslate"><span class="pre">FileListProcessor_Semantic_Segmentation.dataprovider_namescope</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.FileListProcessor_Semantic_Segmentation.get_config"><code class="docutils literal notranslate"><span class="pre">FileListProcessor_Semantic_Segmentation.get_config()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.FileListProcessor_csv_time_series"><code class="docutils literal notranslate"><span class="pre">FileListProcessor_csv_time_series()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.FileListProcessor_image_classification"><code class="docutils literal notranslate"><span class="pre">FileListProcessor_image_classification()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.convert_semanticMap_contourMap"><code class="docutils literal notranslate"><span class="pre">convert_semanticMap_contourMap()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.debug_show_data"><code class="docutils literal notranslate"><span class="pre">debug_show_data()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.extractFilenames"><code class="docutils literal notranslate"><span class="pre">extractFilenames()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.extract_feature_columns"><code class="docutils literal notranslate"><span class="pre">extract_feature_columns()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.get_sample_entropy"><code class="docutils literal notranslate"><span class="pre">get_sample_entropy()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.get_sample_entropy_int"><code class="docutils literal notranslate"><span class="pre">get_sample_entropy_int()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.get_sample_entropy_test"><code class="docutils literal notranslate"><span class="pre">get_sample_entropy_test()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.get_samples_entropies"><code class="docutils literal notranslate"><span class="pre">get_samples_entropies()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.image_tfrecords_dataset"><code class="docutils literal notranslate"><span class="pre">image_tfrecords_dataset()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.imread_from_gdal"><code class="docutils literal notranslate"><span class="pre">imread_from_gdal()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.imread_from_opencv"><code class="docutils literal notranslate"><span class="pre">imread_from_opencv()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.imread_from_rasterio"><code class="docutils literal notranslate"><span class="pre">imread_from_rasterio()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.make_images_coarse"><code class="docutils literal notranslate"><span class="pre">make_images_coarse()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.normalised_entropy"><code class="docutils literal notranslate"><span class="pre">normalised_entropy()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.plot_sample_channel_histograms"><code class="docutils literal notranslate"><span class="pre">plot_sample_channel_histograms()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.scaleImg_0_255"><code class="docutils literal notranslate"><span class="pre">scaleImg_0_255()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.test_image_tfrecords_dataset"><code class="docutils literal notranslate"><span class="pre">test_image_tfrecords_dataset()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.DataProvider_input_pipeline.the_ugly_string_manager"><code class="docutils literal notranslate"><span class="pre">the_ugly_string_manager()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-deeplearningtools.experiments_manager">deeplearningtools.experiments_manager module</a><ul>
+<li><a class="reference internal" href="#deeplearningtools.experiments_manager.build_run_training_session"><code class="docutils literal notranslate"><span class="pre">build_run_training_session()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.experiments_manager.do_inference"><code class="docutils literal notranslate"><span class="pre">do_inference()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.experiments_manager.run"><code class="docutils literal notranslate"><span class="pre">run()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.experiments_manager.run_experiment"><code class="docutils literal notranslate"><span class="pre">run_experiment()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-deeplearningtools.start_federated_server">deeplearningtools.start_federated_server module</a><ul>
+<li><a class="reference internal" href="#deeplearningtools.start_federated_server.get_commands"><code class="docutils literal notranslate"><span class="pre">get_commands()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.start_federated_server.get_custom_strategy"><code class="docutils literal notranslate"><span class="pre">get_custom_strategy()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.start_federated_server.get_evaluate_fn"><code class="docutils literal notranslate"><span class="pre">get_evaluate_fn()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.start_federated_server.run"><code class="docutils literal notranslate"><span class="pre">run()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-deeplearningtools.start_kafka_producer">deeplearningtools.start_kafka_producer module</a><ul>
+<li><a class="reference internal" href="#deeplearningtools.start_kafka_producer.get_commands"><code class="docutils literal notranslate"><span class="pre">get_commands()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.start_kafka_producer.run"><code class="docutils literal notranslate"><span class="pre">run()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-deeplearningtools.start_model_serving">deeplearningtools.start_model_serving module</a><ul>
+<li><a class="reference internal" href="#deeplearningtools.start_model_serving.get_served_model_info"><code class="docutils literal notranslate"><span class="pre">get_served_model_info()</span></code></a></li>
+<li><a class="reference internal" href="#deeplearningtools.start_model_serving.start_model_serving"><code class="docutils literal notranslate"><span class="pre">start_model_serving()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/scripts/furo.js"></script>
+    </body>
+</html>
