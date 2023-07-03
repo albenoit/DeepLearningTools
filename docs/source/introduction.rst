@@ -20,12 +20,6 @@ The DeepLearningTools framework is driven by a distinct philosophy that guides i
 
 A quick presentation of the system is available `here <https://docs.google.com/presentation/d/1tFetD27PK9kt29rdwwZ6QKLYNDyJkHoCLT8GHweve_8/edit?usp=sharing>`_.
 
-Credits
-##############
-
-- 
--
-
 Acknowledgements
 ####################
 

@@ -1,13 +1,14 @@
 .idea
 
-
-
+# Docs and some cache folders
 .cache
 .config
 .flwr
 .keras
 tmp/
 experiments/examples/
+_build
+docs/help_docs.txt
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template

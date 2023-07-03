@@ -1187,12 +1187,9 @@ def FileListProcessor_image_classification(sourceFolder, file_extension,
   ds = tf.data.Dataset.list_files(os.path.join(sourceFolder,file_extension))
   ds = ds.map(map_func=load_image)
 
-
-
   if shuffle_batches is True:
-      dataset=dataset.shuffle(batch_size*100)
+    dataset=dataset.shuffle(batch_size*100)
 
   dataset=dataset.batch(batch_size).prefetch(size=tf.data.AUTOTUNE)  # Make sure you always have 1 batch ready to serve
-
 
   return dataset

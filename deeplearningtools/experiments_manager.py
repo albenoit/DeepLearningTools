@@ -8,32 +8,43 @@
 # for DeepLearningTools.
 # =========================================
 """
-#What's that ?
-A set of script that demonstrate the use of Tensorflow experiments and estimators on different data types for various tasks
-@brief : the main script that enables training, validation and serving Tensorflow based models merging all needs in a
-single script to train, evaluate, export and serve.
-taking large inspirations of official tensorflow demos.
-@author : Alexandre Benoit, LISTIC lab, FRANCE
+What's that ? A set of script that demonstrate the use of Tensorflow experiments and estimators on different data types for various tasks.
+
+Brief: The main script that enables training, validation and serving Tensorflow based models merging all needs in a single script to train, evaluate, export and serve. taking large inspirations of official tensorflow demos.
+
+Author: Alexandre Benoit, LISTIC lab, FRANCE
 
 Several ideas are put together:
--estimators to manage training, valiation and export in a easier way
--using moving averages to store parameters with values smoothed along the last training steps (FIXME : ensure those values are used for real by the estimator, actually the graph shows 2 parameter savers...).
--visualization including embeddings projections to observe some data projections on the TensorBoard
--tensorflow-serving api use to serve the model and dynamically load updated models
--some tensorflow-serving client codes to reuse the trained model on single or streaming data
+  -estimators to manage training, valiation and export in a easier way
 
-#How tu use it ?
+  -using moving averages to store parameters with values smoothed along the last training steps (FIXME : ensure those values are used for real by the estimator, actually the graph shows 2 parameter savers...).
 
-The main script is experiments_manager.py can be used in 3 modes, here are some command examples:
-1. train a model in a context specified in a parameters script such as mysettings_1D_experiments.py:
--> python experiments_manager.py --usersettings=mysettings_1D_experiments.py
-2. start a tensorflow server on the trained/training model :
-2.a if tensorflow_model_server is installed on the system
--> python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53
-2.b  if tensorflow_model_server is installed on a singularity container
--> python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53 -psi=/patg/to/tf_server.sif
-3. interract with the tensorflow server, sending input buffers and receiving answers
--> python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/
+  -visualization including embeddings projections to observe some data projections on the TensorBoard
+
+  -tensorflow-serving api use to serve the model and dynamically load updated models
+
+  -some tensorflow-serving client codes to reuse the trained model on single or streaming data
+
+How tu use it ?
+The main script is `experiments_manager.py` and can be used in 3 modes. Here are some command examples:
+
+1. Train a model in a specific context specified in a parameter script such as `mysettings_1D_experiments.py`:
+
+  # python experiments_manager.py --usersettings=mysettings_1D_experiments.py
+
+2. Start a TensorFlow server on the trained/training model:
+
+   2.a If `tensorflow_model_server` is installed on the system:
+
+    # python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53
+
+   2.b If `tensorflow_model_server` is installed in a Singularity container:
+
+    # python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53 -psi=/path/to/tf_server.sif
+
+3. Interact with the TensorFlow server, sending input buffers and receiving answers:
+
+  # python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53/
 
 NOTE : once trained (or along training), start the Tensorbdownscaledoard to parse logs of
 the experiments folder (provided example is experiments/1Dsignals_clustering):
@@ -41,7 +52,7 @@ from the scripts directory using command: tensorboard  --logdir=experiments/1Dsi
 Then, open a web brwser and reach http://127.0.0.1:6006/ to monitor training
 values and observe the obtained embeddings
 
-#DESIGN:
+DESIGN:
 
 1. The main code for training, validation and prediction is specified in the main script (experiments_manager.py).
 2. Most of the use case specific parameters and Input/Output functions have been
@@ -49,13 +60,13 @@ moved to a separated settings script such as 'mysettings_1D_experiments.py' that
 is targeted when starting the script (this filename is set in var FLAGS.usersettings in the main script).
 3. The model to be trained and served is specified in a different script targetted in the settings file.
 
-#KNOWN ISSUES :
+KNOWN ISSUES:
 
 This script has some known problems, any suggestion is welcome:
 -moving average parameters reloading for model serving is not optimized, this should be enhanced.
 -for now tensorflow_server only works on CPU so using GPU only for training and validation. Track : https://github.com/tensorflow/serving/issues/668
 
-#TODO :
+TODO:
 
 To adapt to new use case, just duplicate the closest mysettingsxxx file presented in the examples folder and adjust the configuration.
 For any experiment, the availability of all the required fields in the settings file is checked by the tools/experiments_settings.py script.
