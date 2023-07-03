@@ -50,7 +50,7 @@ hparams={
          'federated':'FedAvg',#set '' if not making use of federated learning or set the flower strategy name of a custom one from deeplearningtools.helpers
          'minCl':10,#minimum number of clients to allow for federated learning
          'minFit':5,#minimum number of clients to allow for a federated learning fitting round
-         'learningRate':0.001,
+         'learningRate':0.01,
          'nbEpoch':1,#sets either the number of epoch per cleint for each federated round OR sets the total number of epoch for centralised learning
          'procID':0, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
          'dropout':0.1, #used in the model definition 0.0 mean, no unit is dropped out (all data is kept)
@@ -120,6 +120,10 @@ raw_data_dir_val = os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-d
 raw_data_filename_extension=''
 nb_train_samples=6000 #manually adjust here the number of temporal items out of the temporal block size
 nb_val_samples=10000
+#if relying on centralized learning, the total amount of data is the sum of all client data
+if not(enable_federated_learning):
+    nb_train_samples*=10
+    nb_val_samples*=10
 batch_size=32
 steps_per_epoch=nb_train_samples//batch_size
 validation_steps=nb_val_samples//batch_size
@@ -130,7 +134,7 @@ reference_labels=['category']
 tensorflow_server_address='127.0.0.1'
 tensorflow_server_port=9000
 wait_for_server_ready_int_secs=5
-serving_client_timeout_int_secs=1#timeout limit when a client requests a served model
+serving_client_timeout_int_secs=5#timeout limit when a client requests a served model
 serve_on_gpu=True #uncomment to activate model serving on GPU instead of CPU
 served_input_names=['input']
 served_head_names=['category']
@@ -225,10 +229,11 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
         targets = dataframe.iloc[:,:1]
 
     #convert each sample from shape (784,1) to (28,28,1) to allow for convolutional layers processing
+    #also, data samples are normalised to range [0;1] (casted to float) instead of the original uint8 format with range [0;255]
     dataset = tf.data.Dataset.from_tensor_slices((features, targets))
-    def reshape_to_2D(sample, label):
-        return tf.reshape(sample, [28, 28, 1]), label
-    dataset=dataset.map(reshape_to_2D)
+    def reshape_to_2D_normalise(sample, label):
+        return tf.cast(tf.reshape(sample, [28, 28, 1]), tf.float32)/255.0, label
+    dataset=dataset.map(reshape_to_2D_normalise)
 
     return dataset.shuffle(batch_size*20).batch(batch_size, drop_remainder=True).prefetch(1)
 
@@ -255,7 +260,7 @@ def get_served_module(model, model_name):
             Args: input tensor(s)
             Returns a dictionnary of {'output key':tensor}
             '''
-            pred=model(tf.cast(input_frame, tf.float32))
+            pred=model(tf.cast(input_frame, tf.float32)/255.0)
             return {served_head_names[0]:pred}
     return ExportedModule(model)
 

@@ -25,7 +25,7 @@ def model(usersettings):
     else:
       #below is proposed a classical fully connected neural network
       my_model = tf.keras.Sequential([
-          tf.keras.layers.Flatten(input_shape=(784, 1)), # input layer
+          tf.keras.layers.Flatten(input_shape=(28,28,1)), # input layer
           
           # tf.keras.layers.Dense is basically implementing: output = activation(dot(input, weight) + bias)
           # it takes several arguments, but the most important ones for us are the hidden_layer_size and the activation function
