@@ -42,7 +42,7 @@ tensorflow-io==0.31.0
 tensorflow-probability==0.19.0
 tensorflow-serving-api==2.11.0
 tensorflow-model-optimization==0.7.3
--U flwr["simulation"]
+flwr
 ray==2.3.0
 POT
 cdlib
