@@ -61,8 +61,8 @@ I consider here Singularity or the open source fork Apptainer very close to Dock
 
 .. code-block:: console
 
-   $ sudo apptainer build tf2_addons.2.11.0.sif tf2_addons.2.11.0.def #container for model training and validation
-   $ sudo apptainer build tf_server.sif tf_server.def   #container for model serving only
+   sudo apptainer build tf2_addons.2.11.0.sif tf2_addons.2.11.0.def #container for model training and validation
+   sudo apptainer build tf_server.sif tf_server.def   #container for model serving only
 
 
 **run the image (as standard user):**

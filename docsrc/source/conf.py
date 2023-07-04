@@ -14,7 +14,6 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../../'))
 
-
 # -- Project information -----------------------------------------------------
 
 project = 'DeepLearningTools'
@@ -31,9 +30,11 @@ release = '0.1.0'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.duration',
+    'sphinx.ext.duration', 
+    'sphinx.ext.viewcode',
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
+    'sphinx_copybutton',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -44,10 +45,13 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+# The name of the Pygments (syntax highlighting) style to use.
+pygments_style = 'nord'
+
 
 # -- Options for HTML output -------------------------------------------------
 
-# The theme to use for HTML and HTML Help pages.  See the documentation for
+# The theme to use for HTML and HTML Help pages. See the documentation for
 # a list of builtin themes.
 #
 html_theme = 'furo'

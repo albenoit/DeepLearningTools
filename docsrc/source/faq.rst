@@ -23,7 +23,6 @@ A bind is established by adding these parameters below to the command:
 
 .. code-block:: console
     
-    $ apptainer shell --nv --bind /path/to/your/DeepLearningTools/:DeepLearningTools/ tf2_addons.sif
+    apptainer shell --nv --bind /path/to/your/DeepLearningTools/:DeepLearningTools/ tf2_addons.sif
     #or
-    $ apptainer run --nv --bind /path/to/your/DeepLearningTools/:DeepLearningTools/ tf2_addons.sif -m 
-    deeplearningtools.experiments_manager -u examples/regression/mysettings_curve_fitting.py
+    apptainer run --nv --bind /path/to/your/DeepLearningTools/:DeepLearningTools/ tf2_addons.sif -m deeplearningtools.experiments_manager -u examples/regression/mysettings_curve_fitting.py

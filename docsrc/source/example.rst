@@ -11,7 +11,7 @@ and use the receipe provided in the install folder. In this case, one expects th
 
 .. code-block:: console
 
-    $ /path/to/containers/tf2_addons.2.11.0.sif
+    /path/to/containers/tf2_addons.2.11.0.sif
 
 NOTES:
     - Once run, all demos produce logs in specific timestamped folders in the `experiments` folder.
@@ -19,8 +19,7 @@ NOTES:
 
     .. code-block:: console
 
-        $ apptainer exec /path/to/containers/tf2_addons.2.11.0.sif tensorboard 
-        --logdir experiments/YOURTARGETSUBFOLDER
+        apptainer exec /path/to/containers/tf2_addons.2.11.0.sif tensorboard --logdir experiments/YOURTARGETSUBFOLDER
 
 
 Classical centralised model optimisation
@@ -30,29 +29,25 @@ Classical centralised model optimisation
 
 .. code-block:: console
 
-    $ apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager  
-    -u examples/regression/mysettings_curve_fitting.py
+    apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager  -u examples/regression/mysettings_curve_fitting.py
 
 - Classification problem on cats and dogs
 
 .. code-block:: console
 
-    $ apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager  
-    -u examples/classification/mysettings_image_classification.py
+    apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager  -u examples/classification/mysettings_image_classification.py
 
 - Timeseries forecasting with advanced csv files preprocessing
 
 .. code-block:: console
 
-    $ apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager  
-    -u examples/timeseries/mysettings_timeseries_forecasting.py
+    apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager  -u examples/timeseries/mysettings_timeseries_forecasting.py
 
 - Embedding timeseries with advanced csv files preprocessing
 
 .. code-block:: console
 
-    $ apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager  
-    -u examples/embedding/mysettings_1D_experiments.py
+    apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager  -u examples/embedding/mysettings_1D_experiments.py
 
 
 Decentralised federated model optimisation
@@ -68,8 +63,7 @@ Client logs will appear in `/tmp/ray/session_last/runtime_resources/working_dir_
 
 .. code-block:: console
     
-    $ apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.start_federated_server 
-    -sim --usersettings examples/federated/mysettings_curve_fitting.py 
+    apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.start_federated_server -sim --usersettings examples/federated/mysettings_curve_fitting.py 
 
 - Distributed mode
 
@@ -80,28 +74,23 @@ Parameter server and clients run on different processes (and maybe machines).
 .. code-block:: console
 
     #On command panel 0:
-    $ apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.start_federated_server 
-    --usersettings examples/federated/mysettings_curve_fitting.py 
+    apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.start_federated_server --usersettings examples/federated/mysettings_curve_fitting.py 
 
 2. Start each client into a specific command panel. Client logs will appear in experiments/examples/federated, one folder per client.
 
 .. code-block:: console
 
     #On command panel 1:
-    $ apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager 
-    --procID 1 -u examples/federated/mysettings_curve_fitting.py
+    apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager --procID 1 -u examples/federated/mysettings_curve_fitting.py
 
     #On command panel 2:
-    $ apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager 
-    --procID 2 -u examples/federated/mysettings_curve_fitting.py
+    apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager --procID 2 -u examples/federated/mysettings_curve_fitting.py
 
     #On command panel 3:
-    $ apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager 
-    --procID 3 -u examples/federated/mysettings_curve_fitting.py
+    apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager --procID 3 -u examples/federated/mysettings_curve_fitting.py
 
     #On command panel 4:
-    $ apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager 
-    --procID 4 -u examples/federated/mysettings_curve_fitting.py
+    apptainer run /path/to/containers/tf2_addons.2.11.0.sif -m deeplearningtools.experiments_manager --procID 4 -u examples/federated/mysettings_curve_fitting.py
 
 
 Running tests
@@ -111,7 +100,7 @@ You may want to check regression issues using pytest. Some global test cases are
 
 .. code-block:: console
     
-    $ apptainer exec /path/to/containers/tf2_addons.2.11.0.sif pytest test_framework.py
+    apptainer exec /path/to/containers/tf2_addons.2.11.0.sif pytest test_framework.py
 
 
 Application case: Cats and dogs classification
@@ -127,8 +116,7 @@ Start a train/val session using command (a singularity/apptainer container with 
 
 .. code-block:: console
     
-    $ apptainer run --nv tf2_addons.2.11.0.sif.sif -m deeplearningtools.experiments_manager 
-    --usersettings=examples/classification/mysettings_image_classification.py
+    apptainer run --nv tf2_addons.2.11.0.sif.sif -m deeplearningtools.experiments_manager --usersettings=examples/classification/mysettings_image_classification.py
 
 Once done, check for and use in the following steps the resulting folder, say for example `/abs/path/to/deeplearningtools/experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36/`.
 
@@ -140,8 +128,7 @@ Start a tensorflow model server on the produced experiment models using command 
 
 .. code-block:: console
     
-    $ python3 -m deeplearningtools.start_model_serving 
-    --model_dir /abs/path/to/deeplearningtools/experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36/ -psi /abs/path/to/tf2_addons.2.11.0.sif.sif 
+    python3 -m deeplearningtools.start_model_serving --model_dir /abs/path/to/deeplearningtools/experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36/ -psi /abs/path/to/tf2_addons.2.11.0.sif.sif 
 
 
 3. Request the model
@@ -151,5 +138,4 @@ Start a client that sends continuous requests to the server making use of a conn
 
 .. code-block:: console
 
-    $ apptainer run --nv tf2_addons.2.11.0.sif.sif -m deeplearningtools.experiments_manager 
-    --predict_stream=-1 --model_dir /abs/path/to/deeplearningtools/experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36
+    apptainer run --nv tf2_addons.2.11.0.sif.sif -m deeplearningtools.experiments_manager --predict_stream=-1 --model_dir /abs/path/to/deeplearningtools/experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36
