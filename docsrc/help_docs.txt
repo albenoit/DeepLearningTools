@@ -1,3 +1,6 @@
 Inside the cloned repository, check the integrity of all internal and external links:
 
 sphinx-build -c /mnt/c/Users/IR/Desktop/LISTIC/Work/_Alexandre/version-github/DeepLearningTools/docs/source docs -W -b linkcheck -d _build/doctrees _build/html
+
+sphinx-build -b html source ../docs/
+

@@ -23,7 +23,7 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone https://github.com/albenoit/DeepLearningTools
+    git clone https://github.com/albenoit/DeepLearningTools
 
 
 Virtual environment
