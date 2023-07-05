@@ -1,0 +1,1167 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html" /><link rel="search" title="Search" href="../../../search.html" />
+
+    <link rel="shortcut icon" href="../../../_static/logo_listic.png"/><!-- Generated with Sphinx 6.2.1 and Furo 2023.05.20 -->
+        <title>deeplearningtools.helpers.loss - DeepLearningTools 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #2E3440;
+  --color-code-foreground: #d8dee9;
+  --font-stack: Roboto, sans-serif;
+  --font-stack--monospace: Open Sans, monospace;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<div class="announcement">
+  <aside class="announcement-content">
+     <em>Deeplearningtools is currently in development.</em> 
+  </aside>
+</div>
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../index.html"><div class="brand">DeepLearningTools 0.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="../../../_static/main_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="../../../_static/main_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">DeepLearningTools 0.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../example.html">Examples and demonstrations</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../reference.html">Reference manual</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Reference manual</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../reference_index.html">DeepLearningTools package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of DeepLearningTools package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../main_script.html">Main subpackage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../unit_test.html">Test script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../reference_helpers.html">deeplearningtools.helpers subpackage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../reference_tools.html">deeplearningtools.tools subpackage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute.html">Community involvement and contributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../version.html">Release notes</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <h1>Source code for deeplearningtools.helpers.loss</h1><div class="highlight"><pre>
+<span></span><span class="c1"># ========================================</span>
+<span class="c1"># FileName: loss.py</span>
+<span class="c1"># Date: 29 june 2023 - 08:00</span>
+<span class="c1"># Author: Alexandre Benoit</span>
+<span class="c1"># Email: alexandre.benoit@univ-smb.fr</span>
+<span class="c1"># GitHub: https://github.com/albenoit/DeepLearningTools</span>
+<span class="c1"># Brief: A collection of helpers to compute various losses and related tools</span>
+<span class="c1"># Warning: WARNING, many loss to be tested ! check/compare with the original papers !!!</span>
+<span class="c1"># Note: Maybe have a look here: https://niftynet.readthedocs.io/en/dev/niftynet.layer.loss_segmentation.html</span>
+<span class="c1"># for DeepLearningTools.</span>
+<span class="c1"># =========================================</span>
+
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tensorflow.keras.backend</span> <span class="k">as</span> <span class="nn">K</span>
+
+<div class="viewcode-block" id="class_weights"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.class_weights">[docs]</a><span class="k">def</span> <span class="nf">class_weights</span><span class="p">(</span><span class="n">samples_per_class</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Compute class weights used to balance per-class loss during optimization.</span>
+
+<span class="sd">  :param samples_per_class: A numpy array containing the count of samples for each class (1D vector of length equal to the number of classes).</span>
+<span class="sd">  :type samples_per_class: numpy.ndarray</span>
+
+<span class="sd">  :param beta: The beta value used in the computation. If not provided, it is calculated as (N-1)/N, where N is the total number of samples.</span>
+<span class="sd">  :type beta: float, optional</span>
+
+<span class="sd">  :return: Class weights to be applied for each class loss.</span>
+<span class="sd">  :rtype: numpy.ndarray</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">class_nb</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">samples_per_class</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">beta</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">N</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">samples_per_class</span><span class="p">)</span>
+    <span class="n">beta</span>   <span class="o">=</span> <span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">/</span><span class="n">N</span>
+  <span class="c1">#print(&#39;class balancing beta&#39;, beta)</span>
+  <span class="n">effective_num</span><span class="o">=</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">beta</span><span class="p">,</span> <span class="n">samples_per_class</span><span class="p">)</span>
+  <span class="c1">#print(&#39;effective numbers&#39;, effective_num)</span>
+  <span class="n">weights</span><span class="o">=</span> <span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">beta</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">effective_num</span><span class="p">)</span>
+  <span class="n">weights</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">weights</span><span class="o">==</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)]</span><span class="o">=</span><span class="mi">0</span>
+  <span class="c1">#return normalized weights</span>
+  <span class="k">return</span> <span class="n">weights</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span><span class="o">*</span><span class="n">class_nb</span></div>
+  
+<div class="viewcode-block" id="get_sample_class_probabilities"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.get_sample_class_probabilities">[docs]</a><span class="nd">@tf</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="n">reduce_retracing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">get_sample_class_probabilities</span><span class="p">(</span><span class="n">one_hot_labels</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Returns the vector of class probabilities of a 3D [batch, n, labels] one-hot encoded labels tensor.</span>
+
+<span class="sd">  :param one_hot_labels: A tensor of shape [batchsize, n, one-hot labels].</span>
+<span class="sd">  :type one_hot_labels: tf.Tensor</span>
+
+<span class="sd">  :return: A tensor containing class probabilities for each sample.</span>
+<span class="sd">  :rtype: tf.Tensor</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="c1">#labels_shape=one_hot_labels.get_shape().as_list()</span>
+  <span class="n">counts</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">one_hot_labels</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">weights</span> <span class="o">=</span> <span class="n">counts</span><span class="o">/</span><span class="n">one_hot_labels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+  <span class="k">return</span> <span class="n">weights</span></div>
+
+<div class="viewcode-block" id="get_per_sample_class_weights"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.get_per_sample_class_weights">[docs]</a><span class="nd">@tf</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="n">reduce_retracing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">get_per_sample_class_weights</span><span class="p">(</span><span class="n">y_true</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Returns the vector of class weights of a 3D [batch, n, labels] one-hot encoded labels tensor.</span>
+
+<span class="sd">  :param y_true: A tensor of shape [batchsize, n, one-hot labels].</span>
+<span class="sd">  :type y_true: tf.Tensor</span>
+
+<span class="sd">  :return: A tensor that contains class weights for each sample.</span>
+<span class="sd">  :rtype: tf.Tensor</span>
+
+<span class="sd">  WARNING: Weights are normalized to sum to 1. When some classes are not present, the weights of other classes increase!</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">per_sample_class_weights</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">reciprocal_no_nan</span><span class="p">(</span><span class="n">get_sample_class_probabilities</span><span class="p">(</span><span class="n">y_true</span><span class="p">))</span>
+  <span class="n">per_sample_class_weights</span><span class="o">/=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">per_sample_class_weights</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">per_sample_class_weights</span></div>
+
+<div class="viewcode-block" id="get_batch_flat_tensors"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.get_batch_flat_tensors">[docs]</a><span class="nd">@tf</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="n">reduce_retracing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">get_batch_flat_tensors</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">logits</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Prepare logits and label batch samples in a per-sample flat shape.</span>
+
+<span class="sd">  :param labels: The integer values that will be one-hot encoded internally. Shape: [batchsize, ..., 1].</span>
+<span class="sd">  :type labels: tf.Tensor</span>
+<span class="sd">  :param logits: The predicted logits with shape [batchsize, ..., classes].</span>
+<span class="sd">  :type logits: tf.Tensor</span>
+
+<span class="sd">  :return: y_true, the one-hot encoded labels with shape [batchsize, n, classes], where n is the dimension of the flattened samples.</span>
+<span class="sd">            y_pred, the flattened logits with shape [batchsize, n, classes].</span>
+<span class="sd">  :rtype: Tuple[tf.Tensor, tf.Tensor]</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">logits_shape</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+  <span class="n">flat_sample_dim</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_prod</span><span class="p">(</span><span class="n">logits_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+  <span class="n">y_true</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">logits_shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="p">[</span><span class="n">logits_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">flat_sample_dim</span><span class="p">,</span> <span class="n">logits_shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+  <span class="n">y_pred</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="p">[</span><span class="n">logits_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">flat_sample_dim</span><span class="p">,</span> <span class="n">logits_shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+  <span class="k">return</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span></div>
+
+<div class="viewcode-block" id="preds_labels_preprocess_softmax_flatten"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.preds_labels_preprocess_softmax_flatten">[docs]</a><span class="nd">@tf</span><span class="o">.</span><span class="n">function</span>
+<span class="k">def</span> <span class="nf">preds_labels_preprocess_softmax_flatten</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  A tf.function to simplify the optimization graph:</span>
+
+<span class="sd">  1. Apply softmax to the input logits.</span>
+
+<span class="sd">  2. Flatten each sample of the input batch.</span>
+
+<span class="sd">  :param logits: The predicted logits with shape [batchsize, ..., classes].</span>
+<span class="sd">  :type logits: tf.Tensor</span>
+<span class="sd">  :param labels: The integer values that will be one-hot encoded internally. Shape: [batchsize, ..., 1].</span>
+<span class="sd">  :type labels: tf.Tensor</span>
+
+<span class="sd">  :return: y_true, the flattened one-hot encoded labels with shape [batchsize, n, classes], where n is the dimension of the flattened samples.</span>
+<span class="sd">            y_pred, the flattened softmaxed logits with shape [batchsize, n, classes].</span>
+<span class="sd">  :rtype: Tuple[tf.Tensor, tf.Tensor]</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">pred_probs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="o">=</span><span class="n">get_batch_flat_tensors</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">pred_probs</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span></div>
+
+<div class="viewcode-block" id="smooth_labels"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.smooth_labels">[docs]</a><span class="nd">@tf</span><span class="o">.</span><span class="n">function</span>
+<span class="k">def</span> <span class="nf">smooth_labels</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">factor</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Smooths the labels.</span>
+
+<span class="sd">  :param labels: The input labels to be smoothed.</span>
+<span class="sd">  :type labels: tf.Tensor</span>
+<span class="sd">  :param factor: The smoothing factor.</span>
+<span class="sd">  :type factor: float</span>
+
+<span class="sd">  :return: The smoothed labels.</span>
+<span class="sd">  :rtype: tf.Tensor</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="c1"># smooth the labels</span>
+  <span class="n">labels</span> <span class="o">*=</span> <span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="o">-</span> <span class="n">factor</span><span class="p">)</span>
+  <span class="n">labels</span> <span class="o">+=</span> <span class="p">(</span><span class="n">factor</span> <span class="o">/</span> <span class="n">labels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+  <span class="c1">#tf.print(&#39;labels&#39;, labels)</span>
+  <span class="k">return</span> <span class="n">labels</span></div>
+
+<div class="viewcode-block" id="weighted_xcrosspow_loss_softmax"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.weighted_xcrosspow_loss_softmax">[docs]</a><span class="k">def</span> <span class="nf">weighted_xcrosspow_loss_softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">weight_class_sample_prob</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">weight_class_global_prob</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">train_class_probs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;loss&#39;</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  A cross entropy loss with a power low, same idea as for focal loss but, limits oversupression of high scores</span>
+<span class="sd">  from https://arxiv.org/pdf/1809.00076.pdf</span>
+<span class="sd">  added specific weightings</span>
+
+<span class="sd">  :param labels: A tensor of shape [batch_size,...] with class indexes (that will be one hot encoded internally).</span>
+<span class="sd">  :param logits: A float32 tensor of shape [batch_size,...,num_classes].</span>
+<span class="sd">  :param gamma: The power value for the power law.</span>
+<span class="sd">  :param weight_class_sample_prob: If True, per-sample class loss is weighted by the related class sample probability.</span>
+<span class="sd">  :param weight_class_global_prob: If True, weight the loss with respect to the true class probabilities in the training dataset.</span>
+<span class="sd">  :param train_class_probs: A numpy array of class weights.</span>
+<span class="sd">  :param name: The name of the loss tensor.</span>
+
+<span class="sd">  :return: A cross entropy tensor of shape [batchsize, classes]</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="o">=</span><span class="n">preds_labels_preprocess_softmax_flatten</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+  
+  <span class="n">eps</span><span class="o">=</span><span class="mf">1e-10</span>
+  <span class="n">y_pred</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">clip_by_value</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="mf">1.</span><span class="o">-</span><span class="n">eps</span><span class="p">)</span><span class="c1">#avoid undefined values</span>
+  <span class="c1">#standard cross entropy ^ gamma</span>
+  <span class="n">L</span><span class="o">=</span><span class="n">y_true</span><span class="o">*</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="o">-</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">y_pred</span><span class="p">),</span> <span class="n">gamma</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">weight_class_sample_prob</span><span class="p">:</span>
+      <span class="n">class_rates</span> <span class="o">=</span> <span class="n">get_sample_class_probabilities</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span>
+      <span class="n">class_rates</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">class_rates</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">y_pred</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+      <span class="n">weighting_factor</span><span class="o">=</span><span class="nb">pow</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">L</span><span class="p">)</span> <span class="o">*</span> <span class="mf">3.0</span><span class="p">,</span> <span class="n">class_rates</span><span class="p">)</span>
+      <span class="n">L</span><span class="o">*=</span><span class="n">weighting_factor</span>
+  <span class="k">if</span> <span class="n">weight_class_global_prob</span><span class="p">:</span>
+    <span class="n">train_class_weights_factor</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">train_class_probs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">train_class_weights_factor</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">train_class_weights_factor</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">y_pred</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="n">L</span><span class="o">*=</span><span class="n">train_class_weights_factor</span>
+    <span class="n">per_sample_loss</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">per_sample_loss</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+            
+<div class="viewcode-block" id="focal_loss_softmax"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.focal_loss_softmax">[docs]</a><span class="k">def</span> <span class="nf">focal_loss_softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span>  <span class="n">gamma</span><span class="o">=</span><span class="mf">3.</span><span class="p">,</span> <span class="n">weight_class_sample_prob</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">weight_class_global_prob</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">train_class_probs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;loss&#39;</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Focal loss, a cross entropy like loss that favors hard examples</span>
+<span class="sd">  such that imbalanced data can be handled more easily</span>
+<span class="sd">  original work: https://arxiv.org/abs/1708.02002</span>
+<span class="sd">  --&gt; also have a look at the proposed strategy on the last bias init.</span>
+
+<span class="sd">  :param labels: A tensor of shape [batch_size,...] with class indexes (that will be one hot encoded internally).</span>
+<span class="sd">  :param logits: A float32 tensor of shape [batch_size,...,num_classes].</span>
+<span class="sd">  :param gamma: A scalar for focal loss gamma hyper-parameter.</span>
+<span class="sd">  :param weight_class_sample_prob: If True, per-sample class loss is weighted by the related class sample probability.</span>
+<span class="sd">  :param weight_class_global_prob: If True, weight the loss with respect to the true class probabilities in the training dataset.</span>
+<span class="sd">  :param train_class_probs: A numpy array of class weights.</span>
+<span class="sd">  :param name: The name of the loss tensor.</span>
+
+<span class="sd">  :return: A scalar loss value</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="o">=</span><span class="n">preds_labels_preprocess_softmax_flatten</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+  
+  <span class="n">eps</span><span class="o">=</span><span class="mf">1e-15</span>
+  <span class="n">y_pred</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">clip_by_value</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="mf">1.</span><span class="o">-</span><span class="n">eps</span><span class="p">)</span><span class="c1">#avoid undefined values</span>
+  <span class="n">L</span><span class="o">=-</span><span class="n">y_true</span><span class="o">*</span><span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">y_pred</span><span class="p">)</span><span class="o">**</span><span class="n">gamma</span><span class="p">)</span><span class="o">*</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">y_pred</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">weight_class_sample_prob</span><span class="p">:</span>
+      <span class="n">class_rates</span> <span class="o">=</span> <span class="n">get_sample_class_probabilities</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span>
+      <span class="n">class_rates</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">class_rates</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">y_pred</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+      <span class="n">weighting_factor</span><span class="o">=</span><span class="nb">pow</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">L</span><span class="p">)</span> <span class="o">*</span> <span class="mf">3.0</span><span class="p">,</span> <span class="n">class_rates</span><span class="p">)</span>
+      <span class="n">L</span><span class="o">*=</span><span class="n">weighting_factor</span>
+  <span class="k">if</span> <span class="n">weight_class_global_prob</span><span class="p">:</span>
+    <span class="n">train_class_weights_factor</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">train_class_probs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">train_class_weights_factor</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">train_class_weights_factor</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">y_pred</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="n">L</span><span class="o">*=</span><span class="n">train_class_weights_factor</span>
+  <span class="n">per_sample_loss</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">per_sample_loss</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="multiclass_dice_loss_softmax"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.multiclass_dice_loss_softmax">[docs]</a><span class="k">def</span> <span class="nf">multiclass_dice_loss_softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">weight_class_sample_prob</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">weight_class_global_prob</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">train_class_probs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;loss&#39;</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Multiclass Sørensen-Dice index measure, softmax is applied internally on the y_preds.</span>
+
+<span class="sd">  :param logits: The predicted logits with shape [batchsize, ..., classes].</span>
+<span class="sd">  :param labels: Integer values, will be one hot encoded internally [batchsize, ..., 1].</span>
+<span class="sd">  :param weight_class_sample_prob: Set True to weight the loss with respect to sample true class probabilities.</span>
+<span class="sd">  :param weight_class_global_prob: Set True to weight the loss with respect to train dataset true class probabilities.</span>
+<span class="sd">  :param train_class_probs: A numpy array of class weights.</span>
+<span class="sd">  :param name: The name of the loss tensor.</span>
+
+<span class="sd">  :return: The average dice loss.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="o">=</span><span class="n">preds_labels_preprocess_softmax_flatten</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+  <span class="n">true_pos</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span>    <span class="n">y_true</span> <span class="o">*</span> <span class="n">y_pred</span><span class="p">,</span>     <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">false_pos</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">y_true</span><span class="p">)</span> <span class="o">*</span> <span class="n">y_pred</span><span class="p">,</span>     <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">false_neg</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span>     <span class="n">y_true</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">y_pred</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">smooth</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">epsilon</span><span class="p">()</span>
+  <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span>
+  <span class="n">dice_losses</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">-</span><span class="p">(</span><span class="n">true_pos</span> <span class="o">+</span> <span class="n">smooth</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">true_pos</span> <span class="o">+</span> <span class="n">alpha</span><span class="o">*</span><span class="n">false_neg</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span><span class="o">*</span><span class="n">false_pos</span> <span class="o">+</span> <span class="n">smooth</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">weight_class_sample_prob</span><span class="p">:</span>
+    <span class="n">dice_losses</span><span class="o">*=</span><span class="n">get_per_sample_class_weights</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">weight_class_global_prob</span><span class="p">:</span>
+    <span class="n">train_class_weights_factor</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">train_class_probs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">train_class_weights_factor</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">train_class_weights_factor</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">y_pred</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="n">dice_losses</span><span class="o">*=</span><span class="n">train_class_weights_factor</span>
+  
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">dice_losses</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="multiclass_lovasz_loss_softmax"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.multiclass_lovasz_loss_softmax">[docs]</a><span class="k">def</span> <span class="nf">multiclass_lovasz_loss_softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">weight_class_sample_prob</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">weight_class_global_prob</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">train_class_probs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;loss&#39;</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Multiclass Jaccard loss measure, softmax is applied internally on the y_preds.</span>
+
+<span class="sd">  :param logits: The predicted logits with shape [batchsize, ..., classes].</span>
+<span class="sd">  :param labels: Integer values, will be one hot encoded internally [batchsize, ..., 1].</span>
+<span class="sd">  :param weight_class_sample_prob: Set True to weight the loss with respect to sample true class probabilities.</span>
+<span class="sd">  :param weight_class_global_prob: Set True to weight the loss with respect to train dataset true class probabilities.</span>
+<span class="sd">  :param train_class_probs: A numpy array of class weights.</span>
+<span class="sd">  :param name: The name of the loss tensor.</span>
+
+<span class="sd">  :return: The average Jaccard loss.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="o">=</span><span class="n">preds_labels_preprocess_softmax_flatten</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+
+  <span class="n">errors</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_true</span><span class="o">-</span><span class="n">y_pred</span><span class="p">)</span>
+  <span class="n">errors_sorted</span><span class="p">,</span> <span class="n">perm</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">top_k</span><span class="p">(</span><span class="n">errors</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">errors</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;descending_sort_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+
+  <span class="n">signs</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">y_true</span> <span class="o">-</span> <span class="mf">1.</span> <span class="c1"># target class present : value =1 vs not present, value=-1</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;signs, SHOULD BE FLOATS!&#39;</span><span class="p">,</span><span class="n">signs</span><span class="p">)</span>
+  <span class="n">errors</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">logits</span> <span class="o">*</span> <span class="n">signs</span><span class="p">)</span> <span class="c1"># good preds with good margins, value&lt;0 vs bad preds AND good preds with low margins, value&gt;0 </span>
+
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">errors</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="multiclass_jaccard_loss_softmax"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.multiclass_jaccard_loss_softmax">[docs]</a><span class="k">def</span> <span class="nf">multiclass_jaccard_loss_softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">weight_class_sample_prob</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">weight_class_global_prob</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">train_class_probs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;loss&#39;</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Multiclass Jaccard loss measure, softmax is applied internally on the y_preds.</span>
+
+<span class="sd">  :param logits: The predicted logits with shape [batchsize, ..., classes].</span>
+<span class="sd">  :param labels: Integer values, will be one hot encoded internally [batchsize, ..., 1].</span>
+<span class="sd">  :param weight_class_sample_prob: Set True to weight the loss with respect to sample true class probabilities.</span>
+<span class="sd">  :param weight_class_global_prob: Set True to weight the loss with respect to train dataset true class probabilities.</span>
+<span class="sd">  :param train_class_probs: A numpy array of class weights.</span>
+<span class="sd">  :param name: The name of the loss tensor.</span>
+
+<span class="sd">  :return: The average Jaccard measures of shape [batchsize, classes].</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="o">=</span><span class="n">preds_labels_preprocess_softmax_flatten</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+
+  <span class="n">intersects</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">y_true</span> <span class="o">*</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">denominators</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">y_true</span> <span class="o">+</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">intersects</span>
+  <span class="n">smooth</span><span class="o">=</span><span class="mf">1.</span>
+  <span class="n">jaccard_losses</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">-</span> <span class="p">(</span><span class="n">intersects</span><span class="o">+</span><span class="n">smooth</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">denominators</span><span class="o">+</span><span class="n">smooth</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;jaccard.shape&#39;</span><span class="p">,</span> <span class="n">jaccard_losses</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">weight_class_sample_prob</span><span class="p">:</span>
+    <span class="n">jaccard_losses</span><span class="o">*=</span><span class="n">get_per_sample_class_weights</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">weight_class_global_prob</span><span class="p">:</span>
+    <span class="n">train_class_weights_factor</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">train_class_probs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">train_class_weights_factor</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">train_class_weights_factor</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">y_pred</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="n">jaccard_losses</span><span class="o">*=</span><span class="n">train_class_weights_factor</span>
+
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">jaccard_losses</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="multiclass_tversky_loss_softmax"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.multiclass_tversky_loss_softmax">[docs]</a><span class="k">def</span> <span class="nf">multiclass_tversky_loss_softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">weight_class_sample_prob</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">weight_class_global_prob</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">train_class_probs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">focal</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;loss&#39;</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Multiclass Tversky loss measure, softmax is applied internally on the y_preds.</span>
+
+<span class="sd">  Reference: https://arxiv.org/pdf/1706.05721.pdf</span>
+
+<span class="sd">  :param logits: The predicted logits with shape [batchsize, ..., classes].</span>
+<span class="sd">  :param labels: Integer values, will be one hot encoded internally [batchsize, ..., 1].</span>
+<span class="sd">  :param alpha: The weight of the false negatives penalty, (1-alpha) will be set to weigh false positives.</span>
+<span class="sd">  :param weight_class_sample_prob: Set True to weight the loss with respect to sample true class probabilities.</span>
+<span class="sd">  :param weight_class_global_prob: Set True to weight the loss with respect to train dataset true class probabilities.</span>
+<span class="sd">  :param train_class_probs: A numpy array of class weights.</span>
+<span class="sd">  :param focal: If value 0., activate the focal loss as presented in https://arxiv.org/pdf/1810.07842.pdf,</span>
+<span class="sd">                recommended value was 0.75.</span>
+<span class="sd">  :param name: The name of the loss tensor.</span>
+
+<span class="sd">  :return: The average Tversky loss.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="o">=</span><span class="n">preds_labels_preprocess_softmax_flatten</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+  <span class="n">eps</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">epsilon</span><span class="p">()</span>
+  <span class="n">y_pred</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">clip_by_value</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="mf">1.</span><span class="o">-</span><span class="n">eps</span><span class="p">)</span><span class="c1">#avoid undefined values</span>
+
+  <span class="n">true_pos</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span>    <span class="n">y_true</span> <span class="o">*</span> <span class="n">y_pred</span><span class="p">,</span>     <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">false_pos</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">y_true</span><span class="p">)</span> <span class="o">*</span> <span class="n">y_pred</span><span class="p">,</span>     <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">false_neg</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span>     <span class="n">y_true</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">y_pred</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">smooth</span><span class="o">=</span><span class="n">eps</span>
+  <span class="n">tversky_losses</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">-</span> <span class="p">(</span><span class="n">true_pos</span> <span class="o">+</span> <span class="n">smooth</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">true_pos</span> <span class="o">+</span> <span class="n">alpha</span><span class="o">*</span><span class="n">false_neg</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span><span class="o">*</span><span class="n">false_pos</span> <span class="o">+</span> <span class="n">smooth</span><span class="p">)</span>
+  <span class="c1">#tf.print(&#39;tversky_losses : tp&#39;, true_pos)</span>
+  <span class="c1">#tf.print(&#39;tversky_losses : fp&#39;, false_pos)</span>
+  <span class="c1">#tf.print(&#39;tversky_losses : fn&#39;, false_neg)</span>
+  <span class="c1">#tf.print(&#39;tversky_losses : loss&#39;, tversky_losses)</span>
+
+  <span class="k">if</span> <span class="n">focal</span><span class="o">&gt;</span><span class="mf">0.</span><span class="p">:</span>
+    <span class="n">tversky_losses</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">tversky_losses</span><span class="p">,</span> <span class="n">focal</span><span class="p">)</span>
+    <span class="c1">#tf.print(&#39;weighted tversky_losses : loss&#39;, tversky_losses)</span>
+  <span class="c1">#print(&#39;tversky_losses.shape&#39;, tversky_losses.shape)</span>
+
+  <span class="k">if</span> <span class="n">weight_class_sample_prob</span><span class="p">:</span>
+    <span class="n">tversky_losses</span><span class="o">*=</span><span class="n">get_per_sample_class_weights</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span>
+    <span class="c1">#tf.print(&#39;weighted tversky_losses : class probs&#39;, get_per_sample_class_weights(y_true))</span>
+    <span class="c1">#tf.print(&#39;weighted tversky_losses : loss&#39;, tversky_losses)</span>
+  
+  <span class="k">if</span> <span class="n">weight_class_global_prob</span><span class="p">:</span>
+    <span class="n">train_class_weights_factor</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">train_class_probs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">train_class_weights_factor</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">train_class_weights_factor</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">y_pred</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="n">tversky_losses</span><span class="o">*=</span><span class="n">train_class_weights_factor</span>
+
+  <span class="c1">#tf.print(&#39;tversky is finite&#39;, tf.math.reduce_prod(tf.cast(tf.math.is_finite(tversky_losses), dtype=tf.int8)))</span>
+  <span class="c1">#tf.print(&#39;final_loss&#39;, tf.reduce_mean(tversky_losses, name=name))</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tversky_losses</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="exponentialLogLoss"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.exponentialLogLoss">[docs]</a><span class="k">def</span> <span class="nf">exponentialLogLoss</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;loss&#39;</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Apply a power law on the input loss function.</span>
+
+<span class="sd">  Reference: https://arxiv.org/pdf/1809.00076.pdf</span>
+
+<span class="sd">  :param loss: A tensor of (preliminary weighted) metrics in the range [0,1].</span>
+<span class="sd">  :param gamma: The exponent value for the power law.</span>
+<span class="sd">  :param name: The name of the loss tensor.</span>
+
+<span class="sd">  :return: The average of (-log(loss))^gamma.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="o">-</span><span class="mf">1.</span><span class="o">*</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">loss</span><span class="p">),</span> <span class="n">gamma</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+
+<span class="c1">#-----------------------------------------</span>
+<span class="c1"># A loss gradient lipshitz regularizer</span>
+<span class="c1">#-----------------------------------------</span>
+
+<div class="viewcode-block" id="get_IOgradient_norm_lipschitzPenalty"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.get_IOgradient_norm_lipschitzPenalty">[docs]</a><span class="k">def</span> <span class="nf">get_IOgradient_norm_lipschitzPenalty</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">target_lipschitz</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Computes a loss gradient Lipschitz regularizer.</span>
+
+<span class="sd">  This function calculates the norm of the gradients of the outputs with respect to the inputs and penalizes deviations from the target Lipschitz constant.</span>
+
+<span class="sd">  :param inputs: The input tensor.</span>
+<span class="sd">  :param outputs: The output tensor.</span>
+<span class="sd">  :param target_lipschitz: The target Lipschitz constant.</span>
+
+<span class="sd">  :return: The mean squared difference between the slopes (norms of the gradients) and the target Lipschitz constant.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">gradients</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">gradients</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="p">[</span><span class="n">inputs</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Gradient=&#39;</span><span class="p">,</span> <span class="n">gradients</span><span class="p">)</span>
+  <span class="n">slopes</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">gradients</span><span class="p">),</span> <span class="n">reduction_indices</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">((</span><span class="n">slopes</span><span class="o">-</span><span class="n">target_lipschitz</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span></div>
+
+<span class="c1">#---------------------------------------------</span>
+<span class="c1">#</span>
+<span class="c1">#---------------------------------------------</span>
+
+<div class="viewcode-block" id="tensor_gram_matrix"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.tensor_gram_matrix">[docs]</a><span class="k">def</span> <span class="nf">tensor_gram_matrix</span><span class="p">(</span><span class="n">tensor</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Returns the Gram matrix of a given tensor matrix.</span>
+
+<span class="sd">  Note that the input tensor is reshaped to a 2D matrix, preserving the last dimension.</span>
+
+<span class="sd">  :param tensor: The input tensor.</span>
+
+<span class="sd">  :return: The Gram matrix of the tensor.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">inp_shape</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()</span>
+  <span class="n">row_dims</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">inp_shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+  <span class="n">col_dims</span> <span class="o">=</span> <span class="n">inp_shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+  <span class="n">w</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="p">(</span><span class="n">row_dims</span><span class="p">,</span><span class="n">col_dims</span><span class="p">))</span>
+  <span class="n">gm</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">w</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">w</span><span class="p">,</span> <span class="n">transpose_a</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">gm</span></div>
+
+<div class="viewcode-block" id="Regularizer_soft_orthogonality"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.Regularizer_soft_orthogonality">[docs]</a><span class="k">class</span> <span class="nc">Regularizer_soft_orthogonality</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Soft orthogonalization regularizer.</span>
+
+<span class="sd">  This regularizer encourages the weight matrix of a layer to have a Gram matrix close to the identity matrix, promoting orthogonality among the weights.</span>
+
+<span class="sd">  :param l: Regularization factor.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initialize the Soft Orthogonalization Regularizer.</span>
+
+<span class="sd">    :param l: Regularization factor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="o">=</span><span class="n">l</span>
+
+  <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">x</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Apply the soft orthogonal regularization to the weights of a given layer.</span>
+
+<span class="sd">    Require  the Gram matrix of the weight matrix to be close to identity.</span>
+
+<span class="sd">    :param x: The weights tensor of the layer.</span>
+
+<span class="sd">    :return: The weight penalty.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">weights_gram_matrix</span><span class="o">=</span><span class="n">tensor_gram_matrix</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">I</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">weights_gram_matrix</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">gram_minus_ident</span> <span class="o">=</span> <span class="n">weights_gram_matrix</span><span class="o">-</span><span class="n">I</span>
+    <span class="n">loss</span><span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">gram_minus_ident</span><span class="p">))</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="o">*</span><span class="n">loss</span>
+
+<div class="viewcode-block" id="Regularizer_soft_orthogonality.get_config"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.Regularizer_soft_orthogonality.get_config">[docs]</a>  <span class="k">def</span> <span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the configuration of the regularizer.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span><span class="p">{</span><span class="s1">&#39;l&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">}</span></div></div>
+
+<div class="viewcode-block" id="Regularizer_Spectral_Restricted_Isometry"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.Regularizer_Spectral_Restricted_Isometry">[docs]</a><span class="k">class</span> <span class="nc">Regularizer_Spectral_Restricted_Isometry</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">,</span> <span class="n">nb_filters</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Spectral Restricted Isometry regularizer for weights.</span>
+<span class="sd">    </span>
+<span class="sd">    Orthogonal regularization for weights presented here: https://arxiv.org/abs/1810.09102</span>
+
+<span class="sd">      - Generally more efficient than weights_regularizer_soft_orthogonality</span>
+
+<span class="sd">      - WARNING, works best at the beginning if the training but too restrictive when fine tuning and should be replaced by classical l2 weights penalty</span>
+
+<span class="sd">    :param l: Regularization factor.</span>
+<span class="sd">    :param nb_filters: The number of output features.</span>
+
+<span class="sd">    SRIPv2 variant here (TO BE TESTED): https://github.com/VITA-Group/Orthogonality-in-CNNs/blob/master/SVHN/train.py</span>
+<span class="sd">    REMINDER : Other ideas with spectral norm : https://github.com/taki0112/Spectral_Normalization-Tensorflow</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="o">=</span><span class="n">l</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">nb_filters</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">nb_filters</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;nb_filters&#39;</span><span class="p">)</span>
+    <span class="n">w_init</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">random_normal_initializer</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">v</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">initial_value</span><span class="o">=</span><span class="n">w_init</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_filters</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">trainable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;srip_v&#39;</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">x</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Args: x, the weights tensor of a given layer</span>
+<span class="sd">    Returns the weight penalty</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">weights_gram_matrix</span><span class="o">=</span><span class="n">tensor_gram_matrix</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="n">Ident</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">weights_gram_matrix</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">Norm</span>  <span class="o">=</span> <span class="n">weights_gram_matrix</span> <span class="o">-</span> <span class="n">Ident</span>
+
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;v1 = tf.math.multiply(Norm, self.v)</span>
+<span class="sd">    norm1 = tf.reduce_sum(tf.math.square(v1))**0.5</span>
+
+<span class="sd">    v2 = tf.math.divide(v1,norm1)</span>
+
+<span class="sd">    v3 = tf.math.multiply(Norm,v2)</span>
+<span class="sd">    loss= tf.reduce_sum(tf.math.square(v3))**0.5</span>
+<span class="sd">    #l2_reg = (torch.norm(v3,2))**2</span>
+<span class="sd">    </span>
+<span class="sd">    # V2 version (pytorch code):</span>
+<span class="sd">    u = normalize(w_tmp.new_empty(height).normal_(0, 1), dim=0, eps=1e-12)</span>
+<span class="sd">    v = normalize(torch.matmul(w_tmp.t(), u), dim=0, eps=1e-12)</span>
+<span class="sd">    u = normalize(torch.matmul(w_tmp, v), dim=0, eps=1e-12)</span>
+<span class="sd">    sigma = torch.dot(u, torch.matmul(w_tmp, v))</span>
+<span class="sd">    loss=(torch.norm(sigma,2))**2</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">u</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">l2_normalize</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">Norm</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span><span class="mi">1</span><span class="p">),</span> <span class="n">mean</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">stddev</span><span class="o">=</span><span class="mf">1.0</span><span class="p">))</span>
+    <span class="n">v</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">l2_normalize</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">Norm</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">u</span><span class="p">,</span> <span class="n">transpose_a</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">matmul_norm_v</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">Norm</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">v</span><span class="p">,</span> <span class="n">transpose_a</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">u</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">l2_normalize</span><span class="p">(</span><span class="n">matmul_norm_v</span><span class="p">)</span>
+    <span class="n">sigma</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">matmul_norm_v</span><span class="p">)</span>
+    <span class="n">loss</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="nb">ord</span><span class="o">=</span><span class="s1">&#39;euclidean&#39;</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="o">*</span><span class="n">loss</span>
+
+<div class="viewcode-block" id="Regularizer_Spectral_Restricted_Isometry.get_config"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.Regularizer_Spectral_Restricted_Isometry.get_config">[docs]</a>  <span class="k">def</span> <span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span><span class="p">{</span><span class="s1">&#39;l&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">,</span> <span class="s1">&#39;nb_filters&#39;</span><span class="p">:</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_filters</span><span class="p">)}</span></div></div>
+
+<div class="viewcode-block" id="Regularizer_None"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.Regularizer_None">[docs]</a><span class="k">class</span> <span class="nc">Regularizer_None</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Custom regularizer that applies no regularization.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">K</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<div class="viewcode-block" id="Regularizer_None.get_config"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.Regularizer_None.get_config">[docs]</a>  <span class="k">def</span> <span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span><span class="p">{}</span></div></div>
+
+<div class="viewcode-block" id="Regularizer_L1L2Ortho"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.Regularizer_L1L2Ortho">[docs]</a><span class="k">class</span> <span class="nc">Regularizer_L1L2Ortho</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  A regularizer that combine multiple ones (testing)</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">l1</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">ortho</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">ortho_type</span><span class="o">=</span><span class="s1">&#39;soft&#39;</span><span class="p">,</span> <span class="n">nb_filters</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Custom regularizer for L1/L2 weight regularization and soft orthogonality regularization.</span>
+
+<span class="sd">    This regularizer combines L1/L2 weight regularization and soft orthogonality regularization.</span>
+<span class="sd">    The regularization factors and orthogonality type can be specified during initialization.</span>
+
+<span class="sd">    :param l1: Regularization factor for L1 penalty.</span>
+<span class="sd">    :param l2: Regularization factor for L2 penalty.</span>
+<span class="sd">    :param ortho: Regularization factor for orthogonality penalty.</span>
+<span class="sd">    :param ortho_type: Type of orthogonalization penalty (&#39;soft&#39; or &#39;srip&#39;).</span>
+<span class="sd">    :param nb_filters: Number of output features (required for SRIP orthogonalization).</span>
+
+<span class="sd">    :ivar l1: Regularization factor for L1 penalty.</span>
+<span class="sd">    :ivar l2: Regularization factor for L2 penalty.</span>
+<span class="sd">    :ivar ortho: Regularization factor for orthogonality penalty.</span>
+<span class="sd">    :ivar nb_filters: Number of output features (required for SRIP orthogonalization).</span>
+<span class="sd">    :ivar ortho_type: Type of orthogonalization penalty (&#39;soft&#39; or &#39;srip&#39;).</span>
+<span class="sd">    :ivar L1L2_reg: Instance of L1L2 regularizer for L1/L2 weight regularization.</span>
+<span class="sd">    :ivar Ortho_reg: Instance of orthogonality regularizer for soft orthogonality regularization.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">l1</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">cast_to_floatx</span><span class="p">(</span><span class="n">l1</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">l2</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">cast_to_floatx</span><span class="p">(</span><span class="n">l2</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">ortho</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">cast_to_floatx</span><span class="p">(</span><span class="n">ortho</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">nb_filters</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">nb_filters</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">ortho_type</span><span class="o">=</span><span class="n">ortho_type</span>
+    
+    <span class="c1">#prepare regularization operators (and no ops)</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">l1</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">l2</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">L1L2_reg</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">regularizers</span><span class="o">.</span><span class="n">L1L2</span><span class="p">(</span><span class="n">l1</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">l2</span><span class="p">)</span>
+    <span class="k">else</span> <span class="p">:</span> <span class="c1">#no op like</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">L1L2_reg</span> <span class="o">=</span> <span class="n">Regularizer_None</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ortho</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ortho_type</span><span class="o">==</span><span class="s1">&#39;soft&#39;</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Ortho_reg</span> <span class="o">=</span> <span class="n">Regularizer_soft_orthogonality</span><span class="p">(</span><span class="n">l</span><span class="o">=</span><span class="n">ortho</span><span class="p">)</span>
+      <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ortho_type</span><span class="o">==</span><span class="s1">&#39;srip&#39;</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Ortho_reg</span> <span class="o">=</span> <span class="n">Regularizer_Spectral_Restricted_Isometry</span><span class="p">(</span><span class="n">l</span><span class="o">=</span><span class="n">ortho</span><span class="p">,</span> <span class="n">nb_filters</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_filters</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;weights_L1L2_soft_ortho_regularizer : unexpected provided ortho_type, expeting </span><span class="se">\&#39;</span><span class="s1">soft</span><span class="se">\&#39;</span><span class="s1"> or </span><span class="se">\&#39;</span><span class="s1">srip</span><span class="se">\&#39;</span><span class="s1">, received &#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">ortho_type</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">Ortho_reg</span> <span class="o">=</span> <span class="n">Regularizer_None</span><span class="p">()</span>
+
+  <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">L1L2_reg</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">Ortho_reg</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="Regularizer_L1L2Ortho.get_config"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.Regularizer_L1L2Ortho.get_config">[docs]</a>  <span class="k">def</span> <span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+      <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;l1&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l1</span><span class="p">),</span> <span class="s1">&#39;l2&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l2</span><span class="p">),</span> <span class="s1">&#39;nb_filters&#39;</span><span class="p">:</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_filters</span><span class="p">),</span> <span class="s1">&#39;ortho&#39;</span><span class="p">:</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ortho</span><span class="p">),</span> <span class="s1">&#39;ortho_type&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ortho_type</span><span class="p">)}</span></div></div>
+
+
+<div class="viewcode-block" id="multi_loss"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.multi_loss">[docs]</a><span class="k">def</span> <span class="nf">multi_loss</span><span class="p">(</span><span class="n">lossesList</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Combine multiple losses into a single loss.</span>
+
+<span class="sd">  Reference: refactored from the original work of Y. Gal https://github.com/yaringal/multi-task-learning-example/blob/master/multi-task-learning-example.ipynb</span>
+
+<span class="sd">  :param lossesList: A list of dictionaries with keys (&#39;loss_value&#39;, &#39;name&#39;) representing the losses to combine.</span>
+<span class="sd">  :param logvars: A list of associated prediction logvars</span>
+
+<span class="sd">  :return: The combined loss as a single scalar value.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">output_logvars</span><span class="o">=</span><span class="p">[]</span>
+  <span class="k">for</span> <span class="nb">id</span><span class="p">,</span> <span class="n">loss</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lossesList</span><span class="p">):</span>
+      <span class="c1">#create a dedicated output log variance variable to regress</span>
+      <span class="n">logvar_name</span><span class="o">=</span><span class="s1">&#39;task_uncertainty_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">loss</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+      <span class="n">log_var</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="n">logvar_name</span><span class="p">)</span>
+      <span class="n">output_logvars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">log_var</span><span class="p">)</span>
+      <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="n">logvar_name</span><span class="p">,</span> <span class="n">log_var</span><span class="p">)</span>
+      <span class="n">precision</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">log_var</span><span class="p">)</span>
+      <span class="n">single_loss</span> <span class="o">=</span> <span class="n">precision</span> <span class="o">*</span> <span class="n">loss</span><span class="p">[</span><span class="s1">&#39;loss_value&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">log_var</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;single_loss=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">single_loss</span><span class="p">))</span>
+      <span class="k">if</span> <span class="nb">id</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">loss_sum</span><span class="o">=</span><span class="n">single_loss</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">loss_sum</span><span class="o">+=</span><span class="n">single_loss</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">loss_sum</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="reconstruction_loss_L1"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.reconstruction_loss_L1">[docs]</a><span class="k">def</span> <span class="nf">reconstruction_loss_L1</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">reconstruction</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Compute the reconstruction L1 loss.</span>
+
+<span class="sd">  This function computes the reconstruction L1 loss (mean absolute error).</span>
+
+<span class="sd">  :param inputs: The input tensor.</span>
+<span class="sd">  :param reconstruction: The reconstructed tensor.</span>
+
+<span class="sd">  :return: The computed L1 loss.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s1">&#39;reconstruction_loss_l1&#39;</span><span class="p">):</span>
+    <span class="n">inputs_flat</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+    <span class="n">reconstruction_flat</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">reconstruction</span><span class="p">)</span>
+    <span class="c1"># Reconstruction loss</span>
+    <span class="n">l1_loss</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">inputs_flat</span><span class="o">-</span><span class="n">reconstruction_flat</span><span class="p">))</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="s1">&#39;L1loss&#39;</span><span class="p">,</span> <span class="n">l1_loss</span><span class="p">)</span>
+    <span class="c1">#l1_loss=tf.Print(l1_loss, [l1_loss], message=&#39;l1_loss&#39;)</span>
+    <span class="k">return</span> <span class="n">l1_loss</span></div>
+
+<div class="viewcode-block" id="reconstruction_loss_MSE"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.reconstruction_loss_MSE">[docs]</a><span class="k">def</span> <span class="nf">reconstruction_loss_MSE</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">reconstruction</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Compute the mean squared error (MSE) loss for reconstruction.</span>
+
+<span class="sd">  This function computes the MSE loss for the reconstruction of inputs and reconstruction.</span>
+
+<span class="sd">  :param inputs: The input tensor.</span>
+<span class="sd">  :param reconstruction: The reconstructed tensor.</span>
+
+<span class="sd">  :return: The computed MSE loss.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s1">&#39;reconstruction_loss_MSE&#39;</span><span class="p">):</span>
+    <span class="c1"># Reconstruction loss</span>
+    <span class="n">mse_loss</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">MSE</span><span class="p">(</span>
+                                  <span class="n">reconstruction</span><span class="p">,</span>
+                                  <span class="n">inputs</span><span class="p">,</span>
+                                <span class="p">)</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="s1">&#39;MSE_loss&#39;</span><span class="p">,</span> <span class="n">mse_loss</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mse_loss</span></div>
+
+<div class="viewcode-block" id="reconstruction_loss_BCE"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.reconstruction_loss_BCE">[docs]</a><span class="k">def</span> <span class="nf">reconstruction_loss_BCE</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">reconstruction</span><span class="p">,</span> <span class="n">pos_weight</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Compute the binary cross-entropy (BCE) loss for reconstruction.</span>
+
+<span class="sd">  This function computes the BCE loss for the reconstruction of inputs and reconstruction.</span>
+
+<span class="sd">  :param inputs: The input tensor.</span>
+<span class="sd">  :param reconstruction: The reconstructed tensor.</span>
+<span class="sd">  :param pos_weight: The weight to assign to the positive class in the BCE loss. Default is 1.</span>
+
+<span class="sd">  :return: The computed BCE loss.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s1">&#39;reconstruction_loss_BCE&#39;</span><span class="p">):</span>
+    <span class="n">inputs_flat</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+    <span class="n">reconstruction_flat</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">reconstruction</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;xcross_loss=tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits( targets=inputs_flat,</span>
+<span class="sd">                                              logits=reconstruction_flat,</span>
+<span class="sd">                                              pos_weight=pos_weight))</span>
+
+<span class="sd">    xcross_loss=tf.reduce_mean(xcross_loss)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">xcross_loss</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">binary_crossentropy</span><span class="p">(</span><span class="n">inputs_flat</span><span class="p">,</span><span class="n">reconstruction_flat</span><span class="p">))</span>
+
+    <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="s1">&#39;reconstruction_loss_BCE&#39;</span><span class="p">,</span> <span class="n">xcross_loss</span><span class="p">)</span>
+    <span class="c1">#xcross_loss=tf.Print(xcross_loss, [xcross_loss], message=&#39;xcross_loss&#39;)</span>
+    <span class="k">return</span> <span class="n">xcross_loss</span></div>
+
+<div class="viewcode-block" id="reconstruction_loss_BCE_soft"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.reconstruction_loss_BCE_soft">[docs]</a><span class="k">def</span> <span class="nf">reconstruction_loss_BCE_soft</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">reconstruction</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="mf">0.8</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Compute the binary cross-entropy (BCE) loss with soft labels for reconstruction.</span>
+
+<span class="sd">  This function computes the BCE loss with soft labels for the reconstruction of inputs and reconstruction.</span>
+
+<span class="sd">  :param inputs: The input tensor.</span>
+<span class="sd">  :param reconstruction: The reconstructed tensor.</span>
+<span class="sd">  :param w: The weight for balancing the loss between white and non-white pixels. Default is 0.8.</span>
+
+<span class="sd">  :return: The computed BCE loss with soft labels.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s1">&#39;reconstruction_loss_BCE_soft&#39;</span><span class="p">):</span>
+    <span class="n">inputs_flat</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+    <span class="n">reconstruction_flat</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">reconstruction</span><span class="p">)</span>
+
+    <span class="c1"># handmade binary cross entropy loss taking into account the lower representation of the white pixels</span>
+    <span class="n">xcross_loss</span><span class="o">=-</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">w</span> <span class="o">*</span> <span class="n">inputs_flat</span> <span class="o">*</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">reconstruction_flat</span> <span class="o">+</span> <span class="mf">1e-8</span><span class="p">),</span>
+                                         <span class="n">reduction_indices</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> \
+                         <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span>
+                             <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">w</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">inputs_flat</span><span class="p">)</span> <span class="o">*</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">reconstruction_flat</span> <span class="o">+</span> <span class="mf">1e-8</span><span class="p">),</span>
+                             <span class="n">reduction_indices</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">xcross_loss</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">xcross_loss</span><span class="p">)</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="s1">&#39;reconstruction_loss_BCE_soft&#39;</span><span class="p">,</span> <span class="n">xcross_loss</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">xcross_loss</span></div>
+
+<div class="viewcode-block" id="kl_loss"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.kl_loss">[docs]</a><span class="k">def</span> <span class="nf">kl_loss</span><span class="p">(</span><span class="n">z_mean</span><span class="p">,</span> <span class="n">logvar</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Compute the KL divergence loss between two distributions.</span>
+
+<span class="sd">  This function computes the KL divergence loss between two distributions, an identifier &#39;id&#39; is considered for visibility on Tensorboard </span>
+<span class="sd">  with tf.name_scope(&#39;kl_Divergence_loss&#39;).</span>
+
+<span class="sd">  :param z_mean: The mean of the distribution.</span>
+<span class="sd">  :param logvar: The log variance of the distribution.</span>
+<span class="sd">  :param id: An identifier for visibility on TensorBoard.</span>
+
+<span class="sd">  :return: The computed KL divergence loss.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s1">&#39;kl_Divergence_loss&#39;</span><span class="p">):</span>
+    <span class="c1"># KL Divergence loss</span>
+    <span class="n">kl_div_loss</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">+</span> <span class="n">logvar</span> <span class="o">-</span> <span class="n">tf</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">z_mean</span><span class="p">)</span> <span class="o">-</span> <span class="n">tf</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logvar</span><span class="p">)</span>
+    <span class="n">kl_div_loss</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">kl_div_loss</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="s1">&#39;VAE_kl_loss_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">),</span> <span class="n">kl_div_loss</span><span class="p">)</span>
+    <span class="c1">#raw_input(&#39;VAE_kl_loss:&#39;+str(kl_div_loss))</span>
+    <span class="k">return</span> <span class="n">kl_div_loss</span></div>
+
+<div class="viewcode-block" id="generateTheta"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.generateTheta">[docs]</a><span class="k">def</span> <span class="nf">generateTheta</span><span class="p">(</span><span class="n">L</span><span class="p">,</span><span class="n">endim</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Generate L random samples from the unit (endim)-dimensional space.</span>
+
+<span class="sd">  This function generates L random samples from the unit (endim)-dimensional space.</span>
+
+<span class="sd">  :param L: The number of samples to generate.</span>
+<span class="sd">  :param endim: The dimension of the samples.</span>
+
+<span class="sd">  :return: Generated random samples from the unit (endim)-dimensional space.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">theta</span><span class="o">=</span><span class="p">[</span><span class="n">w</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">L</span><span class="p">,</span><span class="n">endim</span><span class="p">))]</span>
+  <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="generateZ_ring"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.generateZ_ring">[docs]</a><span class="k">def</span> <span class="nf">generateZ_ring</span><span class="p">(</span><span class="n">batchsize</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Generate samples from a ring distribution in a 2-dimensional space.</span>
+
+<span class="sd">  This function generates 2D samples from a ring distribution in a 2-dimensional space.</span>
+
+<span class="sd">  :param batchsize: The number of samples to generate.</span>
+
+<span class="sd">  :return: Generated samples from the ring distribution.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_circles</span>
+  <span class="n">temp</span><span class="o">=</span><span class="n">make_circles</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">batchsize</span><span class="p">,</span><span class="n">noise</span><span class="o">=</span><span class="mf">.01</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">temp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">temp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="mi">0</span><span class="p">),:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="generateZ_circle"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.generateZ_circle">[docs]</a><span class="k">def</span> <span class="nf">generateZ_circle</span><span class="p">(</span><span class="n">batchsize</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Generate samples from a circle distribution in a 2-dimensional space.</span>
+
+<span class="sd">  This function generates 2D samples from a circle distribution in a 2-dimensional space.</span>
+
+<span class="sd">  :param batchsize: The number of samples to generate.</span>
+
+<span class="sd">  :return: Generated samples from the circle distribution.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">r</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">batchsize</span><span class="p">))</span>
+  <span class="n">theta</span><span class="o">=</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">batchsize</span><span class="p">))</span>
+  <span class="n">x</span><span class="o">=</span><span class="n">r</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+  <span class="n">y</span><span class="o">=</span><span class="n">r</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+  <span class="n">z_</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+  <span class="k">return</span> <span class="n">z_</span></div>
+
+<div class="viewcode-block" id="slicedWasserteinLoss_single"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.slicedWasserteinLoss_single">[docs]</a><span class="k">def</span> <span class="nf">slicedWasserteinLoss_single</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">target_z</span><span class="p">,</span> <span class="n">sample_points</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Calculate the Sliced Wasserstein loss for a single code.</span>
+
+<span class="sd">  This function computes the Sliced Wasserstein loss for a single code based on the given target z samples and sample points.</span>
+
+<span class="sd">  :param code: The code for which to calculate the loss.</span>
+<span class="sd">  :param target_z: The target z samples.</span>
+<span class="sd">  :param sample_points: The sample points for projection.</span>
+<span class="sd">  :param batch_size: The batch size.</span>
+
+<span class="sd">  :return: The Sliced Wasserstein loss for the single code.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="c1"># Let projae be the projection of the encoded samples</span>
+  <span class="n">projae</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">code</span><span class="p">,</span><span class="n">tf</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">sample_points</span><span class="p">))</span>
+  <span class="c1"># Let projz be the projection of the $q_Z$ samples</span>
+  <span class="c1">#projz=K.dot(target_z,K.transpose(sample_points))</span>
+  <span class="n">projz</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">target_z</span><span class="p">,</span><span class="n">tf</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">sample_points</span><span class="p">))</span>
+  <span class="c1">#projz=tf.Print(projz, [projz, projz_tf], message=&#39;k vc tf&#39;)</span>
+  <span class="c1"># Calculate the Sliced Wasserstein distance by sorting</span>
+  <span class="c1"># the projections and calculating the L2 distance between</span>
+  <span class="n">W2</span><span class="o">=</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">top_k</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">projae</span><span class="p">),</span><span class="n">k</span><span class="o">=</span><span class="n">batch_size</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="o">-</span><span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">top_k</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">projz</span><span class="p">),</span><span class="n">k</span><span class="o">=</span><span class="n">batch_size</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+  <span class="c1">#W2=tf.Print(W2, [tf.nn.top_k(tf.transpose(projae),k=batch_size).values[0]], message=&#39;sorted projae&#39;, summarize=10)</span>
+  <span class="n">w2weight</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mf">10.0</span><span class="p">),</span> <span class="n">trainable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+  <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="s1">&#39;W2_weight&#39;</span><span class="p">,</span> <span class="n">w2weight</span><span class="p">)</span>
+  <span class="n">W2Loss</span><span class="o">=</span> <span class="n">w2weight</span><span class="o">*</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">W2</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">W2Loss</span></div>
+
+<div class="viewcode-block" id="swae_loss"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.swae_loss">[docs]</a><span class="k">def</span> <span class="nf">swae_loss</span><span class="p">(</span><span class="n">code_list</span><span class="p">,</span> <span class="n">target_z</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Calculate the Sliced Wasserstein Autoencoder (AE) loss.</span>
+
+<span class="sd">  This function computes the Sliced Wasserstein Autoencoder (AE) loss based on the given AE codes and target z samples.</span>
+
+<span class="sd">  :param code_list: A list of AE codes.</span>
+<span class="sd">  :param target_z: The target z samples.</span>
+<span class="sd">  :param batch_size: The batch size.</span>
+<span class="sd">  :param L: The number of sample points to project on (default: 50).</span>
+
+<span class="sd">  :return: The Sliced Wasserstein Autoencoder (AE) loss.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Setting up a Sliced Wasserstein loss following https://arxiv.org/abs/1804.01947&#39;</span><span class="p">)</span>
+  <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">code_list</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;swae_loss error : input code list is empty&#39;</span><span class="p">)</span>
+  <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">code_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">!=</span><span class="mi">2</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;swae_loss error : input codes must be flat codes of size batchsize*codeDim&#39;</span><span class="p">)</span>
+  <span class="c1">#generate two variables used for the loss at the current iteration</span>
+  <span class="c1">#theta=tf.Variable(tf.ones(generateTheta(L,code_list[0].shape[-1]).shape), trainable=False) #Define a Keras Variable for \theta_ls</span>
+  <span class="c1">#theta=tf.Print(theta, [theta], message=&#39;theta&#39;)</span>
+  <span class="c1">#target_z=tf.Variable(tf.ones(target_z_samples.shape), trainable=False) #Define a Keras Variable for samples of z)</span>
+  <span class="n">theta</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">numpy_function</span><span class="p">(</span><span class="n">generateTheta</span><span class="p">,[</span><span class="n">L</span><span class="p">,</span> <span class="n">code_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+  <span class="c1">#theta=tf.Print(theta, [theta, target_z], message=&#39;theta, target_z&#39;)</span>
+
+  <span class="n">loss</span><span class="o">=</span><span class="mi">0</span>
+  <span class="k">for</span> <span class="nb">id</span><span class="p">,</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">code_list</span><span class="p">:</span><span class="c1">#enumerate(tf.get_collection(&#39;codes&#39;)):</span>
+    <span class="n">W2Loss</span> <span class="o">=</span> <span class="n">slicedWasserteinLoss_single</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">target_z</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="s1">&#39;w2loss_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">),</span> <span class="n">W2Loss</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;W2Loss=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">W2Loss</span><span class="p">))</span>
+    <span class="n">loss</span><span class="o">+=</span><span class="n">W2Loss</span>
+  <span class="c1">#loss=tf.Print(loss, [loss], message=&#39;SWAE&#39;)</span>
+  <span class="k">return</span> <span class="n">loss</span></div>
+
+<div class="viewcode-block" id="discrepancy_slice_wasserstein"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.discrepancy_slice_wasserstein">[docs]</a><span class="k">def</span> <span class="nf">discrepancy_slice_wasserstein</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Calculate the slice Wasserstein discrepancy between two distributions.</span>
+
+<span class="sd">  This function computes the slice Wasserstein discrepancy between two distributions `p1` and `p2` using random projections.</span>
+
+<span class="sd">  Reference: https://github.com/apple/ml-cvpr2019-swd</span>
+<span class="sd">  </span>
+<span class="sd">  :param p1: The first distribution tensor.</span>
+<span class="sd">  :param p2: The second distribution tensor.</span>
+
+<span class="sd">  :return: The slice Wasserstein discrepancy.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="nf">sort_rows</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">num_rows</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Sort the rows of a matrix in descending order.</span>
+
+<span class="sd">    :param matrix: The input matrix.</span>
+<span class="sd">    :param num_rows: The number of rows to keep.</span>
+
+<span class="sd">    :return: The sorted matrix.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">matrix_T</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">sorted_matrix_T</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">top_k</span><span class="p">(</span><span class="n">matrix_T</span><span class="p">,</span> <span class="n">num_rows</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">sorted_matrix_T</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+  <span class="n">s</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">p1</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">p1</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()</span><span class="o">.</span><span class="n">as_list</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="c1"># For data more than one-dimensional, perform multiple random projection to 1-D</span>
+      <span class="n">proj</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">([</span><span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">p1</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">128</span><span class="p">])</span>
+      <span class="n">proj</span> <span class="o">*=</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">rsqrt</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">proj</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+      <span class="n">p1</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">proj</span><span class="p">)</span>
+      <span class="n">p2</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">p2</span><span class="p">,</span> <span class="n">proj</span><span class="p">)</span>
+  <span class="n">p1</span> <span class="o">=</span> <span class="n">sort_rows</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+  <span class="n">p2</span> <span class="o">=</span> <span class="n">sort_rows</span><span class="p">(</span><span class="n">p2</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+  <span class="n">wdist</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">p1</span> <span class="o">-</span> <span class="n">p2</span><span class="p">))</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">wdist</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="UncorrelatedFeaturesConstraint"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.UncorrelatedFeaturesConstraint">[docs]</a><span class="k">class</span> <span class="nc">UncorrelatedFeaturesConstraint</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">constraints</span><span class="o">.</span><span class="n">Constraint</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Uncorrelated Features Constraint.</span>
+
+<span class="sd">  This constraint encourages the features of a layer to be uncorrelated by penalizing the covariance matrix deviation from the identity matrix.</span>
+
+<span class="sd">  :param encoding_dim: The dimension of the encoded features.</span>
+<span class="sd">  :param weightage: The weightage of the constraint penalty.</span>
+
+<span class="sd">  Usage:</span>
+<span class="sd">  ```python</span>
+<span class="sd">  constraint = UncorrelatedFeaturesConstraint(encoding_dim, weightage=1.0)</span>
+<span class="sd">  ```</span>
+
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">encoding_dim</span><span class="p">,</span> <span class="n">weightage</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initialize the Uncorrelated Features Constraint.</span>
+
+<span class="sd">    :param encoding_dim: The dimension of the encoded features.</span>
+<span class="sd">    :param weightage: The weightage of the constraint penalty.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">encoding_dim</span> <span class="o">=</span> <span class="n">encoding_dim</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">weightage</span> <span class="o">=</span> <span class="n">weightage</span>
+
+<div class="viewcode-block" id="UncorrelatedFeaturesConstraint.get_covariance"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.UncorrelatedFeaturesConstraint.get_covariance">[docs]</a>  <span class="k">def</span> <span class="nf">get_covariance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the covariance matrix of the input tensor.</span>
+
+<span class="sd">    :param x: The input tensor.</span>
+
+<span class="sd">    :return: The covariance matrix.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x_centered_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">encoding_dim</span><span class="p">):</span>
+        <span class="n">x_centered_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">K</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]))</span>
+
+    <span class="n">x_centered</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">x_centered_list</span><span class="p">)</span>
+    <span class="n">covariance</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x_centered</span><span class="p">,</span> <span class="n">K</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">x_centered</span><span class="p">))</span> <span class="o">/</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">x_centered</span><span class="o">.</span><span class="n">get_shape</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">covariance</span></div>
+
+<div class="viewcode-block" id="UncorrelatedFeaturesConstraint.uncorrelated_feature"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.loss.UncorrelatedFeaturesConstraint.uncorrelated_feature">[docs]</a>  <span class="k">def</span> <span class="nf">uncorrelated_feature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the uncorrelated feature penalty.</span>
+
+<span class="sd">    :param x: The input tensor.</span>
+
+<span class="sd">    :return: The penalty value.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoding_dim</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mf">0.0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covariance</span> <span class="o">-</span> <span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covariance</span><span class="p">,</span> <span class="n">K</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">encoding_dim</span><span class="p">))))</span>
+        <span class="k">return</span> <span class="n">output</span></div>
+
+  <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Apply the uncorrelated features constraint to the input tensor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">covariance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_covariance</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">weightage</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncorrelated_feature</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, Alexandre Benoit
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/scripts/furo.js"></script>
+    <script src="../../../_static/clipboard.min.js"></script>
+    <script src="../../../_static/copybutton.js"></script>
+    </body>
+</html>
