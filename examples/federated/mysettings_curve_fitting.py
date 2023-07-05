@@ -96,6 +96,16 @@ validation_steps=100
 batch_size=10
 reference_labels=['values']
 
+########## FEDERATED SERVER PARAMETERS SECTION ################
+# -> by default federated server runs on a local machine with the clients and one generally like to experiment in simulation mode
+# BUT if you need to move to real distributed federated learning with server and client on different machines, do this:
+# 1. adjust the parameter below that specifies where the central server is: ip:port
+# 2. start the federated on the target server machine WITHOUT the simulation option using the deeplearningtools.start_federated_server for instance:
+# apptainer run /path/to/containers/tf2_addons.sif -m deeplearningtools.start_federated_server -u examples/federated/mysettings_mnist_classification.py -rounds 10
+# 3. start each client with a given identifier (procID, here procID=1 for example) on their own devices using deeplearningtools.experiments_manager using command:
+# apptainer run /path/to/containers/tf2_addons.sif -m deeplearningtools.start_federated_server -u examples/federated/mysettings_mnist_classification.py --procID 1
+federated_learning_server_address="localhost:8080"
+
 ########## MODEL SERVING/PRODUCTION PARAMETERS SECTION ################
 #-> port number to be used when interracting with the tensorflow-server
 tensorflow_server_address='localhost'
