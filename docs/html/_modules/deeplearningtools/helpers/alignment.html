@@ -1,0 +1,668 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html" /><link rel="search" title="Search" href="../../../search.html" />
+
+    <link rel="shortcut icon" href="../../../_static/logo_listic.png"/><!-- Generated with Sphinx 6.2.1 and Furo 2023.05.20 -->
+        <title>deeplearningtools.helpers.alignment - DeepLearningTools 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #2E3440;
+  --color-code-foreground: #d8dee9;
+  --font-stack: Roboto, sans-serif;
+  --font-stack--monospace: Open Sans, monospace;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<div class="announcement">
+  <aside class="announcement-content">
+     <em>Deeplearningtools is currently in development.</em> 
+  </aside>
+</div>
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../index.html"><div class="brand">DeepLearningTools 0.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="../../../_static/main_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="../../../_static/main_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">DeepLearningTools 0.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../example.html">Examples and demonstrations</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../reference.html">Reference manual</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Reference manual</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../reference_index.html">DeepLearningTools package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of DeepLearningTools package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../main_script.html">Main subpackage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../unit_test.html">Test script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../reference_helpers.html">deeplearningtools.helpers subpackage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../reference_tools.html">deeplearningtools.tools subpackage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute.html">Community involvement and contributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../version.html">Release notes</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <h1>Source code for deeplearningtools.helpers.alignment</h1><div class="highlight"><pre>
+<span></span><span class="c1"># ========================================</span>
+<span class="c1"># FileName: alignment.py</span>
+<span class="c1"># Date: 29 june 2023 - 08:00</span>
+<span class="c1"># Author: Alexandre Benoit</span>
+<span class="c1"># Email: alexandre.benoit@univ-smb.fr</span>
+<span class="c1"># GitHub: https://github.com/albenoit/DeepLearningTools</span>
+<span class="c1"># Brief: Distance Algorithms</span>
+<span class="c1"># for DeepLearningTools.</span>
+<span class="c1"># =========================================</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">linear_sum_assignment</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">stats</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span> 
+
+<span class="c1"># ------------------------------------------------------------</span>
+<span class="c1"># Distance Algorithms</span>
+<span class="c1"># ------------------------------------------------------------</span>
+<div class="viewcode-block" id="pearson_cost"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.alignment.pearson_cost">[docs]</a><span class="k">def</span> <span class="nf">pearson_cost</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the Pearson correlation coefficient between two arrays, the measure of dissimilarity between two variables [-1:1].</span>
+
+<span class="sd">    It quantifies the strength and direction of the linear association between the variables.</span>
+<span class="sd">    The Pearson correlation coefficient can be calculated as:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        r = \\frac{{\sum((x_i - \overline{x})(y_i - \overline{y}))}}{{\sqrt{{\sum(x_i - \overline{x})^2}} \cdot \sqrt{{\sum(y_i - \overline{y})^2}}}}</span>
+
+<span class="sd">    where:</span>
+
+<span class="sd">        - :math:`\\overline{x}` and :math:`\\overline{y}` are the means of arrays x and y respectively,</span>
+<span class="sd">        - :math:`x_i` and :math:`y_i` are the corresponding elements of arrays x and y,</span>
+
+<span class="sd">    :param x: The first array.</span>
+<span class="sd">    :type x: np.ndarray</span>
+
+<span class="sd">    :param y: The second array.</span>
+<span class="sd">    :type y: np.ndarray</span>
+
+<span class="sd">    :param sort: Whether to sort the arrays before calculating the correlation coefficient.</span>
+<span class="sd">    :type sort: bool, optional (default=True)</span>
+
+<span class="sd">    :return: The Pearson correlation coefficient.</span>
+<span class="sd">    :rtype: float</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">sort</span><span class="p">:</span>
+        <span class="n">r</span><span class="p">,</span> <span class="n">p_value</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">pearsonr</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">flatten</span><span class="p">()),</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">flatten</span><span class="p">()))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">r</span><span class="p">,</span> <span class="n">p_value</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">pearsonr</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="n">r</span> <span class="k">if</span> <span class="n">r</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="k">else</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="spearman_cost"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.alignment.spearman_cost">[docs]</a><span class="k">def</span> <span class="nf">spearman_cost</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the Spearman correlation coefficient between two arrays.</span>
+
+<span class="sd">    The Spearman correlation coefficient measures the strength and direction of the monotonic relationship between two variables. </span>
+<span class="sd">    It is a non-parametric measure that assesses the similarity of the ranks of the corresponding elements in the arrays.</span>
+<span class="sd">    The Spearman correlation coefficient can be calculated as:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        r = 1 - \\frac{6 \\sum d_i^2}{n(n^2 - 1)}</span>
+
+<span class="sd">    where:</span>
+
+<span class="sd">        - :math:`r` is the Spearman correlation coefficient,</span>
+<span class="sd">        - :math:`d_i` is the difference in the ranks of corresponding elements,</span>
+<span class="sd">        - :math:`n` is the number of elements in the arrays.</span>
+
+<span class="sd">    :param x: The first array.</span>
+<span class="sd">    :type x: np.ndarray</span>
+
+<span class="sd">    :param y: The second array.</span>
+<span class="sd">    :type y: np.ndarray</span>
+
+<span class="sd">    :param sort: Whether to sort the arrays before calculating the correlation coefficient.</span>
+<span class="sd">    :type sort: bool, optional (default=True)</span>
+
+<span class="sd">    :return: The Spearman correlation coefficient.</span>
+<span class="sd">    :rtype: float</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">sort</span><span class="p">:</span>
+        <span class="n">r</span><span class="p">,</span> <span class="n">p_value</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">spearmanr</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">flatten</span><span class="p">()),</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">flatten</span><span class="p">()))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">r</span><span class="p">,</span> <span class="n">p_value</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">spearmanr</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="n">r</span> <span class="k">if</span> <span class="n">r</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="k">else</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="pearson"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.alignment.pearson">[docs]</a><span class="k">def</span> <span class="nf">pearson</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the normalized Pearson correlation between two arrays, the measure of similarity between two variables [0:1].</span>
+
+<span class="sd">    :param x: The first array.</span>
+<span class="sd">    :type x: np.ndarray</span>
+
+<span class="sd">    :param y: The second array.</span>
+<span class="sd">    :type y: np.ndarray</span>
+
+<span class="sd">    :return: The normalized Pearson correlation.</span>
+<span class="sd">    :rtype: float</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">pearson_cost</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="pearson_sorted"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.alignment.pearson_sorted">[docs]</a><span class="k">def</span> <span class="nf">pearson_sorted</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the normalized Pearson correlation between two sorted arrays.</span>
+<span class="sd">    </span>
+<span class="sd">    :param x: The first sorted array.</span>
+<span class="sd">    :type x: np.ndarray</span>
+
+<span class="sd">    :param y: The second sorted array.</span>
+<span class="sd">    :type y: np.ndarray</span>
+
+<span class="sd">    :return: The normalized Pearson correlation for sorted arrays.</span>
+<span class="sd">    :rtype: float</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">pearson_cost</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="spearman"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.alignment.spearman">[docs]</a><span class="k">def</span> <span class="nf">spearman</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the normalized Spearman correlation between two arrays.</span>
+
+<span class="sd">    :param x: The first array.</span>
+<span class="sd">    :type x: np.ndarray</span>
+
+<span class="sd">    :param y: The second array.</span>
+<span class="sd">    :type y: np.ndarray</span>
+
+<span class="sd">    :return: The normalized Spearman correlation.</span>
+<span class="sd">    :rtype: float</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">spearman_cost</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="spearman_sorted"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.alignment.spearman_sorted">[docs]</a><span class="k">def</span> <span class="nf">spearman_sorted</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the normalized Spearman correlation between two sorted arrays.</span>
+
+<span class="sd">    :param x: The first sorted array.</span>
+<span class="sd">    :type x: np.ndarray</span>
+
+<span class="sd">    :param y: The second sorted array.</span>
+<span class="sd">    :type y: np.ndarray</span>
+
+<span class="sd">    :return: The normalized Spearman correlation for sorted arrays.</span>
+<span class="sd">    :rtype: float</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">spearman_cost</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="gradient"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.alignment.gradient">[docs]</a><span class="k">def</span> <span class="nf">gradient</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the gradient dissimilarity between two arrays.</span>
+
+<span class="sd">    The gradient dissimilarity between two arrays, x and y, is a measure of their dissimilarity based on the signs of their corresponding elements.</span>
+<span class="sd">    The gradient dissimilarity can be calculated as the number of elements in the arrays where the product of the corresponding elements is negative:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        gradient = \sum_i [x_i \cdot y_i &lt; 0]</span>
+
+<span class="sd">    where:</span>
+
+<span class="sd">        - :math:`x_i` and :math:`y_i` are the corresponding elements of arrays x and y,</span>
+
+<span class="sd">    :param x: The first array.</span>
+<span class="sd">    :type x: np.ndarray</span>
+
+<span class="sd">    :param y: The second array.</span>
+<span class="sd">    :type y: np.ndarray</span>
+
+<span class="sd">    :return: The gradient dissimilarity.</span>
+<span class="sd">    :rtype: int</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="l1"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.alignment.l1">[docs]</a><span class="k">def</span> <span class="nf">l1</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the L1 distance between two arrays or vectors.</span>
+
+<span class="sd">    The L1 distance, also known as the Manhattan distance or taxicab distance, between two arrays (or vectors) is a measure of the absolute difference between </span>
+<span class="sd">    the corresponding elements of the arrays.</span>
+<span class="sd">    The L1 distance between two arrays, x and y, of equal size, can be calculated as follows:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        L1_{distance} = \sum_{i=1}^{n} |x_i - y_i|</span>
+
+<span class="sd">    where:</span>
+
+<span class="sd">        - :math:`x_i` and :math:`y_i` are the corresponding elements of arrays x and y,</span>
+<span class="sd">        </span>
+<span class="sd">    :param x: The first array.</span>
+<span class="sd">    :type x: np.ndarray</span>
+
+<span class="sd">    :param y: The second array.</span>
+<span class="sd">    :type y: np.ndarray</span>
+
+<span class="sd">    :return: The L1 distance.</span>
+<span class="sd">    :rtype: float</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">y</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="l2"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.alignment.l2">[docs]</a><span class="k">def</span> <span class="nf">l2</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the L2 distance between two arrays or vectors. </span>
+<span class="sd">    </span>
+<span class="sd">    The L2 distance, also known as the Euclidean distance, between two arrays (or vectors) is a measure of the distance between these two points in Euclidean space. </span>
+<span class="sd">    The distance L2 between two arrays, x and y, of equal size, can be calculated as follows:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        L2_{distance} = \sqrt{\sum_{i=1}^{n} (x_i - y_i)^2}</span>
+
+<span class="sd">    where:</span>
+
+<span class="sd">        - :math:`x_i` and :math:`y_i` are the corresponding elements of arrays x and y,</span>
+
+<span class="sd">    :param x: The first array.</span>
+<span class="sd">    :type x: np.ndarray</span>
+
+<span class="sd">    :param y: The second array.</span>
+<span class="sd">    :type y: np.ndarray</span>
+
+<span class="sd">    :return: The L2 distance.</span>
+<span class="sd">    :rtype: float</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">y</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))</span></div>
+
+<span class="c1"># ------------------------------------------------------------</span>
+<span class="c1"># Distance options</span>
+<span class="c1"># ------------------------------------------------------------</span>
+
+<span class="n">DISTANCE_OPTIONS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;pearson&#39;</span><span class="p">:</span> <span class="n">pearson</span><span class="p">,</span>
+    <span class="s1">&#39;pearson_sorted&#39;</span><span class="p">:</span> <span class="n">pearson_sorted</span><span class="p">,</span>
+    <span class="s1">&#39;spearman&#39;</span><span class="p">:</span> <span class="n">spearman</span><span class="p">,</span>
+    <span class="s1">&#39;spearman_sorted&#39;</span><span class="p">:</span> <span class="n">spearman_sorted</span><span class="p">,</span>
+    <span class="s1">&#39;gradient&#39;</span><span class="p">:</span> <span class="n">gradient</span><span class="p">,</span>
+    <span class="s1">&#39;l1&#39;</span><span class="p">:</span> <span class="n">l1</span><span class="p">,</span>
+    <span class="s1">&#39;l2&#39;</span><span class="p">:</span> <span class="n">l2</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="c1"># ------------------------------------------------------------</span>
+<span class="c1"># Alignment Algorithms</span>
+<span class="c1"># ------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="stack"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.alignment.stack">[docs]</a><span class="k">def</span> <span class="nf">stack</span><span class="p">(</span><span class="n">units</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">bias</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Stack the units array with the bias array.</span>
+
+<span class="sd">    :param units: Array of units with shape (num_units, ...)</span>
+<span class="sd">    :type units: np.ndarray</span>
+
+<span class="sd">    :param bias: Array of bias with shape (num_units, ...)</span>
+<span class="sd">    :type bias: np.ndarray</span>
+
+<span class="sd">    :return: Stacked array with shape (num_units, channels+1, weight, height)</span>
+<span class="sd">    :rtype: np.ndarray</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># add one dim in the number of channel</span>
+    <span class="c1"># (units, channels, weight, height) =&gt; (units, channels+1, weight, height)</span>
+    <span class="n">shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">units</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span><span class="mi">1</span> <span class="c1"># add one additional dim</span>
+    <span class="c1"># create new empty units_bias array</span>
+    <span class="n">units_bias</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+    <span class="c1"># fill units_bias with units</span>
+    <span class="n">units_bias</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">units</span>
+    <span class="c1"># then add a filter of same value as bias</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bias</span><span class="p">):</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="n">units</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="n">units_bias</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">units_bias</span></div>
+
+<span class="k">def</span> <span class="nf">_linear_sum_assignment</span><span class="p">(</span><span class="n">target_layer</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">align_layer</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">distance</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Solve the linear sum assignment problem using the Hungarian algorithm.</span>
+<span class="sd">    The problem is also known as the minimum weight matching in bipartite graphs.</span>
+<span class="sd">    This function creates a cost matrix by computing pairwise cost similarities between units.</span>
+
+<span class="sd">    :param target_layer: Layer used as the target.</span>
+<span class="sd">    :type target_layer: np.ndarray</span>
+
+<span class="sd">    :param align_layer: Layer to be aligned to the target layer.</span>
+<span class="sd">    :type align_layer: np.ndarray</span>
+
+<span class="sd">    :param distance: Distance metric used for computing pairwise cost similarity of units.</span>
+<span class="sd">                     If None, the L2 distance will be used.</span>
+<span class="sd">                     If a string, the corresponding pre-defined distance metric will be used.</span>
+<span class="sd">                     If a custom callable, it should accept two np.ndarray arguments and return a float.</span>
+<span class="sd">    :type distance: str or callable, optional</span>
+
+<span class="sd">    :return: The column indices representing the optimal alignment and the total cost of the alignment.</span>
+<span class="sd">    :rtype: Tuple[np.ndarray, int]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">row_size</span><span class="p">,</span> <span class="n">col_size</span> <span class="o">=</span> <span class="n">target_layer</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">align_layer</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">distance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">distance</span> <span class="o">=</span> <span class="n">DISTANCE_OPTIONS</span><span class="p">[</span><span class="s1">&#39;l2&#39;</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">distance</span> <span class="o">=</span> <span class="n">DISTANCE_OPTIONS</span><span class="p">[</span><span class="n">distance</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">row_size</span><span class="p">,</span> <span class="n">col_size</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">row_size</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">col_size</span><span class="p">):</span>
+            <span class="c1"># cost matrix</span>
+            <span class="n">cost</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">distance</span><span class="p">(</span><span class="n">target_layer</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">align_layer</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+
+    <span class="n">row_ind</span><span class="p">,</span> <span class="n">col_ind</span> <span class="o">=</span> <span class="n">linear_sum_assignment</span><span class="p">(</span><span class="n">cost</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">col_ind</span><span class="p">,</span> <span class="n">cost</span><span class="p">[</span><span class="n">row_ind</span><span class="p">,</span> <span class="n">col_ind</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="align_network"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.alignment.align_network">[docs]</a><span class="k">def</span> <span class="nf">align_network</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">distance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Aligns a network to another network referred to as the target network.</span>
+
+<span class="sd">    :param X: The source network (tuple or np.ndarray) of shape (n_layers, n_units, ...).</span>
+<span class="sd">    :param Y: The network to be aligned (tuple or np.ndarray) of shape (n_layers, n_units, ...).</span>
+<span class="sd">    :param distance: The distance metric used to compute the cost between two units.</span>
+<span class="sd">                     If None, the L2 distance will be used.</span>
+<span class="sd">                     If a string, the corresponding pre-defined distance metric will be used.</span>
+<span class="sd">                     If a custom callable, it should accept two np.ndarray arguments and return a float.</span>
+<span class="sd">    :param extend: If True, consider the negative layer in Y for alignment.</span>
+<span class="sd">    :param verbose: If True, print unit changes size during alignment.</span>
+<span class="sd">    :param inplace: If True, align Y directly in place. If False, create a copy of Y for alignment.</span>
+
+<span class="sd">    :return: The aligned network, alignment costs, and size of aligned layers.</span>
+<span class="sd">    :rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]</span>
+
+<span class="sd">    Author: Youssouph Faye.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="c1"># number of layers</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">inplace</span><span class="p">:</span>
+        <span class="n">_align_network</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">Y</span><span class="p">]</span> <span class="c1"># will contain the aligned network</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">_align_network</span> <span class="o">=</span> <span class="n">Y</span> <span class="c1"># will align directly the real network </span>
+
+    <span class="n">alignment_costs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">L</span><span class="p">,))</span>
+    <span class="n">unit_changes_per_layer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">L</span><span class="p">,))</span>
+    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">L</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">X</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># if it is not a bias layer</span>
+            <span class="k">if</span> <span class="n">X</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># there&#39;s more than one unit otherwise just avoid alignment of that unit</span>
+                <span class="c1"># we must transpose each layer because with tensorflow the axis of units is at the end</span>
+                <span class="c1"># (weight, height, channels, units).T =&gt; (units, channels, height, weight)</span>
+                <span class="n">target_layer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+                <span class="n">align_layer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">_align_network</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+                <span class="c1"># if the next layer is a layer of bias</span>
+                <span class="k">if</span> <span class="n">l</span> <span class="o">&lt;</span> <span class="n">L</span> <span class="o">-</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">X</span><span class="p">[</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="c1"># for each unit we add its corresponding bias</span>
+                    <span class="n">target_layer</span> <span class="o">=</span> <span class="n">stack</span><span class="p">(</span><span class="n">target_layer</span><span class="p">,</span> <span class="n">X</span><span class="p">[</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">align_layer</span> <span class="o">=</span> <span class="n">stack</span><span class="p">(</span><span class="n">align_layer</span><span class="p">,</span> <span class="n">_align_network</span><span class="p">[</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+
+                <span class="c1"># considering the negative units</span>
+                <span class="k">if</span> <span class="n">extend</span><span class="p">:</span>
+                    <span class="c1"># align_layer = np.concatenate((align_layer, -align_layer), axis=0)</span>
+                    <span class="k">pass</span>
+                <span class="c1"># index of unit in R that match in S</span>
+                <span class="n">K</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">_linear_sum_assignment</span><span class="p">(</span><span class="n">target_layer</span><span class="p">,</span> <span class="n">align_layer</span><span class="p">,</span> <span class="n">distance</span><span class="p">)</span>
+                <span class="c1"># compute the number of units that have been changed or realigned</span>
+                <span class="n">unit_changes_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">K</span><span class="p">))</span> <span class="o">!=</span> <span class="n">K</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Unit changes size =&#39;</span><span class="p">,</span> <span class="n">unit_changes_size</span><span class="p">)</span>
+
+                <span class="c1"># swap i in Y such that i now matches the node in X that it matched in K</span>
+                <span class="n">_align_network</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">_align_network</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">K</span><span class="p">]</span>
+                <span class="c1"># update the cost of the alignment</span>
+                <span class="n">alignment_costs</span><span class="p">[</span><span class="n">l</span><span class="p">]</span> <span class="o">=</span> <span class="n">cost</span>
+                <span class="c1"># update aligned layers size</span>
+                <span class="n">unit_changes_per_layer</span><span class="p">[</span><span class="n">l</span><span class="p">]</span> <span class="o">=</span> <span class="n">unit_changes_size</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># not need to align something</span>
+                <span class="n">K</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># it&#39;s probably a bias layer len(K) == X[l].size or num dim is equals to 1</span>
+        <span class="k">elif</span> <span class="n">K</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">X</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">_align_network</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">_align_network</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">K</span><span class="p">]</span>
+            <span class="c1"># update the cost of the alignment</span>
+            <span class="n">alignment_costs</span><span class="p">[</span><span class="n">l</span><span class="p">]</span> <span class="o">=</span> <span class="n">cost</span>
+            <span class="c1"># update aligned layers size</span>
+            <span class="n">unit_changes_per_layer</span><span class="p">[</span><span class="n">l</span><span class="p">]</span> <span class="o">=</span> <span class="n">unit_changes_size</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Bias unit changes size =&#39;</span><span class="p">,</span> <span class="n">unit_changes_size</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># we avoid to align this layer</span>
+            <span class="k">pass</span>
+
+        <span class="c1"># if we are not at the last layer then we must update the order of weights for each</span>
+        <span class="c1"># unit in the next layer. The next layer must not be a biais (ndim &gt; 1)</span>
+        <span class="c1"># NB: if the lenght of aligned units from the current layer doesn&#39;t match with the</span>
+        <span class="c1"># number of weights in the next layer, probably due to Pooling layer, then discard.</span>
+        <span class="c1"># if K is None we then not need the change the order in the next layer.</span>
+        <span class="k">if</span> <span class="n">l</span> <span class="o">&lt;</span> <span class="n">L</span> <span class="o">-</span> <span class="mi">1</span> \
+            <span class="ow">and</span> <span class="n">K</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> \
+                <span class="ow">and</span> <span class="n">_align_network</span><span class="p">[</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span> \
+                    <span class="ow">and</span> <span class="n">_align_network</span><span class="p">[</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">K</span><span class="p">):</span>
+            <span class="c1"># for each unit in the next layer</span>
+            <span class="c1"># (weight, height, channels, units).T =&gt; (units, channels, height, weight)</span>
+            <span class="c1"># then we loop through units and then change channels orders</span>
+            <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">_align_network</span><span class="p">[</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">:</span>
+                <span class="c1"># change order of weights according to the current alignment</span>
+                <span class="n">unit</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">unit</span><span class="p">[</span><span class="n">K</span><span class="p">]</span>
+
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># keep order of weights for the next layer unchanged</span>
+            <span class="k">pass</span>
+
+    <span class="c1"># return new aligned network, alignment costs and size of aligned layers</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">_align_network</span><span class="p">,</span> <span class="n">alignment_costs</span><span class="p">,</span> <span class="n">unit_changes_per_layer</span><span class="p">)</span></div>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, Alexandre Benoit
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/scripts/furo.js"></script>
+    <script src="../../../_static/clipboard.min.js"></script>
+    <script src="../../../_static/copybutton.js"></script>
+    </body>
+</html>

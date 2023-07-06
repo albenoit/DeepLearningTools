@@ -1,43 +1,60 @@
-# a set of functions to write and read tfrecords datasets
-# directly run this script to test write and read of a dataset of 2 sklearn images
+# ========================================
+# FileName: tfrecords_io.py
+# Date: 29 june 2023 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: A set of functions to write and read tfrecords datasets, directly run this script to test write and read of a dataset of 2 sklearn images
+# for DeepLearningTools.
+# =========================================
 
 import tensorflow as tf
-import tensor_msg_io
+from deeplearningtools.helpers import tensor_msg_io
 import numpy as np
 import cv2
 
 def image_tfrecords_dataset(filename, hasLabels=False):
-  ''' Assuming a set of tfrecords file is pointed by filename, ex:'images.tfrecords',
-  create a data provider that loads them for training/testing models
-  Args:
-    filename, path to the tfrecord files
-    haslabel, a boolean, false by default that specifies if an iteger label is expected or not
-  Returns: a tf.data.Dataset WITHOUT PREFETCH NOR BATCH, specify your own
   '''
+  Assuming a set of tfrecords file is pointed by filename, ex:'images.tfrecords',
+  create a data provider that loads them for training/testing models
+
+  
+  :param filename: A path to the tfrecord files.
+  :param haslabel: A boolean, false by default that specifies if an iteger label is expected or not
+
+  :returns: A tf.data.Dataset WITHOUT PREFETCH NOR BATCH, specify your own
+  '''
+
   raw_image_dataset = tf.data.TFRecordDataset(filename)
 
   # Create a dictionary describing the features.
   image_feature_description = {
-      'image_raw': tf.io.FixedLenFeature([], tf.string),# image is supposed to be encoded as a serialized tensor
+      'image_raw': tf.io.FixedLenFeature([], tf.string),  # image is supposed to be encoded as a serialized tensor
   }
   if hasLabels:
-    image_feature_description.update({'label': tf.io.FixedLenFeature([], tf.int64)})
+      image_feature_description.update({'label': tf.io.FixedLenFeature([], tf.int64)})
 
   def _parse_image_function(example_proto):
-    # Parse the input tf.Example proto using the dictionary above.
-    print('example proto', example_proto)
-    flat_sample=tf.io.parse_single_example(example_proto, image_feature_description)
-    print('example with serialized tensor', flat_sample)
-    sample=tf.io.parse_tensor(flat_sample['image_raw'], tf.uint8) #serialized tensor is supposed to be of type uint8 in our example
-    return sample
+      # Parse the input tf.Example proto using the dictionary above.
+      print('example proto', example_proto)
+      flat_sample = tf.io.parse_single_example(example_proto, image_feature_description)
+      print('example with serialized tensor', flat_sample)
+      sample = tf.io.parse_tensor(flat_sample['image_raw'], tf.uint8)  # serialized tensor is supposed to be of type uint8 in our example
+      return sample
 
   return raw_image_dataset.map(_parse_image_function)
 
 def display_image_tfrecords_dataset(filename='test_dataset.tfrecords'):
-  '''suppose a dataset pointed by files 'test_dataset.tfrecords' exists, load it
-  and display the recorded samples_saving_queuet
-  Args: filename, path to the tfrecord files
-  '''
+  """
+  Load a dataset from a TFRecords file and display the recorded samples.
+
+  Suppose a dataset pointed by files 'test_dataset.tfrecords' exists, load it and display the recorded samples_saving_queuet
+
+  :param filename: Path to the TFRecords file containing the dataset. (default: 'test_dataset.tfrecords')
+  :type filename: str
+
+  :return: None
+  """
   #Read the created dataset
   dataset = image_tfrecords_dataset(filename)
   for sample in dataset:
@@ -61,7 +78,6 @@ def display_image_tfrecords_dataset(filename='test_dataset.tfrecords'):
       input_crop=image_raw
     else:
       raise ValueError('Failed to display array of shape '+str(image_raw.shape))
-
     #display relying on OpenCV
     sample_minVal=np.min(input_crop)
     sample_maxVal=np.max(input_crop)
@@ -75,11 +91,21 @@ def display_image_tfrecords_dataset(filename='test_dataset.tfrecords'):
 
 
 def write_image_dataset_no_display(images_dataset, file_out="demo_image_dataset.tfrecords"):
-  # add serialization node to the dataprovider and write the dataset directly
+  """
+  Add serialization node to the dataprovider and write the dataset directly.
+
+  :param images_dataset: The image dataset to be written.
+  :type images_dataset: tf.data.Dataset
+
+  :param file_out: The output path for the TFRecords file. (default: "demo_image_dataset.tfrecords")
+  :type file_out: str
+
+  :return: None
+  """
   def serialize_sample(sample):
-    ''' takes as input a tensor, transform to protobuffer and
-        returns it serialized
-    '''
+    """
+    Takes as input a tensor, transform to protobuffer and returns it serialized
+    """
     return tf.py_function(tensor_msg_io.serialize_image_float_example, [sample[0]], tf.string)
 
   writer = tf.io.TFRecordWriter(file_out)

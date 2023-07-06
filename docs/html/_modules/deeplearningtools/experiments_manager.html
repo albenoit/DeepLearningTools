@@ -1,0 +1,1101 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" />
+
+    <link rel="shortcut icon" href="../../_static/logo_listic.png"/><!-- Generated with Sphinx 6.2.1 and Furo 2023.05.20 -->
+        <title>deeplearningtools.experiments_manager - DeepLearningTools 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #2E3440;
+  --color-code-foreground: #d8dee9;
+  --font-stack: Roboto, sans-serif;
+  --font-stack--monospace: Open Sans, monospace;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<div class="announcement">
+  <aside class="announcement-content">
+     <em>Deeplearningtools is currently in development.</em> 
+  </aside>
+</div>
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">DeepLearningTools 0.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="../../_static/main_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="../../_static/main_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">DeepLearningTools 0.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example.html">Examples and demonstrations</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../reference.html">Reference manual</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Reference manual</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../reference_index.html">DeepLearningTools package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of DeepLearningTools package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../main_script.html">Main subpackage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../unit_test.html">Test script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference_helpers.html">deeplearningtools.helpers subpackage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference_tools.html">deeplearningtools.tools subpackage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute.html">Community involvement and contributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../version.html">Release notes</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <h1>Source code for deeplearningtools.experiments_manager</h1><div class="highlight"><pre>
+<span></span><span class="c1"># ========================================</span>
+<span class="c1"># FileName: experiments_manager.py</span>
+<span class="c1"># Date: 29 june 2020 - 08:00</span>
+<span class="c1"># Author: Alexandre Benoit</span>
+<span class="c1"># Email: alexandre.benoit@univ-smb.fr</span>
+<span class="c1"># GitHub: https://github.com/albenoit/DeepLearningTools</span>
+<span class="c1"># Brief: A set of script that demonstrate the use of Tensorflow experiments and estimators on different data types for various tasks</span>
+<span class="c1"># for DeepLearningTools.</span>
+<span class="c1"># =========================================</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">What&#39;s that ? A set of script that demonstrate the use of Tensorflow experiments and estimators on different data types for various tasks.</span>
+
+<span class="sd">Brief: The main script that enables training, validation and serving Tensorflow based models merging all needs in a single script to train, evaluate, export and serve. taking large inspirations of official tensorflow demos.</span>
+
+<span class="sd">Author: Alexandre Benoit, LISTIC lab, FRANCE</span>
+
+<span class="sd">Several ideas are put together:</span>
+<span class="sd">  estimators to manage training, valiation and export in a easier way</span>
+
+<span class="sd">  using moving averages to store parameters with values smoothed along the last training steps (FIXME : ensure those values are used for real by the estimator, actually the graph shows 2 parameter savers...).</span>
+
+<span class="sd">  visualization including embeddings projections to observe some data projections on the TensorBoard</span>
+
+<span class="sd">  tensorflow-serving api use to serve the model and dynamically load updated models</span>
+
+<span class="sd">  some tensorflow-serving client codes to reuse the trained model on single or streaming data</span>
+
+<span class="sd">How tu use it ?</span>
+<span class="sd">The main script is `experiments_manager.py` and can be used in 3 modes. Here are some command examples:</span>
+
+<span class="sd">1. Train a model in a specific context specified in a parameter script such as `mysettings_1D_experiments.py`:</span>
+
+<span class="sd">  # python experiments_manager.py --usersettings=mysettings_1D_experiments.py</span>
+
+<span class="sd">2. Start a TensorFlow server on the trained/training model:</span>
+
+<span class="sd">   2.a If `tensorflow_model_server` is installed on the system:</span>
+
+<span class="sd">    # python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53</span>
+
+<span class="sd">   2.b If `tensorflow_model_server` is installed in a Singularity container:</span>
+
+<span class="sd">    # python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53 -psi=/path/to/tf_server.sif</span>
+
+<span class="sd">3. Interact with the TensorFlow server, sending input buffers and receiving answers:</span>
+
+<span class="sd">  # python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53/</span>
+
+<span class="sd">NOTE : once trained (or along training), start the Tensorbdownscaledoard to parse logs of</span>
+<span class="sd">the experiments folder (provided example is experiments/1Dsignals_clustering):</span>
+<span class="sd">from the scripts directory using command: </span>
+
+<span class="sd">  # tensorboard  --logdir=experiments/1Dsignals_clustering</span>
+
+<span class="sd">Then, open a web brwser and reach http://127.0.0.1:6006/ to monitor training</span>
+<span class="sd">values and observe the obtained embeddings</span>
+
+<span class="sd">DESIGN:</span>
+
+<span class="sd">  1. The main code for training, validation and prediction is specified in the main script (experiments_manager.py).</span>
+
+<span class="sd">  2. Most of the use case specific parameters and Input/Output functions have been</span>
+<span class="sd">  moved to a separated settings script such as &#39;mysettings_1D_experiments.py&#39; that</span>
+<span class="sd">  is targeted when starting the script (this filename is set in var FLAGS.usersettings in the main script).</span>
+
+<span class="sd">  3. The model to be trained and served is specified in a different script targetted in the settings file.</span>
+
+<span class="sd">KNOWN ISSUES:</span>
+
+<span class="sd">This script has some known problems, any suggestion is welcome:</span>
+
+<span class="sd">  moving average parameters reloading for model serving is not optimized, this should be enhanced.</span>
+
+<span class="sd">  for now tensorflow_server only works on CPU so using GPU only for training and validation. Track : https://github.com/tensorflow/serving/issues/668</span>
+
+<span class="sd">TODO:</span>
+
+<span class="sd">To adapt to new use case, just duplicate the closest mysettingsxxx file presented in the examples folder and adjust the configuration.</span>
+<span class="sd">For any experiment, the availability of all the required fields in the settings file is checked by the tools/experiments_settings.py script.</span>
+<span class="sd">You can have a look there to ensure you prepared everything right, some variables and functions must exist while some others are optionnal.</span>
+
+<span class="sd">As a reminder, here are the functions prototypes:</span>
+
+<span class="sd">  Define a model to be trained and served in a specific file and follow this prototype:</span>
+
+<span class="sd">    report model name in the settings file using variable name model_file or thecify a premade estimator using variable name premade_estimator</span>
+
+<span class="sd">    def model( usersettings) #receives the external parameters that may be used to setup the model (number of classes and so depending on the task)</span>
+<span class="sd">                mode), #mode set to switch between train, validate and inference mode</span>
+<span class="sd">                wrt tf.estimator.tf.estimator.ModeKeys values</span>
+<span class="sd">              =&gt; the returns a tf.keras.Model</span>
+<span class="sd">              NOTE : custom models with specific loss can be used, tutorial here  https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit</span>
+
+<span class="sd">    def data_preprocess(features, model_placement)</span>
+
+<span class="sd">    def postprocessing_before_export_code(code)</span>
+
+<span class="sd">    def postprocessing_before_export_predictions(predictions)</span>
+
+<span class="sd">    def getOptimizer(model, loss, learning_rate, global_step)</span>
+
+<span class="sd">    def get_total_loss(inputs, predictions, labels, embedding_code, weights_loss)</span>
+
+<span class="sd">    def get_validation_summaries(inputs, predictions, labels, embedding_code)</span>
+
+<span class="sd">    def get_eval_metric_ops(inputs, predictions, labels, embedding_code)</span>
+
+<span class="sd">    def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batches)</span>
+
+<span class="sd">    def get_input_pipeline_serving()</span>
+
+<span class="sd">    define the Client_IO class that presents at least those three methods:</span>
+
+<span class="sd">      def __init__(self, debugMode):</span>
+<span class="sd">      </span>
+<span class="sd">      def getInputData(self, idx):</span>
+<span class="sd">      </span>
+<span class="sd">      def decodeResponse(self, result):</span>
+<span class="sd">      </span>
+<span class="sd">      def finalize():</span>
+<span class="sd">      </span>
+<span class="sd">        Note, the finalize method will be called once the number of expected iterations is reached and if any StopIteration exception is sent by the client</span>
+
+<span class="sd">    OPTIONNAL: add the dictionnary named &#39;hparams&#39; in this settings file to carry those specific hyperparameters to the model</span>
+<span class="sd">    and to complete the session name folder to facilitate experiments tracking and comparison</span>
+
+<span class="sd">Some examples of such functions are put in the README.md and in the versionned examples folder.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1">#standard imports</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">datetime</span><span class="o">,</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">configparser</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+
+<span class="c1">#tensorflow related</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">from</span> <span class="nn">tensorflow.keras.utils</span> <span class="kn">import</span> <span class="n">plot_model</span>
+<span class="kn">from</span> <span class="nn">tensorflow.keras</span> <span class="kn">import</span> <span class="n">mixed_precision</span>
+
+<span class="c1">#local imports</span>
+<span class="kn">from</span> <span class="nn">deeplearningtools.helpers</span> <span class="kn">import</span> <span class="n">model_serving_tools</span>
+<span class="kn">from</span> <span class="nn">deeplearningtools.helpers.model</span> <span class="kn">import</span> <span class="n">track_weights_change</span>
+<span class="kn">from</span> <span class="nn">deeplearningtools.helpers.federated_utils.flclient</span> <span class="kn">import</span> <span class="n">FlClient</span>
+<span class="kn">from</span> <span class="nn">deeplearningtools.helpers</span> <span class="kn">import</span> <span class="n">tensor_msg_io</span>
+<span class="kn">from</span> <span class="nn">deeplearningtools.helpers</span> <span class="kn">import</span> <span class="n">kafka_io</span>
+<span class="kn">from</span> <span class="nn">deeplearningtools.tools</span> <span class="kn">import</span> <span class="n">experiments_settings_surgery</span>
+<span class="kn">from</span> <span class="nn">deeplearningtools.tools.command_line_parser</span> <span class="kn">import</span> <span class="n">get_commands</span>
+<span class="kn">from</span> <span class="nn">deeplearningtools.tools.experiment_settings</span> <span class="kn">import</span>  <span class="n">loadExperimentsSettings</span><span class="p">,</span> <span class="n">loadModel_def_file</span><span class="p">,</span> <span class="n">SETTINGSFILE_COPY_NAME</span>
+<span class="kn">from</span> <span class="nn">deeplearningtools.tools.callbacks</span> <span class="kn">import</span> <span class="n">define_callbacks</span>
+<span class="kn">from</span> <span class="nn">deeplearningtools.tools</span> <span class="kn">import</span> <span class="n">gpu</span>
+
+<span class="c1">#optional libs imports</span>
+<span class="k">try</span><span class="p">:</span>
+  <span class="kn">import</span> <span class="nn">tensorflow_addons</span> <span class="k">as</span> <span class="nn">tfa</span>
+<span class="k">except</span><span class="p">:</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WARNING, tensorflow_addons could not be loaded, this may generate errors for model optimization but should not impact model serving&#39;</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+  <span class="kn">import</span> <span class="nn">tensorflow_model_optimization</span> <span class="k">as</span> <span class="nn">tfmot</span>
+<span class="k">except</span><span class="p">:</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WARNING, tensorflow_model_optimization could not be loaded, this may generate errors for model optimization for instance if usersettings.tensorflow_model_optimization=True&#39;</span><span class="p">)</span>
+
+
+<span class="n">federated_learning_available</span><span class="o">=</span><span class="kc">False</span>
+<span class="k">try</span><span class="p">:</span>
+  <span class="kn">import</span> <span class="nn">flwr</span> <span class="k">as</span> <span class="nn">fl</span>
+  <span class="n">federated_learning_available</span><span class="o">=</span><span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ModuleNotFoundError</span> <span class="k">as</span> <span class="n">e</span> <span class="p">:</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WARNING, Flower lib no present, this may impact distributed learning if required. Error=&#39;</span><span class="p">,</span><span class="n">e</span><span class="p">)</span>
+
+
+<span class="c1">#constants</span>
+<span class="n">WEIGHTS_MOVING_AVERAGE_DECAY</span><span class="o">=</span><span class="mf">0.998</span>
+
+<span class="c1">#------------------------------------------------------------</span>
+<span class="c1"># Define and run experiment</span>
+<span class="c1">#------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="build_run_training_session"><a class="viewcode-back" href="../../main_script.html#deeplearningtools.experiments_manager.build_run_training_session">[docs]</a><span class="k">def</span> <span class="nf">build_run_training_session</span><span class="p">(</span><span class="n">cid</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Define and run the optimisation process.</span>
+
+<span class="sd">  This function loads settings from the working directory and builds/run the optimisation.</span>
+
+<span class="sd">  This process can be the full training procedure OR this can be an ephemeral intermediate training step</span>
+<span class="sd">  as for transfer learning or federated learning.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Starting a single training session...&#39;</span><span class="p">)</span>
+  <span class="c1"># load configuration, expects the process working directory</span>
+  <span class="c1"># to contain all the necessary files including:</span>
+  <span class="c1"># - the configuration file (experiment_settings.py)</span>
+  <span class="c1"># - optionally a &#39;checkpoints&#39; folder in order to pursue training (recover from previous interruption) </span>
+  <span class="n">settings_file</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="n">SETTINGSFILE_COPY_NAME</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">cid</span><span class="o">!=</span><span class="s1">&#39;&#39;</span><span class="p">:</span>
+    <span class="n">message</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">INFO: cid </span><span class="si">{cid}</span><span class="s1"> with cwd=</span><span class="si">{cwd}</span><span class="s1"> and job_session_folder in locals=</span><span class="si">{l}</span><span class="s1"> or job_session_folder in globals=</span><span class="si">{g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cid</span><span class="o">=</span><span class="n">cid</span><span class="p">,</span>
+                                                                                                                                <span class="n">cwd</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span>
+                                                                                                                                <span class="n">l</span><span class="o">=</span><span class="s1">&#39;job_session_folder&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">(),</span>
+                                                                                                                                <span class="n">g</span><span class="o">=</span><span class="s1">&#39;job_session_folder&#39;</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="p">)</span> 
+    <span class="n">settings_file</span><span class="o">=</span><span class="n">experiments_settings_surgery</span><span class="o">.</span><span class="n">insert_additionnal_hparams</span><span class="p">(</span><span class="n">settings_file</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;procID&#39;</span><span class="p">:</span><span class="n">cid</span><span class="p">,</span> <span class="s1">&#39;cid&#39;</span><span class="p">:</span><span class="n">cid</span><span class="p">,</span> <span class="s1">&#39;isFLserver&#39;</span><span class="p">:</span><span class="kc">False</span><span class="p">})</span>
+
+  <span class="c1">#load experiment settings from current working directory</span>
+  <span class="n">usersettings</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span><span class="n">loadExperimentsSettings</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">settings_file</span><span class="p">,</span><span class="n">call_from_session_folder</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+  
+  <span class="c1">#------------------------------------------------------------</span>
+  <span class="c1">#prepare session</span>
+  <span class="c1">#------------------------------------------------------------</span>
+
+  <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">clear_session</span><span class="p">()</span> <span class="c1"># We need to clear the session to enable JIT in the middle of the program.</span>
+  <span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">set_seed</span><span class="p">(</span><span class="n">usersettings</span><span class="o">.</span><span class="n">random_seed</span><span class="p">)</span>
+  <span class="c1">#(de)activate XLA graph optimization</span>
+  <span class="n">tf</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">set_jit</span><span class="p">(</span><span class="n">usersettings</span><span class="o">.</span><span class="n">useXLA</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">useXLA</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Forcing XLA on the CPU side&#39;</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;TF_XLA_FLAGS&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;--tf_xla_cpu_global_jit&#39;</span>
+    <span class="k">if</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">debug</span> <span class="ow">and</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">use_profiling</span><span class="p">:</span>
+      <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;XLA_FLAGS&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;--xla_hlo_profile&#39;</span>
+
+  <span class="k">else</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;TF_XLA_FLAGS&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+
+  <span class="n">gpu_workers_nb</span><span class="o">=</span><span class="n">gpu</span><span class="o">.</span><span class="n">check_GPU_available</span><span class="p">(</span><span class="n">usersettings</span><span class="p">)</span>
+
+  <span class="c1">#####################################</span>
+  <span class="c1">#check GPU requirements vs availability</span>
+  <span class="k">if</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">debugging</span><span class="o">.</span><span class="n">set_log_device_placement</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+  <span class="c1">#####################################</span>
+  <span class="c1">#prepare session</span>
+<span class="w">  </span><span class="sd">&#39;&#39;&#39;tf.keras.backend.clear_session() # We need to clear the session to enable JIT in the middle of the program.</span>
+<span class="sd">  tf.random.set_seed(usersettings.random_seed)</span>
+
+<span class="sd">  os.environ[&#39;TF_GPU_THREAD_MODE&#39;]=&#39;gpu_private&#39;</span>
+<span class="sd">  #(de)activate XLA graph optimization</span>
+<span class="sd">  tf.config.optimizer.set_jit(usersettings.useXLA)</span>
+<span class="sd">  if usersettings.useXLA:</span>
+<span class="sd">    print(&#39;Forcing XLA on the CPU side&#39;)</span>
+<span class="sd">    os.environ[&#39;TF_XLA_FLAGS&#39;]=&#39;--tf_xla_cpu_global_jit&#39;</span>
+<span class="sd">    if usersettings.debug and usersettings.use_profiling:</span>
+<span class="sd">      os.environ[&#39;XLA_FLAGS&#39;]=&#39;--xla_hlo_profile&#39;</span>
+
+<span class="sd">  else:</span>
+<span class="sd">    os.environ[&#39;TF_XLA_FLAGS&#39;]=&#39;&#39;</span>
+<span class="sd">  &#39;&#39;&#39;</span>
+  <span class="c1">######################################</span>
+  <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="s1">&#39;checkpoints&#39;</span><span class="p">,</span> <span class="n">cid</span><span class="p">)):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Recovering training from checkpoint...&#39;</span><span class="p">)</span>
+    <span class="n">usersettings</span><span class="o">.</span><span class="n">recoverFromCheckpoint</span><span class="o">=</span><span class="kc">True</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="n">usersettings</span><span class="o">.</span><span class="n">recoverFromCheckpoint</span><span class="o">=</span><span class="kc">False</span>
+  
+  <span class="c1">#------------------------------------------------------------</span>
+  <span class="c1"># define the input pipepelines (train/val)</span>
+  <span class="c1">#------------------------------------------------------------</span>
+
+  <span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s1">&#39;Input_pipeline&#39;</span><span class="p">):</span>
+    <span class="n">train_data</span> <span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">get_input_pipeline</span><span class="p">(</span><span class="n">raw_data_files_folder</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">raw_data_dir_train</span><span class="p">,</span>
+                                                      <span class="n">isTraining</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+                                                      <span class="n">nbEpoch</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">nbEpoch</span><span class="p">)</span>
+    <span class="n">val_data</span> <span class="o">=</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">get_input_pipeline</span><span class="p">(</span><span class="n">raw_data_files_folder</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">raw_data_dir_val</span><span class="p">,</span>
+                                                      <span class="n">isTraining</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+                                                      <span class="n">nbEpoch</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">nbEpoch</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++train_data&#39;</span><span class="p">,</span> <span class="n">train_data</span><span class="p">)</span>
+    <span class="c1">#data_it=train_data.as_numpy_iterator()</span>
+    <span class="c1">#print(&quot;ELEMENTS&quot;, list(data_it))</span>
+    <span class="c1"># if reading from a kafka log queue:</span>
+    <span class="k">if</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">consume_data_from_kafka</span><span class="p">:</span> 
+      <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Original dataset specs:</span><span class="se">\n</span><span class="s2">-&gt;&quot;</span><span class="p">,</span> <span class="n">train_data</span><span class="o">.</span><span class="n">element_spec</span><span class="p">)</span>
+      <span class="n">train_val_dataset_features</span><span class="o">=</span><span class="n">tensor_msg_io</span><span class="o">.</span><span class="n">get_data_label_features_from_dataset</span><span class="p">(</span><span class="n">train_data</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;train_val_dataset_features:&quot;</span><span class="p">,</span><span class="n">train_val_dataset_features</span><span class="p">)</span>
+      <span class="n">log_queue_name</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">session_name</span>
+      <span class="k">if</span> <span class="s1">&#39;procID&#39;</span> <span class="ow">in</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">log_queue_name</span><span class="o">+=</span><span class="nb">str</span><span class="p">(</span><span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="p">[</span><span class="s1">&#39;procID&#39;</span><span class="p">])</span>
+      <span class="n">kafka_reader_train</span><span class="o">=</span><span class="n">kafka_io</span><span class="o">.</span><span class="n">KafkaIO</span><span class="p">(</span><span class="n">topic_name</span><span class="o">=</span><span class="n">log_queue_name</span><span class="o">+</span><span class="s1">&#39;train&#39;</span><span class="p">,</span> <span class="n">bootstrap_servers</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">kafka_bootstrap_servers</span><span class="p">,</span> <span class="n">element_spec</span><span class="o">=</span><span class="n">train_data</span><span class="o">.</span><span class="n">element_spec</span><span class="p">)</span>
+      <span class="n">kafka_reader_val</span><span class="o">=</span><span class="n">kafka_io</span><span class="o">.</span><span class="n">KafkaIO</span><span class="p">(</span><span class="n">topic_name</span><span class="o">=</span><span class="n">log_queue_name</span><span class="o">+</span><span class="s1">&#39;val&#39;</span><span class="p">,</span> <span class="n">bootstrap_servers</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">kafka_bootstrap_servers</span><span class="p">,</span> <span class="n">element_spec</span><span class="o">=</span><span class="n">val_data</span><span class="o">.</span><span class="n">element_spec</span><span class="p">)</span>
+      <span class="c1">#setup consumer depending on data and label types:</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">train_data</span><span class="o">.</span><span class="n">element_spec</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">train_data</span><span class="o">=</span><span class="n">kafka_reader_train</span><span class="o">.</span><span class="n">kafka_dataset_consumer_tf_custom</span><span class="p">(</span><span class="n">train_val_dataset_features</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">train_data</span><span class="o">=</span><span class="n">kafka_reader_train</span><span class="o">.</span><span class="n">kafka_dataset_consumer_tf_basic</span><span class="p">(</span><span class="n">batch_size</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+      <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val_data</span><span class="o">.</span><span class="n">element_spec</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">val_data</span><span class="o">=</span><span class="n">kafka_reader_val</span><span class="o">.</span><span class="n">kafka_dataset_consumer_tf_custom</span><span class="p">(</span><span class="n">train_val_dataset_features</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">val_data</span><span class="o">=</span><span class="n">kafka_reader_train</span><span class="o">.</span><span class="n">kafka_dataset_consumer_tf_basic</span><span class="p">(</span><span class="n">batch_size</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;------------------------------------------------------------train_data&#39;</span><span class="p">,</span> <span class="n">train_data</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;KAFKA dataset specs:</span><span class="se">\n</span><span class="s2">-&gt;&quot;</span><span class="p">,</span> <span class="n">train_data</span><span class="o">.</span><span class="n">element_spec</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Kafka connectors ready !&#39;</span><span class="p">)</span>
+  <span class="k">try</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Train dataset size=&#39;</span><span class="p">,</span> <span class="n">train_data</span><span class="o">.</span><span class="n">cardinality</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Validation dataset size=&#39;</span><span class="p">,</span> <span class="n">val_data</span><span class="o">.</span><span class="n">cardinality</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+    <span class="n">train_iterations_per_epoch</span><span class="o">=</span><span class="n">train_data</span><span class="o">.</span><span class="n">n</span><span class="o">//</span><span class="n">usersettings</span><span class="o">.</span><span class="n">batch_size</span>
+    <span class="n">val_iterations_per_epoch</span><span class="o">=</span><span class="n">val_data</span><span class="o">.</span><span class="n">n</span><span class="o">//</span><span class="n">usersettings</span><span class="o">.</span><span class="n">batch_size</span>
+  <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Could not estimate dataset sizes from input data pipeline, relying on settings nb_train_samples and nb_val_samples.&#39;</span><span class="p">)</span>
+    <span class="n">train_iterations_per_epoch</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">nb_train_samples</span><span class="o">//</span><span class="n">usersettings</span><span class="o">.</span><span class="n">batch_size</span>
+    <span class="n">val_iterations_per_epoch</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">nb_val_samples</span><span class="o">//</span><span class="n">usersettings</span><span class="o">.</span><span class="n">batch_size</span>
+
+      
+  <span class="k">if</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">enable_mixed_precision</span><span class="p">:</span>
+    <span class="c1"># use AMP</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Using Automatic Mixed Precision along the optimization process&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;### HINT : to make sure Tensor cores are used, and obtain faster processing, ensure that your kernels are multiples of 8 !&#39;</span><span class="p">)</span>
+    <span class="n">policy</span> <span class="o">=</span> <span class="n">mixed_precision</span><span class="o">.</span><span class="n">Policy</span><span class="p">(</span><span class="s1">&#39;mixed_float16&#39;</span><span class="p">)</span>
+    <span class="n">mixed_precision</span><span class="o">.</span><span class="n">set_global_policy</span><span class="p">(</span><span class="n">policy</span><span class="p">)</span>
+
+  <span class="c1">#------------------------------------------------------------</span>
+  <span class="c1">#create the model from the user defined model file</span>
+  <span class="c1">#------------------------------------------------------------</span>
+
+  <span class="c1"># -&gt; (script targeted by usersettings.model_file)</span>
+  
+  <span class="c1"># maybe try to load an existing pretrained model (checkpoint in working folder)</span>
+  <span class="n">initial_epoch</span><span class="o">=</span><span class="mi">0</span>
+  <span class="n">must_create_new_model</span><span class="o">=</span><span class="kc">True</span>
+  <span class="k">if</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">recoverFromCheckpoint</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="n">checkpoint_search_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="s1">&#39;checkpoints&#39;</span><span class="p">,</span><span class="n">cid</span><span class="p">,</span> <span class="s1">&#39;model_epoch_*&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;**** Restoring from checkpoint: searching in folder&#39;</span><span class="p">,</span> <span class="n">checkpoint_search_path</span><span class="p">)</span>
+    <span class="n">available_models</span><span class="o">=</span><span class="nb">sorted</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">checkpoint_search_path</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;All available model=&#39;</span><span class="p">,</span> <span class="n">available_models</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">available_models</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Could NOT find a pretrained model, creating a new one to be trained from scratch...&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Could find pretrained model, loading...&#39;</span><span class="p">)</span>
+      <span class="n">loaded_model</span><span class="o">=</span><span class="n">available_models</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+      <span class="nb">print</span><span class="p">(</span><span class="n">loaded_model</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+      <span class="n">initial_epoch</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">loaded_model</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Restarting optimization from epoch: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">initial_epoch</span><span class="p">))</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;loading &#39;</span><span class="p">,</span><span class="n">loaded_model</span><span class="p">)</span>
+      <span class="k">try</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">loaded_model</span><span class="p">)</span>
+        <span class="n">must_create_new_model</span><span class="o">=</span><span class="kc">False</span>
+      <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Could not load existing model, training from scratch...&#39;</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">must_create_new_model</span><span class="p">:</span> <span class="c1">#if could not restore from checkpoint or start training from scratch</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;**** Training from scratch...&#39;</span><span class="p">)</span>
+    <span class="n">model_scope</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s1">&#39;model&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">gpu_workers_nb</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Deploying model in a multi/distributed GPU training scheme&#39;</span><span class="p">)</span>
+      <span class="n">distribution_strategy</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span> <span class="n">tf</span><span class="o">.</span><span class="n">distribute</span><span class="p">,</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">distribution_strategy</span><span class="p">)()</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&gt; Chosen distribution strategy :&#39;</span><span class="p">,</span><span class="n">distribution_strategy</span><span class="p">)</span>
+      <span class="n">model_scope</span><span class="o">=</span><span class="n">distribution_strategy</span><span class="o">.</span><span class="n">scope</span><span class="p">()</span><span class="c1">#(model_scope, distribution_strategy.scope())</span>
+    <span class="n">usersettings</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+
+    <span class="c1">#def load_fit_model():</span>
+    <span class="k">with</span> <span class="n">model_scope</span><span class="p">:</span>
+      <span class="c1">#load model</span>
+      <span class="n">model</span><span class="o">=</span><span class="n">loadModel_def_file</span><span class="p">(</span><span class="n">usersettings</span><span class="p">)(</span><span class="n">usersettings</span><span class="p">)</span>
+      <span class="c1">#setup training</span>
+      <span class="n">learning_rate</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">get_learningRate</span><span class="p">()</span>
+      <span class="n">loss</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">get_total_loss</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+      <span class="n">optimizer</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">get_optimizer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">weights_moving_averages</span><span class="p">:</span>
+          <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Overriding optimizer option and enabling exponential weights moving average (EMA) along training...&#39;</span><span class="p">)</span>
+          <span class="n">ema_momentum_default</span><span class="o">=</span><span class="mf">0.99</span>
+        
+          <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="s1">&#39;ema&#39;</span><span class="p">):</span>
+            <span class="n">optimizer</span><span class="o">.</span><span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span>
+            <span class="n">optimizer</span><span class="o">.</span><span class="n">ema_momentum</span><span class="o">=</span><span class="n">ema_momentum_default</span>
+          <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+              <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Optimizer does not support EMA, trying to introduce EMA from tfa module&#39;</span><span class="p">)</span>
+              <span class="n">optimizer</span><span class="o">=</span><span class="n">tfa</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">MovingAverage</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">average_decay</span><span class="o">=</span><span class="n">ema_momentum_default</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;weights_ema&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+              <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Could not apply weights EMA:&#39;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+      <span class="n">metrics</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">get_metrics</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">loss</span><span class="p">)</span>
+
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Compiling model...&#39;</span><span class="p">)</span>
+      <span class="n">exp_loss_weights</span><span class="o">=</span><span class="kc">None</span>
+      <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">usersettings</span><span class="p">,</span> <span class="s1">&#39;get_loss_weights&#39;</span><span class="p">):</span>
+        <span class="n">exp_loss_weights</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">get_loss_weights</span><span class="p">()</span>
+      <span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+                    <span class="n">loss</span><span class="o">=</span><span class="n">loss</span><span class="p">,</span><span class="c1"># you can use a different loss on each output by passing a dictionary or a list of losses</span>
+                    <span class="n">loss_weights</span><span class="o">=</span><span class="n">exp_loss_weights</span><span class="p">,</span>
+                    <span class="n">metrics</span><span class="o">=</span><span class="n">metrics</span><span class="p">)</span> <span class="c1">#can specify per output metrics : metrics={&#39;output_a&#39;: &#39;accuracy&#39;, &#39;output_b&#39;: [&#39;accuracy&#39;, &#39;mse&#39;]}</span>
+      
+      <span class="k">if</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">enable_mixed_precision</span><span class="p">:</span>
+        <span class="n">gpu</span><span class="o">.</span><span class="n">check_mixed_precision_compatibility</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">usersettings</span><span class="p">)</span>
+      
+      <span class="k">try</span><span class="p">:</span>
+        <span class="n">init_model_name</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="s1">&#39;checkpoints&#39;</span><span class="p">,</span><span class="n">cid</span><span class="p">,</span><span class="s1">&#39;model_init&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;******************************************&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Saving the model at init state in &#39;</span><span class="p">,</span><span class="n">init_model_name</span><span class="p">,</span> <span class="s1">&#39;issues at this point should warn you before moving to long training sessions...&#39;</span><span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">init_model_name</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;initial model saving done&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;******************************************&#39;</span><span class="p">)</span>
+        
+      <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+          <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WARNING !!! Experiments Manager says : could not serialize the model, did all model elements defined in the model prior model.compile are serialisable and have their get_config(self) method ? Error message=&#39;</span><span class="p">,</span><span class="n">e</span><span class="p">)</span>
+    
+  <span class="c1"># logs and summaries management:</span>
+  <span class="c1">#-&gt; classical logging on Tensorboard (scalars, historams, and so on)</span>
+  <span class="n">log_dir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="s2">&quot;logs&quot;</span><span class="p">,</span><span class="n">cid</span><span class="p">)</span>
+  <span class="c1">#-&gt; specify a summary writer (for more customisation capabilities)</span>
+  <span class="n">file_writer</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">create_file_writer</span><span class="p">(</span><span class="n">log_dir</span><span class="p">)</span>
+  <span class="n">file_writer</span><span class="o">.</span><span class="n">set_as_default</span><span class="p">()</span>
+  
+  <span class="c1"># register a specific method to the model to record weights change gradient when manually specifying new weights</span>
+  <span class="n">model</span><span class="o">.</span><span class="n">track_weights_change</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">MethodType</span><span class="p">(</span> <span class="n">track_weights_change</span><span class="p">,</span> <span class="n">model</span> <span class="p">)</span>
+  
+  <span class="c1"># generate the model description</span>
+  <span class="c1">#-&gt; as an image in the session folder</span>
+  <span class="n">model_name_str</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">model_name</span>
+  <span class="k">try</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;from tensorflow.keras.layers import Layer</span>
+<span class="sd">    model._layers = [</span>
+<span class="sd">        layer for layer in model._layers if isinstance(layer, Layer)</span>
+<span class="sd">    ]&#39;&#39;&#39;</span>
+    <span class="n">plot_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span>
+              <span class="n">to_file</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="n">model_name_str</span><span class="o">+</span><span class="s1">&#39;.png&#39;</span><span class="p">),</span>
+              <span class="n">show_shapes</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+  <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Could not plot model, error:&#39;</span><span class="p">,</span><span class="n">e</span><span class="p">)</span>
+  
+  <span class="c1">#-&gt; as a printed log and write the network summary to file in the session folder</span>
+  <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="n">model_name_str</span><span class="o">+</span><span class="s1">&#39;.txt&#39;</span><span class="p">),</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+    <span class="c1"># Pass the file handle in as a lambda function to make it callable</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;model.summary&#39;</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">(</span><span class="n">print_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">))</span>
+ 
+  <span class="k">if</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
+    <span class="c1">#TODO to be tested</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;TODO: check this for tf2 migration...&#39;</span><span class="p">)</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">debugging</span><span class="o">.</span><span class="n">experimental</span><span class="o">.</span><span class="n">enable_dump_debug_info</span><span class="p">(</span><span class="n">log_dir</span><span class="p">,</span> <span class="n">tensor_debug_mode</span><span class="o">=</span><span class="s2">&quot;FULL_HEALTH&quot;</span><span class="p">,</span> <span class="n">circular_buffer_size</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+  <span class="c1">#------------------------------------------------------------</span>
+  <span class="c1"># train the model</span>
+  <span class="c1">#------------------------------------------------------------</span>
+
+  <span class="n">use_multiprocessing</span><span class="o">=</span><span class="kc">False</span>
+  <span class="n">workers</span><span class="o">=</span><span class="mi">1</span>
+  <span class="k">if</span> <span class="kc">False</span><span class="p">:</span><span class="c1">#gpu_workers_nb&gt;1:</span>
+    <span class="n">workers</span><span class="o">*=</span><span class="n">gpu_workers_nb</span>
+    <span class="n">use_multiprocessing</span><span class="o">=</span><span class="kc">True</span>
+
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Fitting model:&#39;</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;* use_multiprocessing=&#39;</span><span class="p">,</span><span class="n">use_multiprocessing</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">use_multiprocessing</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;* multiprocessing workers=&#39;</span><span class="p">,</span><span class="n">workers</span><span class="p">)</span>
+  <span class="n">history</span> <span class="o">=</span> <span class="kc">None</span>
+
+  <span class="c1">#print XLA mode</span>
+  <span class="k">if</span> <span class="s1">&#39;TF_XLA_FLAGS&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;*** XLA optimization state : TF_XLA_FLAGS =&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;TF_XLA_FLAGS&#39;</span><span class="p">])</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No TF_XLA_FLAGS found in os.environ setup&#39;</span><span class="p">)</span>
+  <span class="c1">#activate tensorflow_model_optimization is required (if tensorflow_model_optimization is available)</span>
+  <span class="k">if</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">quantization_aware_training</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+      <span class="n">model</span> <span class="o">=</span> <span class="n">tfmot</span><span class="o">.</span><span class="n">quantization</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">quantize_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Model quantization aware training is being applied, here is quantized model summary&#39;</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Have a look at https://www.youtube.com/watch?v=2tnWHCxP8Bk&#39;</span><span class="p">)</span>
+      <span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Could not apply model quantization, relying on the original model&#39;</span><span class="p">)</span>
+  
+  <span class="c1">#-&gt; train with (in memory) input data pipelines</span>
+  <span class="k">if</span> <span class="n">train_data</span><span class="o">==</span><span class="n">val_data</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;train_data and val_data are the same, please fix this error&#39;</span><span class="p">)</span>
+  
+  <span class="c1"># prepare callbacks</span>
+  <span class="n">all_callbacks</span><span class="o">=</span><span class="n">define_callbacks</span><span class="p">(</span><span class="n">usersettings</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">train_iterations_per_epoch</span><span class="p">,</span> <span class="n">file_writer</span><span class="p">,</span> <span class="n">log_dir</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">federated_learning</span> <span class="ow">is</span> <span class="kc">False</span> <span class="ow">or</span> <span class="n">federated_learning_available</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Now starting a CENTRALIZED model training session...&#39;</span><span class="p">)</span>
+    <span class="n">history</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">x</span><span class="o">=</span><span class="n">train_data</span><span class="p">,</span>
+            <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="c1">#train_data,</span>
+            <span class="n">batch_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="c1">#usersettings.batch_size, #bath size must be specified</span>
+            <span class="n">epochs</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">nbEpoch</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">callbacks</span><span class="o">=</span><span class="n">all_callbacks</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span>
+            <span class="n">validation_split</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+            <span class="n">validation_data</span><span class="o">=</span><span class="n">val_data</span><span class="p">,</span><span class="c1"># val_ref),</span>
+            <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">class_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">initial_epoch</span><span class="o">=</span><span class="n">initial_epoch</span><span class="p">,</span>
+            <span class="n">steps_per_epoch</span><span class="o">=</span><span class="n">train_iterations_per_epoch</span><span class="p">,</span>
+            <span class="n">validation_steps</span><span class="o">=</span><span class="n">val_iterations_per_epoch</span><span class="p">,</span>
+            <span class="n">validation_freq</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">max_queue_size</span><span class="o">=</span><span class="n">workers</span><span class="o">*</span><span class="mi">100</span><span class="p">,</span>
+            <span class="n">workers</span><span class="o">=</span><span class="n">workers</span><span class="p">,</span>
+            <span class="n">use_multiprocessing</span><span class="o">=</span><span class="n">use_multiprocessing</span><span class="p">,</span>
+        <span class="p">)</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Now starting a FEDERATED model training session...&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;isFLserver&#39;</span> <span class="ow">in</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+      <span class="k">if</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="p">[</span><span class="s1">&#39;isFLserver&#39;</span><span class="p">]</span><span class="o">==</span><span class="kc">True</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&gt; model prepared, ready to be used on the server side&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">usersettings</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;data_pipeline&#39;</span><span class="p">:</span><span class="n">train_data</span><span class="p">,</span> <span class="s1">&#39;steps_per_epoch&#39;</span><span class="p">:</span><span class="n">train_iterations_per_epoch</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;data_pipeline&#39;</span><span class="p">:</span><span class="n">val_data</span><span class="p">,</span> <span class="s1">&#39;steps_per_epoch&#39;</span><span class="p">:</span><span class="n">val_iterations_per_epoch</span><span class="p">},</span> <span class="n">file_writer</span>
+    <span class="c1">#implicit else</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&gt; client model configured&#39;</span><span class="p">)</span>
+    <span class="c1"># Start Flower client</span>
+    <span class="n">federated_learner</span><span class="o">=</span><span class="n">FlClient</span><span class="p">(</span><span class="n">usersettings</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">train_iterations_per_epoch</span><span class="p">,</span> <span class="n">val_data</span><span class="p">,</span> <span class="n">val_iterations_per_epoch</span><span class="p">,</span> <span class="n">workers</span><span class="p">,</span> <span class="n">file_writer</span><span class="p">,</span> <span class="n">log_dir</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;cid&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span> <span class="c1">#if not in simulation mode, start flower client</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;CLient is real runner&#39;</span><span class="p">)</span>
+      <span class="n">fl</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">start_numpy_client</span><span class="p">(</span><span class="n">server_address</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">federated_learning_server_address</span><span class="p">,</span> <span class="n">client</span><span class="o">=</span><span class="n">federated_learner</span><span class="p">)</span>
+      <span class="n">history</span><span class="o">=</span><span class="n">federated_learner</span><span class="o">.</span><span class="n">history</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="c1"># if function is called for flower simulation, then only the client instance is returned</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Client is simulated runner&#39;</span><span class="p">)</span>
+      <span class="k">return</span> <span class="n">federated_learner</span>
+  <span class="k">return</span> <span class="n">history</span></div>
+
+<div class="viewcode-block" id="run_experiment"><a class="viewcode-back" href="../../main_script.html#deeplearningtools.experiments_manager.run_experiment">[docs]</a><span class="k">def</span> <span class="nf">run_experiment</span><span class="p">(</span><span class="n">usersettings</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Run an experiment.</span>
+
+<span class="sd">  :param usersettings: The experiment settings.</span>
+<span class="sd">  :type usersettings: object</span>
+
+<span class="sd">  :return: A tuple containing the final result and the model export filename.</span>
+<span class="sd">  :rtype: tuple</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Running an experiment....&#39;</span><span class="p">)</span>
+
+  <span class="c1">#check GPU requirements vs availability</span>
+  <span class="k">if</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">debugging</span><span class="o">.</span><span class="n">set_log_device_placement</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+  <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;TF_GPU_THREAD_MODE&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;gpu_private&#39;</span>
+ 
+  <span class="c1">#run a single training experiment</span>
+  <span class="n">history</span><span class="o">=</span><span class="n">build_run_training_session</span><span class="p">()</span>
+
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">history dict:&#39;</span><span class="p">,</span> <span class="n">history</span><span class="o">.</span><span class="n">history</span><span class="p">)</span>
+
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Training session end, loss=</span><span class="si">{loss}</span><span class="s1"> &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="n">history</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Have a look at the experiments details saved in folder &#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
+  <span class="n">final_result</span><span class="o">=</span><span class="kc">None</span>
+  <span class="k">if</span> <span class="n">final_result</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">final_result</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;loss&#39;</span><span class="p">:</span><span class="n">history</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]}</span>
+  <span class="k">return</span> <span class="n">final_result</span><span class="p">,</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">model_export_filename</span></div>
+
+<span class="c1">#------------------------------------------------------------</span>
+<span class="c1"># INFERENCE SECTION : talking to a tensorflow-server</span>
+<span class="c1">#inspired from https://github.com/tensorflow/serving/blob/master/tensorflow_serving/example/mnist_client.py</span>
+<span class="c1">#------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="do_inference"><a class="viewcode-back" href="../../main_script.html#deeplearningtools.experiments_manager.do_inference">[docs]</a><span class="k">def</span> <span class="nf">do_inference</span><span class="p">(</span><span class="n">experiment_settings</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">clientIO_InitSpecs</span><span class="p">,</span> <span class="n">concurrency</span><span class="p">,</span> <span class="n">num_tests</span><span class="p">,</span> <span class="n">debug</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Tests PredictionService with concurrent requests.</span>
+
+<span class="sd">  :param experiment_settings: The experiment settings loaded from the function loadExperimentsSettings.</span>
+<span class="sd">  :type experiment_settings: object</span>
+<span class="sd">  :param host: The TensorFlow server address.</span>
+<span class="sd">  :type host: str</span>
+<span class="sd">  :param port: The port address of the PredictionService.</span>
+<span class="sd">  :type port: int</span>
+<span class="sd">  :param model_name: The model name ID.</span>
+<span class="sd">  :type model_name: str</span>
+<span class="sd">  :param clientIO_InitSpecs: A dictionary to pass to the ClientIO constructor.</span>
+<span class="sd">  :type clientIO_InitSpecs: dict</span>
+<span class="sd">  :param concurrency: Maximum number of concurrent requests.</span>
+<span class="sd">  :type concurrency: int</span>
+<span class="sd">  :param num_tests: Number of test images to use. If negative, it indicates an infinite prediction loop.</span>
+<span class="sd">  :type num_tests: int</span>
+<span class="sd">  :param debug: Flag to enable debug mode.</span>
+<span class="sd">  :type debug: bool</span>
+
+<span class="sd">  :raises IOError: An error occurred processing the test data set.</span>
+
+<span class="sd">  Hint: Have a look here to track API use updates: https://github.com/tensorflow/serving/blob/master/tensorflow_serving/example/mnist_client.py</span>
+
+<span class="sd">  :return: Always returns 0.</span>
+<span class="sd">  :rtype: int</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">stub</span><span class="o">=</span><span class="n">model_serving_tools</span><span class="o">.</span><span class="n">setup_model_server_connexion</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">experiment_settings</span><span class="o">.</span><span class="n">grpc_max_message_length</span><span class="p">)</span>
+  <span class="c1">#allocate a clientIO instance defined for the experiment</span>
+  <span class="n">client_io</span><span class="o">=</span><span class="n">experiment_settings</span><span class="o">.</span><span class="n">Client_IO</span><span class="p">(</span><span class="n">clientIO_InitSpecs</span><span class="p">,</span> <span class="n">debug</span><span class="p">)</span>
+  <span class="n">notDone</span><span class="o">=</span><span class="kc">True</span>
+  <span class="n">predictionIdx</span><span class="o">=</span><span class="mi">0</span>
+  <span class="k">while</span> <span class="n">notDone</span><span class="p">:</span>
+      <span class="c1"># 1. get data and prepare request</span>
+      <span class="k">try</span><span class="p">:</span>
+        <span class="n">predictionIdx</span><span class="o">=</span><span class="n">predictionIdx</span><span class="o">+</span><span class="mi">1</span>
+        <span class="n">start_time</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="c1">#get an input data sample to be sent to the model</span>
+        <span class="n">sample</span><span class="o">=</span><span class="n">client_io</span><span class="o">.</span><span class="n">getInputData</span><span class="p">(</span><span class="n">predictionIdx</span><span class="p">)</span>
+        <span class="n">request</span> <span class="o">=</span> <span class="n">model_serving_tools</span><span class="o">.</span><span class="n">generate_single_request</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">model_name</span><span class="p">,</span> <span class="n">debug</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+          <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Input data is ready, data=&#39;</span><span class="p">,</span><span class="n">sample</span><span class="p">)</span>
+          <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Time to prepare collect data request:&#39;</span><span class="p">,</span><span class="nb">round</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+      <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;End of the process detected, running the ClientIO::finalize method&#39;</span><span class="p">)</span>
+        <span class="n">notDone</span><span class="o">=</span><span class="kc">True</span>
+        <span class="k">break</span>
+
+      <span class="c1"># 2. send the request</span>
+      <span class="c1">#asynchronous message request and answer reception, may hide some AbortionError details and only provide CancellationError(code=StatusCode.CANCELLED, details=&quot;Cancelled&quot;)</span>
+      <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">experiment_settings</span><span class="p">,</span> <span class="s1">&#39;client_async&#39;</span><span class="p">):</span>
+        <span class="n">result_future</span> <span class="o">=</span> <span class="n">stub</span><span class="o">.</span><span class="n">Predict</span><span class="o">.</span><span class="n">future</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">experiment_settings</span><span class="o">.</span><span class="n">serving_client_timeout_int_secs</span><span class="p">)</span>  <span class="c1"># 5 seconds</span>
+        <span class="n">result_future</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span>
+            <span class="n">model_serving_tools</span><span class="o">.</span><span class="n">_create_rpc_callback</span><span class="p">(</span><span class="n">client_io</span><span class="p">,</span> <span class="n">debug</span><span class="p">))</span>
+
+      <span class="k">else</span><span class="p">:</span> <span class="c1">#synchronous approach</span>
+        <span class="c1">#synchronous approach... that may provide more details on AbortionError</span>
+        <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+          <span class="n">start_time</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="n">experiment_settings</span><span class="o">.</span><span class="n">serving_client_timeout_int_secs</span>
+        <span class="k">if</span> <span class="n">predictionIdx</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span><span class="c1">#first request takes longer time (memory allocation, and so on)</span>
+          <span class="n">timeout</span><span class="o">*=</span><span class="mi">5</span>  
+        <span class="n">answer</span><span class="o">=</span><span class="n">stub</span><span class="o">.</span><span class="n">Predict</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">timeout</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+          <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Time to send request/decode response:&#39;</span><span class="p">,</span><span class="nb">round</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+          <span class="n">start_time</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="n">client_io</span><span class="o">.</span><span class="n">decodeResponse</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+          <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Time to decode response:&#39;</span><span class="p">,</span><span class="nb">round</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+      <span class="k">if</span> <span class="n">num_tests</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">:</span>
+          <span class="k">if</span> <span class="n">predictionIdx</span><span class="o">&gt;=</span><span class="n">num_tests</span><span class="p">:</span>
+              <span class="n">notDone</span><span class="o">=</span><span class="kc">False</span>
+  <span class="n">client_io</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span>
+  <span class="k">return</span> <span class="mi">0</span></div>
+
+<span class="c1">#--------------------------------------------</span>
+<span class="c1"># Run script</span>
+<span class="c1">#--------------------------------------------</span>
+
+<div class="viewcode-block" id="run"><a class="viewcode-back" href="../../main_script.html#deeplearningtools.experiments_manager.run">[docs]</a><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="n">FLAGS</span><span class="p">,</span> <span class="n">train_config_script</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">external_hparams</span><span class="o">=</span><span class="p">{}):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">  The main script function that can receive hyperparameters as a dictionary to run an experiment.</span>
+
+<span class="sd">  :param FLAGS: The input flags specifying the mode of operation.</span>
+<span class="sd">  :param train_config_script: Path to the training configuration script (optional).</span>
+<span class="sd">  :param external_hparams: A dictionary containing additional hyperparameters (optional).</span>
+
+<span class="sd">  :return: experiments_output: A dictionary summarizing the last model states at the end of the training (if training is done).</span>
+
+<span class="sd">  :raises ValueError: If the provided settings or configurations are incorrect.</span>
+
+<span class="sd">  Notes:</span>
+<span class="sd">  This function can start training, model serving, or model client requesting depending on the `FLAGS` values:</span>
+
+<span class="sd">  - If `FLAGS.start_server` is True: starts a server that hosts the target model.</span>
+<span class="sd">  - If `FLAGS.predict` is True: starts a client that will send requests to a model via gRPC.</span>
+<span class="sd">  - Otherwise, starts a training session relying on a settings file provided by `train_config_script` or `FLAGS.usersettings`.</span>
+<span class="sd">  In this mode, the function returns a dictionary that summarizes the last model states at the end of the training.</span>
+<span class="sd">  If calling with a non-empty `train_config_script` and with non-empty `external_hparams`,</span>
+<span class="sd">  then `external_hparams` will update hyperparameters already specified in the `train_config_script` script.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="n">experiments_output</span><span class="o">=</span><span class="kc">None</span>
+  <span class="c1">#tf.reset_default_graph()</span>
+  <span class="n">usersettings</span><span class="o">=</span><span class="kc">None</span><span class="c1">#ensure to clear this object prior any new trial</span>
+<span class="w">  </span><span class="sd">&#39;&#39;&#39; main function that starts the experiment in the chosen mode &#39;&#39;&#39;</span>
+  <span class="n">scripts_WD</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span> <span class="c1">#to locate the mysettings*.py file</span>
+  <span class="nb">print</span><span class="p">(</span><span class="n">FLAGS</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">FLAGS</span><span class="o">.</span><span class="n">debug</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Running in debug mode. Press Enter to continue...&#39;</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">FLAGS</span><span class="o">.</span><span class="n">start_server</span> <span class="ow">is</span> <span class="kc">True</span> <span class="p">:</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;### START TENSORFLOW SERVER MODE ###&#39;</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WARNING, this function expects some libraries to be installed, mostly dedicated to the training processing.&#39;</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&gt; to run tensorflow model server on minimal install run start_model_serving.py&#39;</span><span class="p">)</span>
+
+      <span class="n">usersettings</span><span class="p">,</span> <span class="n">sessionFolder</span> <span class="o">=</span> <span class="n">loadExperimentsSettings</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">model_dir</span><span class="p">,</span><span class="n">SETTINGSFILE_COPY_NAME</span><span class="p">),</span> <span class="n">isServingModel</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+      <span class="c1">#target the served models folder</span>
+      <span class="n">model_folder</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">scripts_WD</span><span class="p">,</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">model_dir</span><span class="p">,</span><span class="s1">&#39;exported_models&#39;</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Considering served model parent directory:&#39;</span><span class="o">+</span><span class="n">model_folder</span><span class="p">)</span>
+      <span class="c1">#check if at least one served model exists in the target models directory</span>
+      <span class="n">stillWait</span><span class="o">=</span><span class="kc">True</span>
+      <span class="k">while</span> <span class="n">stillWait</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Looking for a servable model in &#39;</span><span class="o">+</span><span class="n">model_folder</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+          <span class="c1">#check served model existance</span>
+          <span class="k">if</span> <span class="ow">not</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">model_folder</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;served models directory not found : &#39;</span><span class="o">+</span><span class="n">model_folder</span><span class="p">)</span>
+          <span class="c1">#look for a model in the directory</span>
+          <span class="n">one_model</span><span class="o">=</span><span class="nb">next</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">model_folder</span><span class="p">))[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+          <span class="n">one_model_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">model_folder</span><span class="p">,</span> <span class="n">one_model</span><span class="p">)</span>
+          <span class="k">if</span> <span class="ow">not</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">one_model_path</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;served models directory not found : &#39;</span><span class="o">+</span><span class="n">one_model_path</span><span class="p">)</span>
+          <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Found at least one servable model directory &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">one_model_path</span><span class="p">))</span>
+          <span class="n">stillWait</span><span class="o">=</span><span class="kc">False</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+          <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Could not find servable model, error=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">))</span>
+
+      <span class="n">model_serving_tools</span><span class="o">.</span><span class="n">get_served_model_info</span><span class="p">(</span><span class="n">one_model_path</span><span class="p">,</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
+      <span class="n">tensorflow_start_cmd</span><span class="o">=</span><span class="s2">&quot; --port=</span><span class="si">{port}</span><span class="s2"> --model_name=</span><span class="si">{model}</span><span class="s2"> --model_base_path=</span><span class="si">{model_dir}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">tensorflow_server_port</span><span class="p">,</span>
+                                                                                          <span class="n">model</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span>
+                                                                                          <span class="n">model_dir</span><span class="o">=</span><span class="n">model_folder</span><span class="p">)</span>
+      <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">singularity_tf_server_container_path</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Starting Tensorflow model server from provided singularity container : &#39;</span><span class="o">+</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">singularity_tf_server_container_path</span><span class="p">)</span>
+        <span class="n">tensorflow_start_cmd</span><span class="o">=</span><span class="s1">&#39;singularity run --nv &#39;</span><span class="o">+</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">singularity_tf_server_container_path</span><span class="o">+</span><span class="n">tensorflow_start_cmd</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Starting Tensorflow model server installed on system&#39;</span><span class="p">)</span>
+        <span class="n">tensorflow_start_cmd</span><span class="o">=</span><span class="s1">&#39;tensorflow_model_server &#39;</span><span class="o">+</span><span class="n">tensorflow_start_cmd</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Starting tensorflow server with command :&#39;</span><span class="o">+</span><span class="n">tensorflow_start_cmd</span><span class="p">)</span>
+      <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">tensorflow_start_cmd</span><span class="p">)</span>
+
+  <span class="k">elif</span> <span class="n">FLAGS</span><span class="o">.</span><span class="n">predict</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">FLAGS</span><span class="o">.</span><span class="n">predict_stream</span> <span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;### PREDICT MODE, interacting with a tensorflow server ###&#39;</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)</span><span class="se">\n</span><span class="s1"> to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME&#39;</span><span class="p">)</span>
+
+      <span class="n">usersettings</span><span class="p">,</span> <span class="n">sessionFolder</span> <span class="o">=</span> <span class="n">loadExperimentsSettings</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">model_dir</span><span class="p">,</span><span class="n">SETTINGSFILE_COPY_NAME</span><span class="p">),</span> <span class="n">isServingModel</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+      <span class="c1">#FIXME errors reported on gRPC: https://github.com/grpc/grpc/issues/13752 ... stay tuned, had to install a specific gpio version (pip install grpcio==1.7.3)</span>
+<span class="w">      </span><span class="sd">&#39;&#39;&#39;server_ready=WaitForServerReady(usersettings.tensorflow_server_address, usersettings.tensorflow_server_port)</span>
+<span class="sd">      if server_ready is False:</span>
+<span class="sd">          raise ValueError(&#39;Could not reach tensorflow server&#39;)</span>
+<span class="sd">      &#39;&#39;&#39;</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Prediction mode using model : &#39;</span><span class="o">+</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">model_dir</span><span class="o">+</span><span class="s1">&#39; with model &#39;</span><span class="o">+</span><span class="n">usersettings</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
+
+      <span class="n">predictions_dir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">model_dir</span><span class="p">,</span>
+                              <span class="s1">&#39;predictions_&#39;</span><span class="o">+</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">--%H:%M:%S&quot;</span><span class="p">))</span>
+      <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">predictions_dir</span><span class="p">)</span>
+      <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">predictions_dir</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Current working directory = &#39;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;In case of GRPC errors, check codes at https://developers.google.com/maps-booking/reference/grpc-api/status_codes&#39;</span><span class="p">)</span>
+      <span class="n">do_inference</span><span class="p">(</span>
+                  <span class="n">experiment_settings</span><span class="o">=</span><span class="n">usersettings</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">tensorflow_server_address</span><span class="p">,</span>
+                  <span class="n">port</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">tensorflow_server_port</span><span class="p">,</span>
+                  <span class="n">model_name</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span>
+                  <span class="n">clientIO_InitSpecs</span><span class="o">=</span><span class="p">{},</span>
+                  <span class="n">concurrency</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                  <span class="n">num_tests</span><span class="o">=</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">predict_stream</span><span class="p">,</span>
+                  <span class="n">debug</span><span class="o">=</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">debug</span><span class="p">)</span>
+
+  <span class="k">elif</span> <span class="n">FLAGS</span><span class="o">.</span><span class="n">commands</span> <span class="ow">is</span> <span class="kc">True</span> <span class="p">:</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;Here are some command examples&#39;</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;1. train a model (once the mysettings_1D_experiments.py is set):&#39;</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;-&gt; python experiments_manager.py --usersettings=mysettings_1D_experiments.py&#39;</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;2. start a tensorflow server on the trained/training model :&#39;</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;-&gt; python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53&#39;</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;3. interract with the tensorflow server, sending input buffers and receiving answers&#39;</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;-&gt; python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/&#39;</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;4. restart an interrupted training session&#39;</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;-&gt; python experiments_manager.py --restart_interrupted --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/&#39;</span><span class="p">)</span>
+
+  <span class="k">else</span><span class="p">:</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;### TRAINING MODE, preparing session ###&#39;</span><span class="p">)</span>
+<span class="w">      </span><span class="sd">&quot;&quot;&quot; This mode first prepares a trainin session, different modes possible:</span>
+<span class="sd">      -&gt; in classical centralized learning, this script can :</span>
+<span class="sd">      ------&gt;create and run a new training session in a specific session folder</span>
+<span class="sd">      ------&gt;restart a training session in an existing specific session folder</span>
+<span class="sd">      -&gt; in decentralized learning (as for federated learning):</span>
+<span class="sd">      ------&gt;create the training session folder to be used by the central server</span>
+<span class="sd">             BUT no training is started, only the session folder location is returned</span>
+<span class="sd">      &quot;&quot;&quot;</span>
+<span class="w">      </span><span class="sd">&quot;&quot;&quot; setting up default values from command line &quot;&quot;&quot;</span>
+      <span class="n">settings_file</span><span class="o">=</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">usersettings</span>
+<span class="w">      </span><span class="sd">&quot;&quot;&quot; updating default values if running function from an upper level &quot;&quot;&quot;</span>
+
+      <span class="c1"># manage eventual external custom settings and hyperparameters</span>
+      <span class="n">custom_settings</span><span class="o">=</span><span class="kc">False</span>
+      <span class="k">if</span> <span class="n">train_config_script</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;--&gt; Training from setup file </span><span class="si">{file}</span><span class="s1"> with the following external hyperparameters </span><span class="si">{params}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">train_config_script</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">external_hparams</span><span class="p">))</span>
+        <span class="n">settings_file</span><span class="o">=</span><span class="n">train_config_script</span>
+        <span class="n">custom_settings</span><span class="o">=</span><span class="kc">True</span>
+      <span class="k">if</span> <span class="n">FLAGS</span><span class="o">.</span><span class="n">procID</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">external_hparams</span><span class="p">[</span><span class="s1">&#39;procID&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">procID</span>
+      <span class="k">if</span> <span class="n">FLAGS</span><span class="o">.</span><span class="n">distributed</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">external_hparams</span><span class="p">[</span><span class="s1">&#39;distributed&#39;</span><span class="p">]</span><span class="o">=</span><span class="kc">True</span>
+      <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">external_hparams</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">custom_settings</span><span class="o">=</span><span class="kc">True</span>
+        
+      <span class="k">if</span> <span class="n">custom_settings</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Some custom settings have been specified : training from setup file </span><span class="si">{file}</span><span class="s1"> with the following external hyperparameters </span><span class="si">{params}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">train_config_script</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">external_hparams</span><span class="p">))</span>
+        <span class="n">settings_file</span><span class="o">=</span><span class="n">experiments_settings_surgery</span><span class="o">.</span><span class="n">insert_additionnal_hparams</span><span class="p">(</span><span class="n">settings_file</span><span class="p">,</span> <span class="n">external_hparams</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&gt; created a temporary experiments settings file : &#39;</span><span class="o">+</span><span class="n">settings_file</span><span class="p">)</span>
+
+
+
+      <span class="c1">#loading the experiment setup script</span>
+      <span class="n">usersettings</span><span class="p">,</span> <span class="n">sessionFolder</span> <span class="o">=</span> <span class="n">loadExperimentsSettings</span><span class="p">(</span><span class="n">settings_file</span><span class="p">,</span>
+                                                                        <span class="n">restart_from_sessionFolder</span><span class="o">=</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">model_dir</span><span class="p">,</span>
+                                                                        <span class="n">isServingModel</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+      <span class="c1">#add additionnal hyperparams coming from an optionnal</span>
+      <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">usersettings</span><span class="p">,</span> <span class="s1">&#39;hparams&#39;</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;adding hypermarameters declared from the experiment settings script:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="p">))</span>
+        <span class="c1">#update sessionFolder name string</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">recoverFromCheckpoint</span><span class="p">:</span>
+          <span class="n">sessionFolder_splits</span><span class="o">=</span><span class="n">sessionFolder</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span>
+          <span class="n">sessionFolder_addon</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+          <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">sessionFolder_addon</span><span class="o">+=</span><span class="s1">&#39;_&#39;</span><span class="o">+</span><span class="n">key</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+          <span class="c1">#insert sessionname addons in the original one</span>
+          <span class="n">sessionFolder</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+          <span class="k">for</span> <span class="n">str_</span> <span class="ow">in</span>  <span class="n">sessionFolder_splits</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">sessionFolder</span><span class="o">+=</span><span class="n">str_</span><span class="o">+</span><span class="s1">&#39;_&#39;</span>
+          <span class="n">sessionFolder</span><span class="o">=</span><span class="n">sessionFolder</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="c1">#remove the last &#39;_&#39;</span>
+          <span class="n">sessionFolder</span><span class="o">+=</span><span class="n">sessionFolder_addon</span><span class="o">+</span><span class="s1">&#39;_&#39;</span><span class="o">+</span><span class="n">sessionFolder_splits</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+          <span class="n">usersettings</span><span class="o">.</span><span class="n">sessionFolder</span><span class="o">=</span><span class="n">sessionFolder</span>
+          <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Found hparams: &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="p">))</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No hparams dictionnary found in the experiment settings file&#39;</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Experiment session folder : &#39;</span><span class="o">+</span><span class="n">sessionFolder</span><span class="p">)</span>
+
+      <span class="c1">#deduce the experiments settings copy filename that is versionned in the experiment folder</span>
+      <span class="n">settings_copy_fullpath</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sessionFolder</span><span class="p">,</span> <span class="n">SETTINGSFILE_COPY_NAME</span><span class="p">)</span>
+      <span class="c1">#copy settings and model file to the working folder</span>
+      <span class="k">if</span> <span class="ow">not</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">recoverFromCheckpoint</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">sessionFolder</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">usersettings</span><span class="p">,</span> <span class="s1">&#39;model_file&#39;</span><span class="p">):</span>
+          <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="n">usersettings</span><span class="o">.</span><span class="n">model_file</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sessionFolder</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">usersettings</span><span class="o">.</span><span class="n">model_file</span><span class="p">)))</span>
+        <span class="n">settings_src_file</span><span class="o">=</span><span class="n">settings_file</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Willing to copy </span><span class="si">{src}</span><span class="s1"> to </span><span class="si">{dst}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="n">settings_src_file</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="n">settings_copy_fullpath</span><span class="p">))</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="n">settings_src_file</span><span class="p">,</span> <span class="n">settings_copy_fullpath</span><span class="p">)</span>
+        <span class="c1">#prepare a config file for model serving</span>
+        <span class="n">serving_config</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+        <span class="n">serving_config</span><span class="p">[</span><span class="s1">&#39;SERVER&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;host&#39;</span><span class="p">:</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">tensorflow_server_address</span><span class="p">,</span>
+                              <span class="s1">&#39;port&#39;</span><span class="p">:</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">tensorflow_server_port</span><span class="p">,</span>
+                              <span class="s1">&#39;model_name&#39;</span><span class="p">:</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span>
+                            <span class="p">}</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sessionFolder</span><span class="p">,</span> <span class="s1">&#39;model_serving_setup.ini&#39;</span><span class="p">),</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">configfile</span><span class="p">:</span>
+          <span class="n">serving_config</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">configfile</span><span class="p">)</span>
+        
+      <span class="c1"># now ready to start a training session</span>
+      <span class="c1"># -&gt; for classical/centralised learning, training starts</span>
+      <span class="c1"># -&gt; if this run function is called from start_feerated_server.py script, then sessionFolder is ready but do not start training at this step</span>
+      <span class="k">if</span> <span class="s1">&#39;isFLserver&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">external_hparams</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="c1"># Next keep initial working folder, move to the session folder and run experiment</span>
+        <span class="n">initial_wd</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">sessionFolder</span><span class="p">)</span>
+        <span class="n">res</span><span class="p">,</span> <span class="n">last_exported_model</span><span class="o">=</span><span class="n">run_experiment</span><span class="p">(</span><span class="n">usersettings</span><span class="p">)</span>
+        <span class="c1"># Finally recover initial working directory</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">initial_wd</span><span class="p">)</span>
+        <span class="c1">#refactor result in a single updated dictionnary</span>
+        <span class="n">experiments_output</span><span class="o">=</span><span class="n">res</span>  
+        <span class="n">experiments_output</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;last_exported_model&#39;</span><span class="p">:</span><span class="n">last_exported_model</span><span class="p">,</span> <span class="s1">&#39;sessionFolder&#39;</span><span class="p">:</span><span class="n">sessionFolder</span><span class="p">})</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;SETUP mode, training session folder is prepared and ready to start training.</span><span class="se">\n</span><span class="s1"> No training is started at this step, to be conducted next&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sessionFolder</span>
+  <span class="k">return</span> <span class="n">experiments_output</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+  <span class="n">parser</span><span class="o">=</span><span class="n">get_commands</span><span class="p">()</span>
+  <span class="n">FLAGS</span><span class="o">=</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+  <span class="n">run</span><span class="p">(</span><span class="n">FLAGS</span><span class="p">)</span>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, Alexandre Benoit
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/scripts/furo.js"></script>
+    <script src="../../_static/clipboard.min.js"></script>
+    <script src="../../_static/copybutton.js"></script>
+    </body>
+</html>

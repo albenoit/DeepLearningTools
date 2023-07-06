@@ -1,53 +1,108 @@
-# a set of helpers to experiment with kafka pubsub
-# maes use of tensor serialization/parsing helpers proposed in tensor_msg_io.py
-
+# ========================================
+# FileName: kafka_io.py
+# Date: 29 june 2023 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: A set of helpers to experiment with kafka pubsub, maes use of tensor serialization/parsing helpers proposed in tensor_msg_io.py
+# for DeepLearningTools.
+# =========================================
 '''
-# tested with kafka install and config:
+This module makes use of the tensor serialization/parsing helpers proposed in tensor_msg_io.py.
+
+Usage:
+
+- Install and configure Kafka.
+
+- Start ZooKeeper and Kafka.
+
+- Create a topic named 'demo-pics'.
+
+- Check topic behaviors.
+
+- Delete the 'demo-pics' topic to free up disk space.
+
+- List all available topics on a server.
+
+- Get topic details.
+
+Example commands:
+
+# tested with Kafka install and config:
+
 wget  https://downloads.apache.org/kafka/2.7.1/kafka_2.13-2.7.1.tgz
+
 tar -xzf kafka_2.13-2.7.1.tgz
 
-#-> start zookeeper and kafka
+# Start ZooKeeper and Kafka
+
 ./kafka_2.13-2.7.1/bin/zookeeper-server-start.sh -daemon ./kafka_2.13-2.7.1/config/zookeeper.properties
+
 ./kafka_2.13-2.7.1/bin/kafka-server-start.sh -daemon ./kafka_2.13-2.7.1/config/server.properties
-echo "Waiting for 10 secs until kafka and zookeeper services are up and running"
+
+echo "Waiting for 10 secs until Kafka and ZooKeeper services are up and running"
+
 sleep 10
-#-> create the 'demo-pics' topic
+
+# Create the 'demo-pics' topic
+
 ./kafka_2.13-2.7.1/bin/kafka-topics.sh --create --bootstrap-server 127.0.0.1:9092 --replication-factor 1 --partitions 1 --topic demo-pics
-#-> check topic behaviors
+
+# Check topic behaviors
+
 ./kafka_2.13-2.7.1/bin/kafka-topics.sh --describe --bootstrap-server 127.0.0.1:9092 --topic demo-pics
 
-#-> not forget to delete topic to keep disk space...
+# Delete the 'demo-pics' topic to free up disk space
+
 ./kafka_2.13-2.7.1/bin/kafka-topics.sh  --bootstrap-server 127.0.0.1:9092 --delete --topic demo-pics
 
-#-> list all available topics on a server:
+# List all available topics on a server
+
 ./kafka_2.13-2.7.1/bin/kafka-topics.sh  --list --bootstrap-server 127.0.0.1:9092
 
-#-> get topic details:
+# Get topic details
+
 ./kafka_2.13-2.7.1/bin/kafka-topics.sh  --bootstrap-server=localhost:9092 --describe --topic demo-pics
 '''
+
 import datetime
 import kafka
 try:
   from deeplearningtools.helpers import tensor_msg_io
 except:
   from . import tensor_msg_io
-
 import tensorflow as tf
 import tensorflow_io as tfio
 
 def error_callback(exc):
-    raise Exception('Error while sendig data to kafka: {0}'.format(str(exc)))
+  '''
+  Error callback function for handling exceptions during data sending to Kafka.
 
-# tensorflow message publish
+  This function raises an Exception with the error message.
+
+  :param exc: The exception raised during data sending.
+  :type exc: Exception
+
+  :raises Exception: Raises an Exception with the error message.
+  '''
+  raise Exception('Error while sendig data to kafka: {0}'.format(str(exc)))
+
+# -----------------------------------------
+# Tensorflow message publish
+# -----------------------------------------
 
 class KafkaIO(object):
   def __init__(self, topic_name:str, element_spec, bootstrap_servers=['localhost:9092'], flush_every=20):
     '''
-      setup a kafka connexion to push Tensorflow data samples to
-      topic_name:str, the log queue name to write to
-      element_spec: a tuple (data, label) of tf.Tensorspec (single tensor) or dictionnaries of tf.Tensorspec (multiple named tensors)
-      bootstrap_servers, the list of kafka servers(default is default local)
-      flush_every, an integer that specify the iteration period when data is flushed to kafka 
+    Setup a Kafka connection to push TensorFlow data samples to.
+    
+    :param topic_name: The name of the Kafka topic to write to.
+    :type topic_name: str
+    :param element_spec: A tuple (data, label) of tf.TensorSpec (single tensor) or dictionaries of tf.TensorSpec (multiple named tensors).
+    :param bootstrap_servers: The list of Kafka servers. Defaults to ['localhost:9092'].
+    :type bootstrap_servers: list, optional
+    :param flush_every: The iteration period when data is flushed to Kafka. Defaults to 20.
+    :type flush_every: int, optional
     '''
     self.bootstrap_servers=bootstrap_servers
     self.topic_name=topic_name
@@ -58,7 +113,12 @@ class KafkaIO(object):
     
   def kafka_producer_tf(self, items:tf.Tensor, log:str=None)->None:
     '''
-    Publish tf.tensor sample pairs (tensor, label) in the form of tensorflow.Examples from an iterable (list of tensor tuples, or a dataset (WARNING, each batch will then be a sample) or something similar)
+    Publish TensorFlow tensor sample pairs (tensor, label) in the form of tensorflow.Examples from an iterable (list of tensor tuples, or a dataset) or something similar.
+    
+    :param items: The TensorFlow tensor sample pairs to publish.
+    :type items: tf.Tensor
+    :param log: The path to the log file. Defaults to None.
+    :type log: str, optional
     '''
     producer=kafka.KafkaProducer(bootstrap_servers=self.bootstrap_servers)
 
@@ -108,6 +168,16 @@ class KafkaIO(object):
         f.write(msg)
 
   def kafka_dataset_consumer_tf_basic(self, batch_size:int, shuffle:bool=False)->tfio.IODataset:
+    '''
+    Consume TensorFlow tensor sample pairs (tensor, label) from a Kafka topic and return an IODataset.
+    
+    :param batch_size: The batch size.
+    :type batch_size: int
+    :param shuffle: Whether to shuffle the dataset. Defaults to False.
+    :type shuffle: bool, optional
+    :return: The IODataset containing the consumed data.
+    :rtype: tfio.IODataset
+    '''
     @tf.function
     def decode_kafka_item(item):
       '''
@@ -136,6 +206,18 @@ class KafkaIO(object):
     return ds
 
   def kafka_dataset_consumer_tf_custom(self, features, batch_size:int, shuffle:bool=False)->tfio.IODataset:
+    '''
+    Consume TensorFlow tensor sample pairs (tensor, label) from a Kafka topic and return an IODataset with custom features.
+    
+    :param features: The features to decode.
+    :type features: list
+    :param batch_size: The batch size.
+    :type batch_size: int
+    :param shuffle: Whether to shuffle the dataset. Defaults to False.
+    :type shuffle: bool, optional
+    :return: The IODataset containing the consumed data.
+    :rtype: tfio.IODataset
+    '''
     @tf.function
     def decode_kafka_custom_items(item):
       '''
@@ -168,6 +250,21 @@ class KafkaIO(object):
     return ds
 
   def kafka_dataset_incremental_consumer_tf(self, batch_size:int, shuffle:bool=False)->tfio.IODataset:
+    '''
+    Create an incremental consumer for streaming datasets from Kafka using TensorFlow IODataset.
+
+    Note: This feature is not yet implemented.
+
+    Args:
+        batch_size (int): The batch size for the dataset.
+        shuffle (bool): Whether to shuffle the dataset.
+
+    Returns:
+        tfio.IODataset: The incremental consumer dataset.
+
+    Raises:
+        NotImplementedError: Streaming datasets are not yet implemented.
+    '''
     raise NotImplementedError('Streaming datasets not already implemented')
     online_train_ds = tfio.experimental.streaming.KafkaBatchIODataset(self.topic_name,
                                           partition=0,
@@ -183,45 +280,41 @@ class KafkaIO(object):
      
 #test code
 if __name__ == "__main__":
-	import cv2
-	# tensorflow kafka demo
-	#-> get demo images
-	kafka_topic='demo-pics'
-	from sklearn.datasets import load_sample_images
-	dataset = load_sample_images()
-	#print('demo images', dataset.images)
-	images_tf_orig=tf.constant(dataset.images, dtype=tf.uint8)
-	images_labels_orig=tf.constant(dataset.filenames, dtype=tf.string)
-	print('original dataset shapes : ',images_tf_orig.shape)
-	images_tf=tf.expand_dims(images_tf_orig, 1)
-	images_labels=tf.expand_dims(images_labels_orig, 1)
-	print('EXPECTED dataset shapes : ',images_tf.shape)
-	print('images_tf', images_tf)
-	demo_dataset = zip(images_tf, images_labels) # -> keep the 'key,', 'value' order to comply with the API
-	#-> publish dataset to kafka
-	datasample_spec=(tf.TensorSpec(shape=(1, 427, 640, 3), dtype=tf.uint8, name=None), tf.TensorSpec(shape=(), dtype=tf.string, name=None) )
-	kafka_writer=KafkaIO(topic_name='demo_pics', element_spec=datasample_spec)
-	kafka_writer.kafka_producer_tf(demo_dataset)
-	#->read and display dataset samples
-	kafka_reader=KafkaIO(topic_name='demo_pics', element_spec=datasample_spec)
-	dataset_kclient=kafka_reader.kafka_dataset_consumer_tf_basic(batch_size=1)
-	
-	for id, sample in enumerate(dataset_kclient):
-	  print('sample ', id, ': value, key shapes=', sample[0].shape, sample[1].shape)
-	  cv2.imshow(str(sample[1][0].numpy()), cv2.cvtColor(sample[0][0].numpy(), cv2.COLOR_RGB2BGR))
-
-	cv2.waitKey()
-
-	
+  import cv2
+  # tensorflow kafka demo
+  #-> get demo images
+  kafka_topic='demo-pics'
+  from sklearn.datasets import load_sample_images
+  dataset = load_sample_images()
+  #print('demo images', dataset.images)
+  images_tf_orig=tf.constant(dataset.images, dtype=tf.uint8)
+  images_labels_orig=tf.constant(dataset.filenames, dtype=tf.string)
+  print('original dataset shapes : ',images_tf_orig.shape)
+  images_tf=tf.expand_dims(images_tf_orig, 1)
+  images_labels=tf.expand_dims(images_labels_orig, 1)
+  print('EXPECTED dataset shapes : ',images_tf.shape)
+  print('images_tf', images_tf)
+  demo_dataset = zip(images_tf, images_labels) # -> keep the 'key,', 'value' order to comply with the API
+  #-> publish dataset to kafka
+  datasample_spec=(tf.TensorSpec(shape=(1, 427, 640, 3), dtype=tf.uint8, name=None), tf.TensorSpec(shape=(), dtype=tf.string, name=None) )
+  kafka_writer=KafkaIO(topic_name='demo_pics', element_spec=datasample_spec)
+  kafka_writer.kafka_producer_tf(demo_dataset)
+  #->read and display dataset samples
+  kafka_reader=KafkaIO(topic_name='demo_pics', element_spec=datasample_spec)
+  dataset_kclient=kafka_reader.kafka_dataset_consumer_tf_basic(batch_size=1)
+  
+  for id, sample in enumerate(dataset_kclient):
+    print('sample ', id, ': value, key shapes=', sample[0].shape, sample[1].shape)
+    cv2.imshow(str(sample[1][0].numpy()), cv2.cvtColor(sample[0][0].numpy(), cv2.COLOR_RGB2BGR))
+  cv2.waitKey()
+  
   # example of a custom pipeline test:
-	datasample_spec=(tf.TensorSpec(shape=(1, 512, 512, 3), dtype=tf.uint8, name=None), tf.TensorSpec((1, 357, 357,1), dtype=tf.uint8, name=None) )
-	kafka_reader_check=KafkaIO(topic_name='Cityscapes_hardnetmsegtrials0train', bootstrap_servers=['127.0.0.1:9092'] , element_spec=datasample_spec)#192.168.2.148:9092
-	dataset_kclient_check=kafka_reader_check.kafka_dataset_consumer_tf_basic(batch_size=1)
-	
-	for id, sample in enumerate(dataset_kclient_check):
-	  print('sample ', id, ': value, key shapes=', sample[0].shape, sample[1].shape)
-	  cv2.imshow('sample'+str(id), cv2.cvtColor(sample[0][0].numpy(), cv2.COLOR_RGB2BGR))
-	  cv2.imshow('label'+str(id), sample[1][0,:,:,0].numpy()*7)
-	  cv2.waitKey()
-	
-
+  datasample_spec=(tf.TensorSpec(shape=(1, 512, 512, 3), dtype=tf.uint8, name=None), tf.TensorSpec((1, 357, 357,1), dtype=tf.uint8, name=None) )
+  kafka_reader_check=KafkaIO(topic_name='Cityscapes_hardnetmsegtrials0train', bootstrap_servers=['127.0.0.1:9092'] , element_spec=datasample_spec)#192.168.2.148:9092
+  dataset_kclient_check=kafka_reader_check.kafka_dataset_consumer_tf_basic(batch_size=1)
+  
+  for id, sample in enumerate(dataset_kclient_check):
+    print('sample ', id, ': value, key shapes=', sample[0].shape, sample[1].shape)
+    cv2.imshow('sample'+str(id), cv2.cvtColor(sample[0][0].numpy(), cv2.COLOR_RGB2BGR))
+    cv2.imshow('label'+str(id), sample[1][0,:,:,0].numpy()*7)
+    cv2.waitKey()

@@ -106,8 +106,10 @@ def get_semantic_contours(reference_crop):
     contours = DataProvider_input_pipeline.convert_semanticMap_contourMap(formatted_reference_crop)
     return contours
 
-#######################################################################
-### Optionnal samples recording setup (check here:https://www.tensorflow.org/api_docs/python/tf/io/TFRecordWriter?version=nightly)
+#-------------------------------------------------------------------------------------------------------------------------------------------
+# Optionnal samples recording setup (check here:https://www.tensorflow.org/api_docs/python/tf/io/TFRecordWriter?version=nightly)
+#-------------------------------------------------------------------------------------------------------------------------------------------
+
 def _bytes_feature(value):
   """Returns a bytes_list from a string / byte."""
   if isinstance(value, type(tf.constant(0))):

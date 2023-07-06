@@ -1,5 +1,14 @@
 .idea
 
+# Docs and some cache folders
+.cache
+.config
+.flwr
+.keras
+tmp/
+experiments/
+docs/help_docs.txt
+
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
 # Byte-compiled / optimized / DLL files

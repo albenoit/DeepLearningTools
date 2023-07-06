@@ -1,0 +1,537 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" />
+
+    <link rel="shortcut icon" href="../../_static/logo_listic.png"/><!-- Generated with Sphinx 6.2.1 and Furo 2023.05.20 -->
+        <title>deeplearningtools.start_federated_server - DeepLearningTools 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #2E3440;
+  --color-code-foreground: #d8dee9;
+  --font-stack: Roboto, sans-serif;
+  --font-stack--monospace: Open Sans, monospace;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<div class="announcement">
+  <aside class="announcement-content">
+     <em>Deeplearningtools is currently in development.</em> 
+  </aside>
+</div>
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">DeepLearningTools 0.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="../../_static/main_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="../../_static/main_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">DeepLearningTools 0.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example.html">Examples and demonstrations</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../reference.html">Reference manual</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Reference manual</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../reference_index.html">DeepLearningTools package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of DeepLearningTools package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../main_script.html">Main subpackage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../unit_test.html">Test script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference_helpers.html">deeplearningtools.helpers subpackage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference_tools.html">deeplearningtools.tools subpackage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute.html">Community involvement and contributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../version.html">Release notes</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <h1>Source code for deeplearningtools.start_federated_server</h1><div class="highlight"><pre>
+<span></span><span class="c1"># ========================================</span>
+<span class="c1"># FileName: start_kafka_producer.py</span>
+<span class="c1"># Date: 29 june 2020 - 08:00</span>
+<span class="c1"># Author: Alexandre Benoit</span>
+<span class="c1"># Email: alexandre.benoit@univ-smb.fr</span>
+<span class="c1"># GitHub: https://github.com/albenoit/DeepLearningTools</span>
+<span class="c1"># Brief: A set of functionnalities to start a federated server</span>
+<span class="c1"># for DeepLearningTools.</span>
+<span class="c1"># =========================================</span>
+<span class="c1"># main parameter server, should be started first</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">importlib</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">import</span> <span class="nn">flwr</span> <span class="k">as</span> <span class="nn">fl</span>
+<span class="kn">from</span> <span class="nn">flwr.common</span> <span class="kn">import</span> <span class="n">NDArrays</span><span class="p">,</span> <span class="n">Scalar</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">deeplearningtools</span>
+<span class="kn">from</span> <span class="nn">deeplearningtools</span> <span class="kn">import</span> <span class="n">experiments_manager</span> <span class="c1"># make use of all the standard tools of the framework</span>
+<span class="kn">from</span> <span class="nn">deeplearningtools</span> <span class="kn">import</span> <span class="n">tools</span>
+
+<span class="k">global</span> <span class="n">monitored_value_threshold</span> <span class="c1"># monitored discrepancy value (loss or other) used to trigger logging on better model</span>
+
+<div class="viewcode-block" id="get_commands"><a class="viewcode-back" href="../../main_script.html#deeplearningtools.start_federated_server.get_commands">[docs]</a><span class="k">def</span> <span class="nf">get_commands</span><span class="p">():</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Defines the command line argument parser dedicated to running session.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="c1"># retreive command line arguents, all the standard commands </span>
+  <span class="n">parser</span><span class="o">=</span><span class="n">tools</span><span class="o">.</span><span class="n">command_line_parser</span><span class="o">.</span><span class="n">get_commands</span><span class="p">()</span>
+  <span class="c1"># add script specific arguments</span>
+  <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-w&quot;</span><span class="p">,</span><span class="s2">&quot;--pretrainedmodelcheckpointpath&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                      <span class="n">help</span><span class="o">=</span><span class="s2">&quot;path to a previous model checkpoint that provides pretrained model weights&quot;</span><span class="p">)</span>
+  <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-rounds&quot;</span><span class="p">,</span><span class="s2">&quot;--num_rounds&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                      <span class="n">help</span><span class="o">=</span><span class="s2">&quot;set the maximum clients/server rounds number, defaults is 20&quot;</span><span class="p">)</span>
+  <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-agr&quot;</span><span class="p">,</span><span class="s2">&quot;--agregation&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+                      <span class="n">help</span><span class="o">=</span><span class="s2">&quot;override server agregation method, string is case sensitive, must target one of the FLower lib methods or one within this library, or leave empty to use the one specified in the experiment setting file&quot;</span><span class="p">)</span>
+  <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-minCl&quot;</span><span class="p">,</span><span class="s2">&quot;--min_available_clients&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                      <span class="n">help</span><span class="o">=</span><span class="s2">&quot;override the minimum number of available clients to allow for a federated session run, default&lt;0 such that the value specified in the settings file is used, set &gt;0 to use your own spec.&quot;</span><span class="p">)</span>
+  <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-minFit&quot;</span><span class="p">,</span><span class="s2">&quot;--min_fit_clients&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                      <span class="n">help</span><span class="o">=</span><span class="s2">&quot;override the minimum number of available clients to allow for a single federated round run, default&lt;0 such that the value specified in the settings file is used, set &gt;0 to use your own spec.&quot;</span><span class="p">)</span>
+  <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-minEval&quot;</span><span class="p">,</span><span class="s2">&quot;--min_eval_clients&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                      <span class="n">help</span><span class="o">=</span><span class="s2">&quot;override the minimum number of clients required to run a single evaluation process, default&lt;0 such that the value specified in the settings file is used, set &gt;0 to use your own spec.&quot;</span><span class="p">)</span>
+  <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-locEpoch&quot;</span><span class="p">,</span><span class="s2">&quot;--local_epochs&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                      <span class="n">help</span><span class="o">=</span><span class="s2">&quot;override the number of epochs each client perform required to run a single round, default=0 such that the value replaces the one specified in the settings file generally used for centralized learning.&quot;</span><span class="p">)</span>
+  <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;-sim&quot;</span><span class="p">,</span><span class="s2">&quot;--simulation&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span>
+                      <span class="n">help</span><span class="o">=</span><span class="s2">&quot;run in simulation mode i.e. all processes are conducted on the same shared machine&quot;</span><span class="p">)</span>
+  
+  <span class="c1">#get framework and local command line arguments</span>
+  <span class="k">return</span> <span class="n">parser</span></div>
+
+<div class="viewcode-block" id="get_custom_strategy"><a class="viewcode-back" href="../../main_script.html#deeplearningtools.start_federated_server.get_custom_strategy">[docs]</a><span class="k">def</span> <span class="nf">get_custom_strategy</span><span class="p">(</span><span class="n">strategy_name</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Retrieve a custom strategy class based on the strategy_name.</span>
+
+<span class="sd">  :param strategy_name: Name of the strategy.</span>
+<span class="sd">  :type strategy_name: str</span>
+
+<span class="sd">  :return: The custom strategy class.</span>
+<span class="sd">  :rtype: str</span>
+
+<span class="sd">  :raises ValueError: If the strategy fails to load.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">strategy_cl</span><span class="o">=</span><span class="kc">None</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Trying to load stategy from standard Flower strategies:&#39;</span><span class="p">,</span> <span class="n">strategy_name</span><span class="p">)</span>
+  <span class="k">try</span><span class="p">:</span>
+    <span class="n">strategy_module</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">fl</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">strategy</span><span class="p">,</span> <span class="n">strategy_name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+    <span class="n">strategy_cl</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">strategy_module</span><span class="p">,</span> <span class="n">strategy_name</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Found &#39;</span><span class="p">,</span> <span class="n">strategy_cl</span><span class="p">)</span>
+  <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Chosen strategy is not part of fl.server.strategy =&gt; Attempting to load custom strategy from deeplearningtools.helpers.federated.&#39;</span><span class="p">,</span> <span class="n">strategy_name</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+      <span class="n">strategy_module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="s1">&#39;deeplearningtools.helpers.federated.&#39;</span><span class="o">+</span><span class="n">strategy_name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+      <span class="n">strategy_cl</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">strategy_module</span><span class="p">,</span> <span class="n">strategy_name</span><span class="p">)</span>      
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;start_federated_server:strategy_cl: Failed to load strategy </span><span class="si">{s}</span><span class="s1">, error message=</span><span class="si">{err}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="o">=</span><span class="n">strategy_name</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="n">e</span><span class="p">))</span>
+    
+  <span class="k">return</span> <span class="n">strategy_cl</span></div>
+
+<div class="viewcode-block" id="get_evaluate_fn"><a class="viewcode-back" href="../../main_script.html#deeplearningtools.start_federated_server.get_evaluate_fn">[docs]</a><span class="k">def</span> <span class="nf">get_evaluate_fn</span><span class="p">(</span><span class="n">usersettings</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">val_data</span><span class="p">,</span> <span class="n">file_writer</span><span class="p">,</span> <span class="n">log_dir</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return evaluation metrics results for server-side evaluation.</span>
+
+<span class="sd">    Reference: inspired from https://flower.dev/docs/evaluation.html</span>
+
+<span class="sd">    :param usersettings: User settings for the evaluation function.</span>
+<span class="sd">    :type usersettings: object</span>
+<span class="sd">    :param model: The model to be evaluated.</span>
+<span class="sd">    :type model: keras.Model</span>
+<span class="sd">    :param val_data: Validation data for evaluation.</span>
+<span class="sd">    :type val_data: dict</span>
+<span class="sd">    :param file_writer: File writer for logging into tensorBoard.</span>
+<span class="sd">    :type file_writer: object tf.summary.FileWriter</span>
+<span class="sd">    :param log_dir: Directory for logging.</span>
+<span class="sd">    :type log_dir: str</span>
+
+<span class="sd">    :return: The evaluation metrics result for each out.</span>
+<span class="sd">    :rtype: tuple</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># The `evaluate` function will be called after every round</span>
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span>
+        <span class="n">server_round</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">parameters</span><span class="p">:</span> <span class="n">NDArrays</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Scalar</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Scalar</span><span class="p">]]]:</span>
+        <span class="k">global</span> <span class="n">monitored_value_threshold</span>
+        <span class="c1">#recover fresh callbacks</span>
+        <span class="n">all_callbacks_dict</span><span class="o">=</span><span class="n">deeplearningtools</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">define_callbacks</span><span class="p">(</span><span class="n">usersettings</span><span class="o">=</span><span class="n">usersettings</span><span class="p">,</span>
+                                                                          <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+                                                                          <span class="n">train_iterations_per_epoch</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="c1">#not useful in that use case</span>
+                                                                          <span class="n">file_writer</span><span class="o">=</span><span class="n">file_writer</span><span class="p">,</span>
+                                                                          <span class="n">log_dir</span><span class="o">=</span><span class="n">log_dir</span><span class="p">,</span>
+                                                                          <span class="n">previous_model_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                                                          <span class="n">custom_callbacks</span><span class="o">=</span><span class="p">{},</span>
+                                                                          <span class="n">initial_value_threshold</span><span class="o">=</span><span class="n">monitored_value_threshold</span><span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">set_weights</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span>  <span class="c1"># Update model with the latest parameters</span>
+        <span class="n">res_raw</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">val_data</span><span class="p">[</span><span class="s1">&#39;data_pipeline&#39;</span><span class="p">],</span>
+                                       <span class="n">steps</span><span class="o">=</span><span class="n">val_data</span><span class="p">[</span><span class="s1">&#39;steps_per_epoch&#39;</span><span class="p">],</span>
+                                       <span class="n">callbacks</span><span class="o">=</span><span class="n">all_callbacks_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="c1">#model.on_epoch_end(epoch=round)</span>
+        <span class="c1">#workaround related to https://github.com/keras-team/keras/issues/14045</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;reformating evaluation results, expecting metrics:&#39;</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">metrics_names</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="n">out</span><span class="p">:</span> <span class="n">res_raw</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">out</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">metrics_names</span><span class="p">)}</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;metrics&#39;</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">],</span> <span class="n">result</span>
+
+    <span class="k">return</span> <span class="n">evaluate</span></div>
+
+<div class="viewcode-block" id="run"><a class="viewcode-back" href="../../main_script.html#deeplearningtools.start_federated_server.run">[docs]</a><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="n">FLAGS</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Run the federated learning server.</span>
+
+<span class="sd">  :param FLAGS: Command line arguments and flags.</span>
+<span class="sd">  :type FLAGS: object</span>
+
+<span class="sd">  :return: The result of the server run.</span>
+<span class="sd">  :rtype: object</span>
+
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">global</span> <span class="n">monitored_value_threshold</span>
+  <span class="n">monitored_value_threshold</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span> <span class="c1"># indicator that triggers model checkpointing initially set to maximum value </span>
+  <span class="c1">#get experiment settings filename path</span>
+  <span class="n">usersettings_file</span><span class="o">=</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">usersettings</span>
+  <span class="c1">#load experiments settings, add eventual command line parameters andforce server mode to only prepare a session folder from which the server can report its states</span>
+  <span class="n">param_addons</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;isFLserver&#39;</span><span class="p">:</span><span class="kc">True</span><span class="p">}</span>
+  <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">agregation</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+    <span class="n">param_addons</span><span class="p">[</span><span class="s1">&#39;federated&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">agregation</span>
+  <span class="k">if</span> <span class="n">FLAGS</span><span class="o">.</span><span class="n">min_available_clients</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+    <span class="n">param_addons</span><span class="p">[</span><span class="s1">&#39;minCl&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">min_available_clients</span>
+  <span class="k">if</span> <span class="n">FLAGS</span><span class="o">.</span><span class="n">min_fit_clients</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+    <span class="n">param_addons</span><span class="p">[</span><span class="s1">&#39;minFit&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">min_fit_clients</span>
+  <span class="k">if</span> <span class="n">FLAGS</span><span class="o">.</span><span class="n">min_eval_clients</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+    <span class="n">param_addons</span><span class="p">[</span><span class="s1">&#39;minEval&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">min_eval_clients</span>
+  <span class="k">if</span> <span class="n">FLAGS</span><span class="o">.</span><span class="n">local_epochs</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+    <span class="n">param_addons</span><span class="p">[</span><span class="s1">&#39;nbEpoch&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">local_epochs</span>
+
+  <span class="n">job_session_folder</span> <span class="o">=</span> <span class="n">experiments_manager</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">FLAGS</span><span class="p">,</span> <span class="n">train_config_script</span><span class="o">=</span><span class="n">usersettings_file</span><span class="p">,</span> <span class="n">external_hparams</span><span class="o">=</span><span class="n">param_addons</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;job_session_folder&#39;</span><span class="p">,</span> <span class="n">job_session_folder</span><span class="p">)</span>
+  <span class="c1"># Next keep initial working folder, move to the session folder and run experiment such that :</span>
+  <span class="c1"># -&gt; the current settings file can be loaded is necessary</span>
+  <span class="c1"># -&gt; any file writen in the process in os.getcwd() is kept in the experiment folder</span>
+  <span class="n">initial_wd</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+  <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">job_session_folder</span><span class="p">)</span>
+  <span class="c1">#load a model ready for training and more especially evaluation on the server side</span>
+  <span class="n">usersettings</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">train_data</span><span class="p">,</span> <span class="n">val_data</span><span class="p">,</span> <span class="n">file_writer</span> <span class="o">=</span> <span class="n">experiments_manager</span><span class="o">.</span><span class="n">build_run_training_session</span><span class="p">()</span>
+  <span class="n">strategy_name</span><span class="o">=</span><span class="kc">None</span>
+  <span class="k">if</span> <span class="s1">&#39;federated&#39;</span> <span class="ow">in</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="p">:</span>
+    <span class="n">strategy_name</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="p">[</span><span class="s1">&#39;federated&#39;</span><span class="p">]</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Experiment settings does not specify the federated agregation method (hparams[</span><span class="se">\&#39;</span><span class="s1">federated</span><span class="se">\&#39;</span><span class="s1">]&#39;</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="s1">&#39;minCl&#39;</span> <span class="ow">in</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="p">:</span>
+    <span class="n">min_available_clients</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="p">[</span><span class="s1">&#39;minCl&#39;</span><span class="p">]</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Experiment settings does not specify the minimum number of clients (hparams[</span><span class="se">\&#39;</span><span class="s1">minCl</span><span class="se">\&#39;</span><span class="s1">]&#39;</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="s1">&#39;minFit&#39;</span> <span class="ow">in</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="p">:</span>
+    <span class="n">min_fit_clients</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="p">[</span><span class="s1">&#39;minFit&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">min_fit_clients</span><span class="o">&gt;</span><span class="n">min_available_clients</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;min_fit_clients must be lower than or equal to min_available_clients, check parameters&#39;</span><span class="p">)</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Experiment settings does not specify the minimum number of fitted clients (hparams[</span><span class="se">\&#39;</span><span class="s1">minFit</span><span class="se">\&#39;</span><span class="s1">]&#39;</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="s1">&#39;minEval&#39;</span> <span class="ow">in</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="p">:</span>
+    <span class="n">min_eval_clients</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="p">[</span><span class="s1">&#39;minEval&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">min_eval_clients</span><span class="o">&gt;</span><span class="n">min_available_clients</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;min_eval_clients must be lower than or equal to min_available_clients, check parameters&#39;</span><span class="p">)</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="n">min_eval_clients</span><span class="o">=</span><span class="n">min_fit_clients</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Experiment settings does not specify the minimum number of evaluated clients (hparams[</span><span class="se">\&#39;</span><span class="s1">minEval</span><span class="se">\&#39;</span><span class="s1">] -&gt; automatically set to the min_fit_clients value&#39;</span><span class="p">)</span>
+  
+  <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">pretrainedmodelcheckpointpath</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;centralized model is pretrained... loading from &#39;</span><span class="p">,</span> <span class="n">FLAGS</span><span class="o">.</span><span class="n">pretrainedmodelcheckpointpath</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">helpers.model</span> <span class="kn">import</span> <span class="n">load_model</span>
+    <span class="n">model_pretrained</span><span class="o">=</span><span class="n">load_model</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">pretrainedmodelcheckpointpath</span><span class="p">,</span><span class="s1">&#39;checkpoints/&#39;</span><span class="p">),</span> <span class="n">usersettings</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">set_weights</span><span class="p">(</span><span class="n">model_pretrained</span><span class="o">.</span><span class="n">get_weights</span><span class="p">())</span>
+
+  <span class="c1">#load model as will be done by the clients taking into account the experiment settings</span>
+  <span class="c1">#model, callbacks = experiments_manager.build_run_training_session()</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  REMINDER from https://flower.dev/docs/strategies.html: </span>
+<span class="sd">  import flwr as fl</span>
+
+<span class="sd">  strategy = fl.server.strategy.FedAvg(</span>
+<span class="sd">      fraction_fit=0.1,  # Sample 10% of available clients for the next round</span>
+<span class="sd">      min_fit_clients=10,  # Minimum number of clients to be sampled for the next round</span>
+<span class="sd">      min_available_clients=80,  # Minimum number of clients that need to be connected to the server before a training round can start</span>
+<span class="sd">  )</span>
+<span class="sd">  fl.server.start_server(config={&quot;num_rounds&quot;: 3}, strategy=strategy)</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="c1">#first create or load a default model (the initialization of the weights that will be distributed to each client)</span>
+  <span class="c1">#get the init central model parameters to be distributed to each clients</span>
+  <span class="n">init_params</span><span class="o">=</span><span class="n">fl</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">ndarrays_to_parameters</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">get_weights</span><span class="p">())</span>
+
+  <span class="c1">#prepare the evaluation function on the server side</span>
+  <span class="n">eval_fn</span><span class="o">=</span><span class="n">get_evaluate_fn</span><span class="p">(</span><span class="n">usersettings</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">val_data</span><span class="p">,</span> <span class="n">file_writer</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="s2">&quot;logs&quot;</span><span class="p">))</span>
+
+  <span class="c1">#then apply the specified agregation strategy</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Experiment settings file reports federated learning strategy:&#39;</span><span class="p">,</span> <span class="n">strategy_name</span><span class="p">)</span>
+  <span class="n">strategy_cl</span> <span class="o">=</span> <span class="n">get_custom_strategy</span><span class="p">(</span><span class="n">strategy_name</span><span class="p">)</span>
+  <span class="n">strategy</span><span class="o">=</span><span class="n">strategy_cl</span><span class="p">(</span><span class="n">initial_parameters</span><span class="o">=</span><span class="n">init_params</span><span class="p">,</span> <span class="n">min_fit_clients</span><span class="o">=</span><span class="n">min_fit_clients</span><span class="p">,</span> <span class="n">min_evaluate_clients</span><span class="o">=</span><span class="n">min_eval_clients</span><span class="p">,</span> <span class="n">min_available_clients</span><span class="o">=</span><span class="n">min_available_clients</span><span class="p">,</span> <span class="n">evaluate_fn</span><span class="o">=</span><span class="n">eval_fn</span><span class="p">)</span> 
+  
+
+  <span class="c1">#finally run server in real or simulation mode</span>
+  <span class="k">if</span> <span class="n">FLAGS</span><span class="o">.</span><span class="n">simulation</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Federated Learning session starts with REAL clients, CHECK DISTRIBUTED RESSOURCES availability and load&#39;</span><span class="p">)</span>
+    <span class="n">result</span><span class="o">=</span><span class="n">fl</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">start_server</span><span class="p">(</span><span class="n">server_address</span><span class="o">=</span><span class="s2">&quot;localhost:8080&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">fl</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">ServerConfig</span><span class="p">(</span><span class="n">num_rounds</span><span class="o">=</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">num_rounds</span><span class="p">),</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">)</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Federated Learning session starts with SIMULATED clients, SINGLE MACHINE MODE, check machine load&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;--&gt; have a look at logs at /tmp/ray/session_latest/logs/&#39;</span><span class="p">)</span>
+    <span class="kn">import</span> <span class="nn">ray</span>
+    <span class="n">ray</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+    <span class="n">ressources</span> <span class="o">=</span> <span class="n">ray</span><span class="o">.</span><span class="n">available_resources</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;INFO : available ressources reported by ray: &#39;</span><span class="p">,</span> <span class="n">ressources</span><span class="p">)</span>
+    <span class="n">client_training_fn</span><span class="o">=</span><span class="n">experiments_manager</span><span class="o">.</span><span class="n">build_run_training_session</span>
+    <span class="c1"># before starting simulation, help local modules to be loaded properly</span>
+    <span class="c1"># on the ray client side by adding them a __path__ property to mke them loadable  </span>
+    <span class="n">deeplearningtools</span><span class="o">.</span><span class="n">__path__</span><span class="o">=</span><span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">initial_wd</span><span class="p">,</span> <span class="s1">&#39;deeplearningtools&#39;</span><span class="p">)]</span>
+    
+    <span class="c1">#setup ray server config:</span>
+    <span class="n">ray_server_config</span><span class="o">=</span><span class="p">{</span>
+              <span class="s2">&quot;ignore_reinit_error&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="c1">#default arg</span>
+              <span class="s2">&quot;include_dashboard&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="c1"># default is False but you may need this for tracking</span>
+              <span class="c1">#&quot;_temp_dir&quot;:job_session_folder+&quot;/ray&quot;,</span>
+              <span class="s2">&quot;num_cpus&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+              <span class="s2">&quot;num_gpus&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+              <span class="c1">#&quot;_memory&quot;: 16000 * 1024 * 1024,#16Gb</span>
+              <span class="s2">&quot;runtime_env&quot;</span><span class="p">:{</span> <span class="s2">&quot;working_dir&quot;</span><span class="p">:</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">initial_wd</span><span class="p">,</span><span class="n">job_session_folder</span><span class="p">),</span>
+                              <span class="s2">&quot;py_modules&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">deeplearningtools</span><span class="p">],</span>                          
+                            <span class="p">}</span>
+    <span class="p">}</span>
+      <span class="c1"># The argument below is new</span>
+    <span class="n">client_resources</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;num_cpus&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s2">&quot;num_gpus&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="c1"># start simulation           </span>
+    <span class="n">result</span><span class="o">=</span><span class="n">fl</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">start_simulation</span><span class="p">(</span>
+      <span class="n">client_fn</span><span class="o">=</span><span class="n">client_training_fn</span><span class="p">,</span>
+      <span class="n">num_clients</span><span class="o">=</span><span class="n">min_available_clients</span><span class="p">,</span>
+      <span class="n">config</span><span class="o">=</span><span class="n">fl</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">ServerConfig</span><span class="p">(</span><span class="n">num_rounds</span><span class="o">=</span><span class="n">FLAGS</span><span class="o">.</span><span class="n">num_rounds</span><span class="p">),</span>
+      <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span>
+      <span class="n">ray_init_args</span><span class="o">=</span><span class="n">ray_server_config</span>
+    <span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">symlink</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="s2">&quot;/tmp/ray/session_latest/&quot;</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="s1">&#39;ray_logs&#39;</span><span class="p">))</span>
+
+  <span class="c1">#end of the job, recover initial working directory</span>
+  <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">initial_wd</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">result</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+  <span class="c1"># Make TensorFlow logs less verbose</span>
+  <span class="c1">#os.environ[&quot;TF_CPP_MIN_LOG_LEVEL&quot;] = &quot;3&quot;</span>
+
+  <span class="c1"># retreive command line arguents</span>
+  <span class="n">parser</span> <span class="o">=</span> <span class="n">get_commands</span><span class="p">()</span>
+  <span class="n">FLAGS</span><span class="o">=</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+  <span class="n">run</span><span class="p">(</span><span class="n">FLAGS</span><span class="p">)</span>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, Alexandre Benoit
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/scripts/furo.js"></script>
+    <script src="../../_static/clipboard.min.js"></script>
+    <script src="../../_static/copybutton.js"></script>
+    </body>
+</html>

@@ -1,6 +1,13 @@
-''' a basic script that tries to start each of the demo scripts
-TODO:move to unit testing with pytest
-'''
+# ========================================
+# FileName: test_framework.py
+# Date: 29 june 2023 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: A basic script that tries to start each of the demo scripts
+# for DeepLearningTools.
+#TODO:move to unit testing with pytest
+# =========================================
 
 import pytest
 import tensorflow as tf
@@ -102,4 +109,4 @@ if __name__ == "__main__":
   test_timeseries()
   test_classification()
   test_basic_1Dembedding()
-
+  print("END")

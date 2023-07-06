@@ -1,5 +1,13 @@
+# ========================================
+# FileName: start_kafka_producer.py
+# Date: 29 june 2020 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: A set of tools to help running a kafka log server
+# for DeepLearningTools.
+# =========================================
 """
-
 Standardized script that loads an experiment in order to use the 'get_input_pipeline' function as a data provider to a kafka log queue
 
 use example:
@@ -31,6 +39,7 @@ sleep 10
 
 # LOGS LOCATION : by default, queues/logs are stored here : /tmp/kafka-logs
 """
+
 import argparse
 import numpy as np
 
@@ -42,7 +51,9 @@ import deeplearningtools.tools.experiments_settings_surgery
 DEFAULT_LOG_QUEUE_NAME='default_queue'
 
 def get_commands():
-    ''' defines the command line argument parser dedicated to this script'''
+    """
+    Defines the command line argument parser dedicated to the running session.
+    """
     argparser = argparse.ArgumentParser(description='Data producer to Kafka that makes use of DeepLearningTools experiments input data pipelines')
     argparser.add_argument("-u","--usersettings",
                         help="filename of the settings file that defines an experiment")
@@ -62,11 +73,12 @@ def get_commands():
     return argparser
 
 def run(commands):
-    ''' main function that applies runs kafka library to push/read data to/from a kafka server
-    Args:
-        commands: the decoded expected flags defined in the get_commands() function defined in this script
+    """
+    Main function that applies runs kafka library to push/read data to/from a kafka server.
+    
+    :param commands: The decoded expected flags defined in the get_commands() function.
          
-     '''
+    """
     #get experiment settings filename path
     settings_file=commands.usersettings
 
@@ -133,8 +145,6 @@ def run(commands):
             print('### KAFKA sample:', id)
             print('sample:',sample)
         print('Read all the dataset with number of samples:', id)
-        
-
 
 if __name__ == "__main__":
 

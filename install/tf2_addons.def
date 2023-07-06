@@ -16,13 +16,11 @@ From: tensorflow/tensorflow:2.11.0-gpu-jupyter
     apt-get -qq  install -y python3-pip
     apt-get -qq  install -y gstreamer1.0-opencv libopencv-contrib-dev python3-opencv
     python3 -m pip install openpyxl
-    python3 -m pip install fairness_indicators
     python3 -m pip install aequitas
     python3 -m pip install pytest pytest-cov
     python3 -m pip install flask
     python3 -m pip install sqlalchemy Flask-SQLAlchemy
     python3 -m pip install -U tensorboard_plugin_profile
-    python3 -m pip install tensorboard-plugin-fairness-indicators
     python3 -m pip install redis
     python3 -m pip install pandas-profiling great-expectations
     python3 -m pip install kafka-python

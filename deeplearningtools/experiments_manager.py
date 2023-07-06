@@ -1,52 +1,79 @@
+# ========================================
+# FileName: experiments_manager.py
+# Date: 29 june 2020 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: A set of script that demonstrate the use of Tensorflow experiments and estimators on different data types for various tasks
+# for DeepLearningTools.
+# =========================================
 """
-#What's that ?
-A set of script that demonstrate the use of Tensorflow experiments and estimators on different data types for various tasks
-@brief : the main script that enables training, validation and serving Tensorflow based models merging all needs in a
-single script to train, evaluate, export and serve.
-taking large inspirations of official tensorflow demos.
-@author : Alexandre Benoit, LISTIC lab, FRANCE
+What's that ? A set of script that demonstrate the use of Tensorflow experiments and estimators on different data types for various tasks.
+
+Brief: The main script that enables training, validation and serving Tensorflow based models merging all needs in a single script to train, evaluate, export and serve. taking large inspirations of official tensorflow demos.
+
+Author: Alexandre Benoit, LISTIC lab, FRANCE
 
 Several ideas are put together:
--estimators to manage training, valiation and export in a easier way
--using moving averages to store parameters with values smoothed along the last training steps (FIXME : ensure those values are used for real by the estimator, actually the graph shows 2 parameter savers...).
--visualization including embeddings projections to observe some data projections on the TensorBoard
--tensorflow-serving api use to serve the model and dynamically load updated models
--some tensorflow-serving client codes to reuse the trained model on single or streaming data
+  estimators to manage training, valiation and export in a easier way
 
-#How tu use it ?
+  using moving averages to store parameters with values smoothed along the last training steps (FIXME : ensure those values are used for real by the estimator, actually the graph shows 2 parameter savers...).
 
-The main script is experiments_manager.py can be used in 3 modes, here are some command examples:
-1. train a model in a context specified in a parameters script such as mysettings_1D_experiments.py:
--> python experiments_manager.py --usersettings=mysettings_1D_experiments.py
-2. start a tensorflow server on the trained/training model :
-2.a if tensorflow_model_server is installed on the system
--> python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53
-2.b  if tensorflow_model_server is installed on a singularity container
--> python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53 -psi=/patg/to/tf_server.sif
-3. interract with the tensorflow server, sending input buffers and receiving answers
--> python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14\:40\:53/
+  visualization including embeddings projections to observe some data projections on the TensorBoard
+
+  tensorflow-serving api use to serve the model and dynamically load updated models
+
+  some tensorflow-serving client codes to reuse the trained model on single or streaming data
+
+How tu use it ?
+The main script is `experiments_manager.py` and can be used in 3 modes. Here are some command examples:
+
+1. Train a model in a specific context specified in a parameter script such as `mysettings_1D_experiments.py`:
+
+  # python experiments_manager.py --usersettings=mysettings_1D_experiments.py
+
+2. Start a TensorFlow server on the trained/training model:
+
+   2.a If `tensorflow_model_server` is installed on the system:
+
+    # python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53
+
+   2.b If `tensorflow_model_server` is installed in a Singularity container:
+
+    # python experiments_manager.py --start_server --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53 -psi=/path/to/tf_server.sif
+
+3. Interact with the TensorFlow server, sending input buffers and receiving answers:
+
+  # python experiments_manager.py --predict --model_dir=experiments/1Dsignals_clustering/my_test_2018-01-03--14:40:53/
 
 NOTE : once trained (or along training), start the Tensorbdownscaledoard to parse logs of
 the experiments folder (provided example is experiments/1Dsignals_clustering):
-from the scripts directory using command: tensorboard  --logdir=experiments/1Dsignals_clustering
+from the scripts directory using command: 
+
+  # tensorboard  --logdir=experiments/1Dsignals_clustering
+
 Then, open a web brwser and reach http://127.0.0.1:6006/ to monitor training
 values and observe the obtained embeddings
 
-#DESIGN:
+DESIGN:
 
-1. The main code for training, validation and prediction is specified in the main script (experiments_manager.py).
-2. Most of the use case specific parameters and Input/Output functions have been
-moved to a separated settings script such as 'mysettings_1D_experiments.py' that
-is targeted when starting the script (this filename is set in var FLAGS.usersettings in the main script).
-3. The model to be trained and served is specified in a different script targetted in the settings file.
+  1. The main code for training, validation and prediction is specified in the main script (experiments_manager.py).
 
-#KNOWN ISSUES :
+  2. Most of the use case specific parameters and Input/Output functions have been
+  moved to a separated settings script such as 'mysettings_1D_experiments.py' that
+  is targeted when starting the script (this filename is set in var FLAGS.usersettings in the main script).
+
+  3. The model to be trained and served is specified in a different script targetted in the settings file.
+
+KNOWN ISSUES:
 
 This script has some known problems, any suggestion is welcome:
--moving average parameters reloading for model serving is not optimized, this should be enhanced.
--for now tensorflow_server only works on CPU so using GPU only for training and validation. Track : https://github.com/tensorflow/serving/issues/668
 
-#TODO :
+  moving average parameters reloading for model serving is not optimized, this should be enhanced.
+
+  for now tensorflow_server only works on CPU so using GPU only for training and validation. Track : https://github.com/tensorflow/serving/issues/668
+
+TODO:
 
 To adapt to new use case, just duplicate the closest mysettingsxxx file presented in the examples folder and adjust the configuration.
 For any experiment, the availability of all the required fields in the settings file is checked by the tools/experiments_settings.py script.
@@ -54,34 +81,50 @@ You can have a look there to ensure you prepared everything right, some variable
 
 As a reminder, here are the functions prototypes:
 
--define a model to be trained and served in a specific file and follow this prototype:
---report model name in the settings file using variable name model_file or thecify a premade estimator using variable name premade_estimator
---def model( usersettings) #receives the external parameters that may be used to setup the model (number of classes and so depending on the task)
-            mode), #mode set to switch between train, validate and inference mode
-            wrt tf.estimator.tf.estimator.ModeKeys values
-          => the returns a tf.keras.Model
-          NOTE : custom models with specific loss can be used, tutorial here  https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit
-          
--def data_preprocess(features, model_placement)
--def postprocessing_before_export_code(code)
--def postprocessing_before_export_predictions(predictions)
--def getOptimizer(model, loss, learning_rate, global_step)
--def get_total_loss(inputs, predictions, labels, embedding_code, weights_loss)
--def get_validation_summaries(inputs, predictions, labels, embedding_code)
--def get_eval_metric_ops(inputs, predictions, labels, embedding_code)
--def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batches)
--def get_input_pipeline_serving()
--define the Client_IO class that presents at least those three methods:
----def __init__(self, debugMode):
----def getInputData(self, idx):
----def decodeResponse(self, result):
----def finalize():
--------> Note, the finalize method will be called once the number of expected
-iterations is reached and if any StopIteration exception is sent by the client
--OPTIONNAL: add the dictionnary named 'hparams' in this settings file to carry those specific hyperparameters to the model
-and to complete the session name folder to facilitate experiments tracking and comparison
+  Define a model to be trained and served in a specific file and follow this prototype:
 
-Some examples of such functions are put in the README.md and in the versionned examples folder
+    report model name in the settings file using variable name model_file or thecify a premade estimator using variable name premade_estimator
+
+    def model( usersettings) #receives the external parameters that may be used to setup the model (number of classes and so depending on the task)
+                mode), #mode set to switch between train, validate and inference mode
+                wrt tf.estimator.tf.estimator.ModeKeys values
+              => the returns a tf.keras.Model
+              NOTE : custom models with specific loss can be used, tutorial here  https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit
+
+    def data_preprocess(features, model_placement)
+
+    def postprocessing_before_export_code(code)
+
+    def postprocessing_before_export_predictions(predictions)
+
+    def getOptimizer(model, loss, learning_rate, global_step)
+
+    def get_total_loss(inputs, predictions, labels, embedding_code, weights_loss)
+
+    def get_validation_summaries(inputs, predictions, labels, embedding_code)
+
+    def get_eval_metric_ops(inputs, predictions, labels, embedding_code)
+
+    def get_input_pipeline_train_val(batch_size, raw_data_files_folder, shuffle_batches)
+
+    def get_input_pipeline_serving()
+
+    define the Client_IO class that presents at least those three methods:
+
+      def __init__(self, debugMode):
+      
+      def getInputData(self, idx):
+      
+      def decodeResponse(self, result):
+      
+      def finalize():
+      
+        Note, the finalize method will be called once the number of expected iterations is reached and if any StopIteration exception is sent by the client
+
+    OPTIONNAL: add the dictionnary named 'hparams' in this settings file to carry those specific hyperparameters to the model
+    and to complete the session name folder to facilitate experiments tracking and comparison
+
+Some examples of such functions are put in the README.md and in the versionned examples folder.
 """
 
 #standard imports
@@ -135,17 +178,20 @@ except ModuleNotFoundError as e :
 #constants
 WEIGHTS_MOVING_AVERAGE_DECAY=0.998
 
-# Define and run experiment ###############################
+#------------------------------------------------------------
+# Define and run experiment
+#------------------------------------------------------------
+
 def build_run_training_session(cid: str=''):
-  ''' define and run the optimisation process
-      this function loads settings from the working directory
-      and builds/run the optimisation.
-      -> This process can be the full training procedure 
-      OR this can be an ephemeral intermediate training step
-      as for transfer learning or federated learning
-  '''
+  """
+  Define and run the optimisation process.
+
+  This function loads settings from the working directory and builds/run the optimisation.
+
+  This process can be the full training procedure OR this can be an ephemeral intermediate training step
+  as for transfer learning or federated learning.
+  """
   print('Starting a single training session...')
-  #####################################
   # load configuration, expects the process working directory
   # to contain all the necessary files including:
   # - the configuration file (experiment_settings.py)
@@ -153,18 +199,19 @@ def build_run_training_session(cid: str=''):
   settings_file=os.path.join(os.getcwd(), SETTINGSFILE_COPY_NAME)
   if cid!='':
     message='\nINFO: cid {cid} with cwd={cwd} and job_session_folder in locals={l} or job_session_folder in globals={g}'.format(cid=cid,
-                                                                                                                        cwd=os.getcwd(),
-                                                                                                                        l='job_session_folder' in locals(),
-                                                                                                                        g='job_session_folder' in globals())
+                                                                                                                                cwd=os.getcwd(),
+                                                                                                                                l='job_session_folder' in locals(),
+                                                                                                                                g='job_session_folder' in globals())
     print(message) 
     settings_file=experiments_settings_surgery.insert_additionnal_hparams(settings_file, {'procID':cid, 'cid':cid, 'isFLserver':False})
 
   #load experiment settings from current working directory
-  usersettings, _ =loadExperimentsSettings(filename=settings_file,
-                                           call_from_session_folder=True)
+  usersettings, _ =loadExperimentsSettings(filename=settings_file,call_from_session_folder=True)
   
-  #####################################
+  #------------------------------------------------------------
   #prepare session
+  #------------------------------------------------------------
+
   tf.keras.backend.clear_session() # We need to clear the session to enable JIT in the middle of the program.
   tf.random.set_seed(usersettings.random_seed)
   #(de)activate XLA graph optimization
@@ -179,9 +226,6 @@ def build_run_training_session(cid: str=''):
     os.environ['TF_XLA_FLAGS']=''
 
   gpu_workers_nb=gpu.check_GPU_available(usersettings)
-
-
-  ######################################
 
   #####################################
   #check GPU requirements vs availability
@@ -204,7 +248,6 @@ def build_run_training_session(cid: str=''):
 
   else:
     os.environ['TF_XLA_FLAGS']=''
-
   '''
   ######################################
   if os.path.exists(os.path.join(os.getcwd(),'checkpoints', cid)):
@@ -213,8 +256,10 @@ def build_run_training_session(cid: str=''):
   else:
     usersettings.recoverFromCheckpoint=False
   
-  #####################################
+  #------------------------------------------------------------
   # define the input pipepelines (train/val)
+  #------------------------------------------------------------
+
   with tf.name_scope('Input_pipeline'):
     train_data =usersettings.get_input_pipeline(raw_data_files_folder=usersettings.raw_data_dir_train,
                                                       isTraining=True, batch_size=usersettings.batch_size,
@@ -265,8 +310,10 @@ def build_run_training_session(cid: str=''):
     policy = mixed_precision.Policy('mixed_float16')
     mixed_precision.set_global_policy(policy)
 
-  #####################################
+  #------------------------------------------------------------
   #create the model from the user defined model file
+  #------------------------------------------------------------
+
   # -> (script targeted by usersettings.model_file)
   
   # maybe try to load an existing pretrained model (checkpoint in working folder)
@@ -383,8 +430,10 @@ def build_run_training_session(cid: str=''):
     print('TODO: check this for tf2 migration...')
     tf.debugging.experimental.enable_dump_debug_info(log_dir, tensor_debug_mode="FULL_HEALTH", circular_buffer_size=-1)
 
-  #####################################
+  #------------------------------------------------------------
   # train the model
+  #------------------------------------------------------------
+
   use_multiprocessing=False
   workers=1
   if False:#gpu_workers_nb>1:
@@ -462,21 +511,20 @@ def build_run_training_session(cid: str=''):
   return history
 
 def run_experiment(usersettings):
-  ''' 
-  Run a single training experiment
-  arguments:
-    usersettings: an experiment settings object initialized from the user experiment file (my_settings_xxx.py in the provided examples). This object is defined in deeplearningtools.tools.experiment_settings.py that applies some default values when not specified in the experiment file and looks for som errors.
-  returns:
-    final_result: a dict containing the final result of the experiment
-    model_export_filename: the filename of the model to be exported
-  '''
+  """
+  Run an experiment.
+
+  :param usersettings: The experiment settings.
+  :type usersettings: object
+
+  :return: A tuple containing the final result and the model export filename.
+  :rtype: tuple
+  """
   print('Running an experiment....')
 
-  #####################################
   #check GPU requirements vs availability
   if usersettings.debug:
     tf.debugging.set_log_device_placement(True)
-
 
   os.environ['TF_GPU_THREAD_MODE']='gpu_private'
  
@@ -492,25 +540,38 @@ def run_experiment(usersettings):
     final_result={'loss':history.history['loss'][-1]}
   return final_result, usersettings.model_export_filename
 
-
-###########################################################
-## INFERENCE SECTION : talking to a tensorflow-server
+#------------------------------------------------------------
+# INFERENCE SECTION : talking to a tensorflow-server
 #inspired from https://github.com/tensorflow/serving/blob/master/tensorflow_serving/example/mnist_client.py
+#------------------------------------------------------------
 
 def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs, concurrency, num_tests, debug):
-  """Tests PredictionService with concurrent requests.
-  Args:
-    experiment_settings: the experiment settings loaded from function loadExperimentsSettings
-    host:tensorfow server address
-    port: port address of the PredictionService.
-    model_name: the model name ID
-    clientIO_InitSpecs: a dictionnary to pass to the ClientIO constructor
-    concurrency: Maximum number of concurrent requests.
-    num_tests: Number of test images to use, infinite prediction loop if <0.
-  Raises:
-    IOError: An error occurred processing test data set.
+  """
+  Tests PredictionService with concurrent requests.
 
-  Hint : have a look here to track api use updates : https://github.com/tensorflow/serving/blob/master/tensorflow_serving/example/mnist_client.py
+  :param experiment_settings: The experiment settings loaded from the function loadExperimentsSettings.
+  :type experiment_settings: object
+  :param host: The TensorFlow server address.
+  :type host: str
+  :param port: The port address of the PredictionService.
+  :type port: int
+  :param model_name: The model name ID.
+  :type model_name: str
+  :param clientIO_InitSpecs: A dictionary to pass to the ClientIO constructor.
+  :type clientIO_InitSpecs: dict
+  :param concurrency: Maximum number of concurrent requests.
+  :type concurrency: int
+  :param num_tests: Number of test images to use. If negative, it indicates an infinite prediction loop.
+  :type num_tests: int
+  :param debug: Flag to enable debug mode.
+  :type debug: bool
+
+  :raises IOError: An error occurred processing the test data set.
+
+  Hint: Have a look here to track API use updates: https://github.com/tensorflow/serving/blob/master/tensorflow_serving/example/mnist_client.py
+
+  :return: Always returns 0.
+  :rtype: int
   """
   stub=model_serving_tools.setup_model_server_connexion(host, port, experiment_settings.grpc_max_message_length)
   #allocate a clientIO instance defined for the experiment
@@ -562,17 +623,33 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
   client_io.finalize()
   return 0
 
-# Run script ##############################################
+#--------------------------------------------
+# Run script
+#--------------------------------------------
+
 def run(FLAGS, train_config_script=None, external_hparams={}):
-  ''' the main script function that can receive hyperparameters as a dictionnary to run an experiment
-  can start training, model serving or model client requesting depending on the FLAGS values:
-  -> if FLAGS.start_server is True : starts a server that hosts the target model
-  -> if FLAGS.predict is TRUE : starts a client that will send requests to a model threw gRPC
-  -> else, start a training session relying on a settings file provided by train_config_script or FLAGS.usersettings
-    --> in this mode, function returns a dictionnary of that summarizes the last model states at the end of the training
-    --> if calling with non empty train_config_script and with non empty external_hparams,
-        then external_hparams will update hyperparameters already specified in the train_config_script script
-  '''
+  """ 
+  The main script function that can receive hyperparameters as a dictionary to run an experiment.
+
+  :param FLAGS: The input flags specifying the mode of operation.
+  :param train_config_script: Path to the training configuration script (optional).
+  :param external_hparams: A dictionary containing additional hyperparameters (optional).
+
+  :return: experiments_output: A dictionary summarizing the last model states at the end of the training (if training is done).
+
+  :raises ValueError: If the provided settings or configurations are incorrect.
+
+  Notes:
+  This function can start training, model serving, or model client requesting depending on the `FLAGS` values:
+
+  - If `FLAGS.start_server` is True: starts a server that hosts the target model.
+  - If `FLAGS.predict` is True: starts a client that will send requests to a model via gRPC.
+  - Otherwise, starts a training session relying on a settings file provided by `train_config_script` or `FLAGS.usersettings`.
+  In this mode, the function returns a dictionary that summarizes the last model states at the end of the training.
+  If calling with a non-empty `train_config_script` and with non-empty `external_hparams`,
+  then `external_hparams` will update hyperparameters already specified in the `train_config_script` script.
+  """
+
   experiments_output=None
   #tf.reset_default_graph()
   usersettings=None#ensure to clear this object prior any new trial
