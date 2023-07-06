@@ -1,0 +1,538 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html" /><link rel="search" title="Search" href="../../../search.html" />
+
+    <link rel="shortcut icon" href="../../../_static/logo_listic.png"/><!-- Generated with Sphinx 6.2.1 and Furo 2023.05.20 -->
+        <title>deeplearningtools.helpers.tensor_msg_io - DeepLearningTools 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #2E3440;
+  --color-code-foreground: #d8dee9;
+  --font-stack: Roboto, sans-serif;
+  --font-stack--monospace: Open Sans, monospace;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<div class="announcement">
+  <aside class="announcement-content">
+     <em>Deeplearningtools is currently in development.</em> 
+  </aside>
+</div>
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../index.html"><div class="brand">DeepLearningTools 0.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="../../../_static/main_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="../../../_static/main_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">DeepLearningTools 0.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../example.html">Examples and demonstrations</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../reference.html">Reference manual</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Reference manual</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../reference_index.html">DeepLearningTools package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of DeepLearningTools package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../main_script.html">Main subpackage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../unit_test.html">Test script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../reference_helpers.html">deeplearningtools.helpers subpackage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../reference_tools.html">deeplearningtools.tools subpackage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute.html">Community involvement and contributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../version.html">Release notes</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <h1>Source code for deeplearningtools.helpers.tensor_msg_io</h1><div class="highlight"><pre>
+<span></span><span class="c1"># ========================================</span>
+<span class="c1"># FileName: tensor_msg_io.py</span>
+<span class="c1"># Date: 29 june 2023 - 08:00</span>
+<span class="c1"># Author: Alexandre Benoit</span>
+<span class="c1"># Email: alexandre.benoit@univ-smb.fr</span>
+<span class="c1"># GitHub: https://github.com/albenoit/DeepLearningTools</span>
+<span class="c1"># Brief: A set of helpers to convert tensors to their serialized binary strings to facilitate message io accross processes</span>
+<span class="c1"># from https://www.tensorflow.org/tutorials/load_data/tfrecord?hl=en</span>
+<span class="c1"># for DeepLearningTools.</span>
+<span class="c1"># =========================================</span>
+
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="k">def</span> <span class="nf">_bytes_feature</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Returns a bytes_list from a string / byte.&quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mi">0</span><span class="p">))):</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="c1"># BytesList won&#39;t unpack a string from an EagerTensor.</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">bytes_list</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">BytesList</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="p">[</span><span class="n">value</span><span class="p">]))</span>
+
+<span class="k">def</span> <span class="nf">_float_feature</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Returns a float_list from a float / double.&quot;&quot;&quot;</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">float_list</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">FloatList</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="p">[</span><span class="n">value</span><span class="p">]))</span>
+
+<span class="k">def</span> <span class="nf">_float_list_feature</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Returns a float_list from a float / double.&quot;&quot;&quot;</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">float_list</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">FloatList</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">values</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">_bytes_feature</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Returns a bytes_list from a string / byte.&quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mi">0</span><span class="p">))):</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="c1"># BytesList won&#39;t unpack a string from an EagerTensor.</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">bytes_list</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">BytesList</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="p">[</span><span class="n">value</span><span class="p">]))</span>
+
+<span class="k">def</span> <span class="nf">_int64_feature_scalar</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Returns an int64_list from a bool / enum / int / uint.&quot;&quot;&quot;</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">int64_list</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Int64List</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="p">[</span><span class="n">value</span><span class="p">]))</span>
+
+<span class="k">def</span> <span class="nf">_int64_list_feature</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Returns an int64_list from a bool / enum / int / uint.&quot;&quot;&quot;</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">int64_list</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Int64List</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">values</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">_tensor_feature</span><span class="p">(</span><span class="n">tensor</span><span class="p">):</span>
+  <span class="c1">#first serialize the tensor</span>
+  <span class="n">serialized_nonscalar</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">serialize_tensor</span><span class="p">(</span><span class="n">tensor</span><span class="p">)</span>
+  <span class="c1">#next integrate into a tf.train.Feature</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">bytes_list</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">BytesList</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="p">[</span><span class="n">serialized_nonscalar</span><span class="o">.</span><span class="n">numpy</span><span class="p">()]))</span>
+
+<span class="c1">#-----------------------------------------------------------------</span>
+<span class="c1"># Create a dictionary with features that may be relevant.</span>
+<span class="c1">#-----------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="serialize_image_float_example"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.tensor_msg_io.serialize_image_float_example">[docs]</a><span class="k">def</span> <span class="nf">serialize_image_float_example</span><span class="p">(</span><span class="n">image_tensor</span><span class="p">,</span> <span class="n">label_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Creates a tf.train.Example string message ready to be written to a file or sent as a message.</span>
+
+<span class="sd">  :param image_tensor: The image tensor to be serialized.</span>
+<span class="sd">  :type image_tensor: tf.Tensor</span>
+
+<span class="sd">  :param label_id: The label associated with the image (optional).</span>
+<span class="sd">  :type label_id: str</span>
+
+<span class="sd">  :return: A dictionary mapping the feature name to the tf.train.Example-compatible.</span>
+<span class="sd">  :rtype: str</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">feature</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="s1">&#39;image_raw&#39;</span><span class="p">:</span> <span class="n">_tensor_feature</span><span class="p">(</span><span class="n">image_tensor</span><span class="p">)</span><span class="c1">#simpler and keeps dimensions info compared to _float_list_feature(image_tensor.numpy().flatten().tolist()),</span>
+  <span class="p">}</span>
+  <span class="k">if</span> <span class="n">label_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">feature</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;label_id&#39;</span><span class="p">:</span> <span class="n">_int64_feature_scalar</span><span class="p">(</span><span class="n">label_id</span><span class="p">)})</span>
+
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Example</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Features</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">feature</span><span class="p">))</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="serialize_tensor_label_example"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.tensor_msg_io.serialize_tensor_label_example">[docs]</a><span class="k">def</span> <span class="nf">serialize_tensor_label_example</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Creates a tf.train.Example string message ready to be written to a file or sent as a message.</span>
+
+<span class="sd">  :param tensor: The tensor to be serialized.</span>
+<span class="sd">  :type tensor: tf.Tensor</span>
+
+<span class="sd">  :param label: The label associated with the tensor.</span>
+<span class="sd">  :type label: str</span>
+
+<span class="sd">  :return: A dictionary mapping the feature name to the tf.train.Example-compatible.</span>
+<span class="sd">  :rtype: str</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">feature</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="n">_tensor_feature</span><span class="p">(</span><span class="n">tensor</span><span class="p">),</span>
+      <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="n">_tensor_feature</span><span class="p">(</span><span class="n">label</span><span class="p">),</span>
+  <span class="p">}</span>
+
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Example</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Features</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">feature</span><span class="p">))</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="serialize_float_with_text_label"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.tensor_msg_io.serialize_float_with_text_label">[docs]</a><span class="k">def</span> <span class="nf">serialize_float_with_text_label</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Creates a tf.train.Example string message ready to be written to a file or sent as a message.</span>
+
+<span class="sd">  :param values: The list of floating-point values to be serialized.</span>
+<span class="sd">  :type values: list[float]</span>
+
+<span class="sd">  :param label: The text label associated with the values.</span>
+<span class="sd">  :type label: str</span>
+
+<span class="sd">  :return: A dictionary mapping the feature name to the tf.train.Example-compatible.</span>
+<span class="sd">  :rtype: str</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">feature</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="n">_float_feature</span><span class="p">(</span><span class="n">values</span><span class="p">),</span>
+      <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="n">_bytes_feature</span><span class="p">(</span><span class="n">label</span><span class="p">),</span>
+  <span class="p">}</span>
+
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Example</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Features</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">feature</span><span class="p">))</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span></div>
+
+<span class="c1">#-----------------------------------------------------------</span>
+<span class="c1"># Simple tensor + string label encode/decode helpers</span>
+<span class="c1">#-----------------------------------------------------------</span>
+
+<div class="viewcode-block" id="serialize_tensor_with_label"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.tensor_msg_io.serialize_tensor_with_label">[docs]</a><span class="k">def</span> <span class="nf">serialize_tensor_with_label</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Creates a tf.train.Example string message ready to be written to a file or sent as a message.</span>
+
+<span class="sd">  :param tensor: Input tensor to be serialized.</span>
+<span class="sd">  :type tensor: tf.Tensor</span>
+
+<span class="sd">  :param label: Corresponding label associated with the tensor.</span>
+<span class="sd">  :type label: str</span>
+
+<span class="sd">  :return: Create a dictionary describing the expected features.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">feature</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="n">_tensor_feature</span><span class="p">(</span><span class="n">tensor</span><span class="p">),</span>
+      <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="n">_bytes_feature</span><span class="p">(</span><span class="n">label</span><span class="p">),</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Example</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Features</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">feature</span><span class="p">))</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span></div>
+   
+<div class="viewcode-block" id="decode_tensor_with_label_example"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.tensor_msg_io.decode_tensor_with_label_example">[docs]</a><span class="k">def</span> <span class="nf">decode_tensor_with_label_example</span><span class="p">(</span><span class="n">example_proto</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Decode a tf.train.Example, supposing its structure is known.</span>
+
+<span class="sd">  :param example_proto: Input tensor to be serialized.</span>
+<span class="sd">  :type example_proto: tf.Tensor</span>
+
+<span class="sd">  :return: Create a dictionary describing the expected features.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">data_feature_description</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">),</span>
+      <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">),</span>
+  <span class="p">}</span>
+
+  <span class="n">features_dict</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_single_example</span><span class="p">(</span><span class="n">example_proto</span><span class="p">,</span> <span class="n">data_feature_description</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;features_dict&#39;</span><span class="p">,</span> <span class="n">features_dict</span><span class="p">)</span>
+  <span class="n">instance_label</span><span class="o">=</span><span class="n">features_dict</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span>
+  <span class="n">instance_tensor</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">features_dict</span><span class="p">[</span><span class="s1">&#39;values&#39;</span><span class="p">],</span> <span class="n">dtype</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">instance_label</span><span class="p">,</span> <span class="n">instance_tensor</span></div>
+
+<span class="c1">#------------------------------------------------------</span>
+<span class="c1"># Simple tensor encode/decode helpers</span>
+<span class="c1">#------------------------------------------------------</span>
+
+<div class="viewcode-block" id="serialize_tensor"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.tensor_msg_io.serialize_tensor">[docs]</a><span class="k">def</span> <span class="nf">serialize_tensor</span><span class="p">(</span><span class="n">tensor</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Simply serialize a single tensor as a tf.Example.</span>
+
+<span class="sd">  :param tensor: A tensor to be serialized.</span>
+<span class="sd">  :type tensor: tf.Tensor</span>
+<span class="sd">  </span>
+<span class="sd">  :return: Create a dictionary describing the expected features.</span>
+
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">)):</span>
+    <span class="c1">#tf.print(&#39;*** input tensor is list or tuple&#39;)</span>
+    <span class="n">feature</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;values_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">keyID</span><span class="p">):</span><span class="n">_tensor_feature</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">keyID</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tensor</span><span class="p">)}</span>
+  <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+    <span class="c1">#tf.print(&#39;*** input tensor is dict&#39;)</span>
+    <span class="n">feature</span><span class="o">=</span><span class="p">{</span><span class="n">item</span><span class="p">:</span><span class="n">_tensor_feature</span><span class="p">(</span><span class="n">tensor</span><span class="p">[</span><span class="n">item</span><span class="p">])</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">tensor</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+  <span class="k">else</span><span class="p">:</span> <span class="c1">#if tensor is a classical tensor, then, encode with defauult name &#39;values&#39;</span>
+    <span class="c1">#tf.print(&#39;*** direct tensor encoding&#39;)</span>
+    <span class="n">feature</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="n">_tensor_feature</span><span class="p">(</span><span class="n">tensor</span><span class="p">),</span>
+    <span class="p">}</span>
+
+  <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Example</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Features</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">feature</span><span class="p">))</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="decode_tensor_proto"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.tensor_msg_io.decode_tensor_proto">[docs]</a><span class="k">def</span> <span class="nf">decode_tensor_proto</span><span class="p">(</span><span class="n">example_proto</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Decode a tf.train.Example, supposing its structure is a simple tensor.</span>
+
+<span class="sd">  :param example_proto: A dataset to be serialized.</span>
+<span class="sd">  :type example_proto: tf.Tensor</span>
+
+<span class="sd">  :return: A dictionary describing the expected features.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">data_feature_description</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">),</span>
+  <span class="p">}</span>
+
+  <span class="n">features_dict</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_single_example</span><span class="p">(</span><span class="n">example_proto</span><span class="p">,</span> <span class="n">data_feature_description</span><span class="p">)</span>
+  <span class="c1">#print(&#39;features_dict&#39;, features_dict)</span>
+  <span class="n">instance_tensor</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">features_dict</span><span class="p">[</span><span class="s1">&#39;values&#39;</span><span class="p">],</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;parse_values&#39;</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">instance_tensor</span></div>
+
+
+<div class="viewcode-block" id="decode_multitensor_proto"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.tensor_msg_io.decode_multitensor_proto">[docs]</a><span class="k">def</span> <span class="nf">decode_multitensor_proto</span><span class="p">(</span><span class="n">data_feature_descriptions</span><span class="p">,</span> <span class="n">example_proto</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Decode a tf.train.Example, supposing its structure is known.</span>
+
+<span class="sd">  :param data_feature_descriptions: A dataset to be serialized.</span>
+<span class="sd">  :type data_feature_descriptions: tf.Tensor</span>
+<span class="sd">  </span>
+<span class="sd">  :return: Create a dictionary describing the expected features.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="c1">#print(&#39;+++++++++++++data_feature_descriptions&#39;, data_feature_descriptions[&#39;feature_specs&#39;])</span>
+  <span class="n">features_dict</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_single_example</span><span class="p">(</span><span class="n">example_proto</span><span class="p">,</span> <span class="n">data_feature_descriptions</span><span class="p">[</span><span class="s1">&#39;feature_specs&#39;</span><span class="p">])</span>
+  <span class="c1">#print(&#39;features_dict&#39;, features_dict)</span>
+  <span class="n">instance_tensor</span><span class="o">=</span><span class="p">{</span><span class="n">key_name</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">features_dict</span><span class="p">[</span><span class="n">key_name</span><span class="p">],</span> <span class="n">data_feature_descriptions</span><span class="p">[</span><span class="s1">&#39;types&#39;</span><span class="p">][</span><span class="n">key_name</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;parse_&#39;</span><span class="o">+</span><span class="n">key_name</span><span class="p">)</span> <span class="k">for</span> <span class="n">key_name</span> <span class="ow">in</span> <span class="n">data_feature_descriptions</span><span class="p">[</span><span class="s1">&#39;types&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+<span class="w">  </span><span class="sd">&#39;&#39;&#39;for i in instance_tensor.keys():</span>
+<span class="sd">    tf.print(i, tf.shape(instance_tensor[i]))</span>
+<span class="sd">  &#39;&#39;&#39;</span>
+  <span class="k">return</span> <span class="n">instance_tensor</span></div>
+
+<div class="viewcode-block" id="get_data_label_features_from_dataset"><a class="viewcode-back" href="../../../reference_helpers.html#deeplearningtools.helpers.tensor_msg_io.get_data_label_features_from_dataset">[docs]</a><span class="k">def</span> <span class="nf">get_data_label_features_from_dataset</span><span class="p">(</span><span class="n">dataset</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Construct a dictionnary of feature description to decode serialized tensors.</span>
+
+<span class="sd">  :param dataset: A dataset to be serialized.</span>
+<span class="sd">  :type dataset: tf.Tensor</span>
+<span class="sd">  </span>
+<span class="sd">  :return: Create a dictionary describing the expected features.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="nf">get_features_specs</span><span class="p">(</span><span class="n">dataset_col_specs</span><span class="p">,</span> <span class="n">default_name</span><span class="p">):</span>
+    <span class="n">data_feature_descriptions</span><span class="o">=</span><span class="p">{}</span>
+    <span class="n">feature_types</span><span class="o">=</span><span class="p">{}</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset_label_data_element_spec</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">tf</span><span class="o">.</span><span class="n">TensorSpec</span><span class="p">):</span>
+      <span class="n">data_feature_descriptions</span><span class="p">[</span><span class="n">default_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">)</span>
+      <span class="n">feature_types</span><span class="p">[</span><span class="n">default_name</span><span class="p">]</span><span class="o">=</span><span class="n">dataset_col_specs</span><span class="o">.</span><span class="n">dtype</span>
+    <span class="k">else</span><span class="p">:</span>
+
+      <span class="k">for</span> <span class="n">keyID</span> <span class="ow">in</span> <span class="n">dataset_col_specs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;item&#39;</span><span class="p">,</span> <span class="n">keyID</span><span class="p">,</span> <span class="n">dataset_col_specs</span><span class="p">[</span><span class="n">keyID</span><span class="p">])</span>
+        <span class="c1">#data_feature_description</span>
+        <span class="c1">#name:tf.io.FixedLenFeature([], tf.string)</span>
+
+        <span class="c1"># Create a dictionary describing the expected features.</span>
+        <span class="n">data_feature_descriptions</span><span class="p">[</span><span class="n">keyID</span><span class="p">]</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">FixedLenFeature</span><span class="p">([],</span> <span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">)</span>
+        <span class="n">feature_types</span><span class="p">[</span><span class="n">keyID</span><span class="p">]</span><span class="o">=</span><span class="n">dataset_col_specs</span><span class="p">[</span><span class="n">keyID</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;feature_specs&#39;</span><span class="p">:</span><span class="n">data_feature_descriptions</span><span class="p">,</span> <span class="s1">&#39;types&#39;</span><span class="p">:</span><span class="n">feature_types</span><span class="p">}</span>
+  <span class="n">dataset_label_data_element_spec</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">element_spec</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Dataset Feature specs (data, labels)&#39;</span><span class="p">,</span> <span class="n">dataset_label_data_element_spec</span><span class="p">)</span>
+  <span class="n">data_specs</span><span class="o">=</span><span class="n">get_features_specs</span><span class="p">(</span><span class="n">dataset_label_data_element_spec</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;values&#39;</span><span class="p">)</span>
+  <span class="n">label_specs</span><span class="o">=</span><span class="n">get_features_specs</span><span class="p">(</span><span class="n">dataset_label_data_element_spec</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;label&#39;</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;label_specs=&#39;</span><span class="p">,</span> <span class="n">label_specs</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;data_specs=&#39;</span><span class="p">,</span> <span class="n">data_specs</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">data_specs</span><span class="p">,</span> <span class="n">label_specs</span></div>
+  
+<span class="c1">############### EXAMPLES ###################</span>
+<span class="c1">#encoding example 1 (float scalar, label)</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+  <span class="n">serialized_example_1</span> <span class="o">=</span> <span class="n">serialize_float_with_text_label</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;goat&#39;</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;serialized example_1&#39;</span><span class="p">,</span> <span class="n">serialized_example_1</span><span class="p">)</span>
+  <span class="c1">#related decoding example</span>
+  <span class="n">read_proto_1</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">Example</span><span class="o">.</span><span class="n">FromString</span><span class="p">(</span><span class="n">serialized_example_1</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;unserialized example_1&#39;</span><span class="p">,</span> <span class="n">read_proto_1</span><span class="p">)</span>
+
+  <span class="c1">#encoding example 2 (tensor, label)</span>
+  
+  <span class="n">serialized_example_2</span> <span class="o">=</span> <span class="n">serialize_tensor_with_label</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">([</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">2.03</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float16</span><span class="p">),</span> <span class="sa">b</span><span class="s1">&#39;goat&#39;</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;serialized example_2&#39;</span><span class="p">,</span> <span class="n">serialized_example_2</span><span class="p">)</span>
+  <span class="c1">#related decoding example</span>
+  <span class="n">example_proto</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">serialized_example_2</span><span class="p">)</span>
+  <span class="c1">#example = tf.train.Example()</span>
+  <span class="c1">#example.ParseFromString(serialized_example_2)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;unserialized example_2&#39;</span><span class="p">,</span> <span class="n">example_proto</span><span class="p">)</span>
+  <span class="n">decoded_example</span><span class="o">=</span><span class="n">decode_tensor_with_label_example</span><span class="p">(</span><span class="n">example_proto</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;unserialized example_2&#39;</span><span class="p">,</span> <span class="n">decoded_example</span><span class="p">)</span>
+  
+
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, Alexandre Benoit
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/scripts/furo.js"></script>
+    <script src="../../../_static/clipboard.min.js"></script>
+    <script src="../../../_static/copybutton.js"></script>
+    </body>
+</html>

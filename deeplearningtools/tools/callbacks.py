@@ -1,9 +1,22 @@
+# ========================================
+# FileName: callbacks.py
+# Date: 29 june 2023 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: Define callbacks process
+# for DeepLearningTools.
+# =========================================
+
 import os
 from tensorboard.plugins.hparams import api as hp
-
 import tensorflow as tf
 
 class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
+  """
+  Custom callback class for recording training history.
+
+  """
   def __init__(self,
            filepath,
            settings,
@@ -16,6 +29,7 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
            previous_model_params=None,
            initial_value_threshold=None, #the last best monitored value that will allow for checkpoint triggering
            **kwargs):
+    
     #init tf.keras.callbacks.ModelCheckpoint parent
     super(MyCustomModelSaverExporterCallback, self).__init__( filepath,
                                                               monitor,
@@ -31,6 +45,12 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
     self.previous_model_params=previous_model_params
 
   def get_config(self):
+    """
+    Returns the configuration of the callback.
+
+    :return: Configuration dictionary.
+    :rtype: dict
+    """
     config=super(CustomHistory, self).get_config()
     config['settings']=self.settings
     config['previous_model_params']=self.previous_model_params
@@ -38,6 +58,12 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
     return config
 
   def on_epoch_end(self, epoch, logs=None):
+    """
+    Called at the end of an epoch during training.
+
+    :param epoch: Integer, index of the current epoch.
+    :param logs: Dictionary, metric results for this epoch.
+    """
     #call parent function
     print('on_epoch_end, saving checkpoint for round ', epoch)
     super(MyCustomModelSaverExporterCallback, self).on_epoch_end(epoch, logs)
@@ -62,6 +88,12 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
     print('Epoch checkpoint save and export processes done.')
 
   def _export_model(self, epoch, logs=None):
+    """
+    Exports the model for serving and other purposes.
+
+    :param epoch: Integer, index of the current epoch.
+    :param logs: Dictionary, metric results for this epoch.
+    """
     print('Exporting model...')
     current = logs.get(self.monitor)
     if current==self.best:
@@ -144,31 +176,86 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
     else:
       print('Model was not exported since no performance increase has been reported')
 
+#--------------------------------------------------------------
+# Get the callbacks output into a history object 
+#--------------------------------------------------------------
+
 class CustomHistory(tf.keras.callbacks.History):
   """Callback that records events into a `History` object.
   This callback is automatically applied to
   every Keras model. The `History` object
   gets returned by the `fit` method of models.
   """
-
   def __init__(self):
     super(CustomHistory, self).__init__()
     self.history = {}
     self.epoch = [] #moved from on_train_begin, helps keeping the same  log for multiple training sessions
 
   def on_train_begin(self, logs=None):
+    """
+    Callback function called at the beginning of training.
+    Logs the start of a new training session.
+    """
     print('******** HISTORY starting a training session...')
   
   def on_epoch_end(self, epoch, logs=None):
+    """
+    Callback function called at the end of each epoch.
+    """
     print('******** HISTORY on_epoch_end...')
-
     super(CustomHistory, self).on_epoch_end(epoch, logs)
-  def get_config(self):
-     return super(CustomHistory, self).get_config()
 
-#####################################
-# prepare all standard callbacks as a dictionary
-def define_callbacks(usersettings, model, train_iterations_per_epoch, file_writer, log_dir, previous_model_params=None, custom_callbacks:dict={}, initial_value_threshold=None):
+  def get_config(self):
+    """
+    Returns the configuration of the callback.
+
+    Returns:
+        dict: Configuration dictionary.
+    """
+    return super(CustomHistory, self).get_config()
+
+#--------------------------------------------------------------
+# Prepare all standard callbacks as a dictionary
+#--------------------------------------------------------------
+
+def define_callbacks(usersettings, 
+                     model, 
+                     train_iterations_per_epoch, 
+                     file_writer, 
+                     log_dir, 
+                     previous_model_params=None, 
+                     custom_callbacks:dict={}, 
+                     initial_value_threshold=None):
+  """
+  Define callbacks for training a model.
+
+  :param usersettings: The user settings object.
+  :type usersettings: UserSettings
+
+  :param model: The model to train.
+  :type model: tf.keras.Model
+
+  :param train_iterations_per_epoch: The number of training iterations per epoch.
+  :type train_iterations_per_epoch: int
+
+  :param file_writer: The file writer for TensorBoard logging.
+  :type file_writer: tf.summary.FileWriter
+
+  :param log_dir: The directory for log files.
+  :type log_dir: str
+
+  :param previous_model_params: Parameters from a previous model.
+  :type previous_model_params: dict, optional
+
+  :param custom_callbacks: Custom callbacks to be added.
+  :type custom_callbacks: dict, optional
+
+  :param initial_value_threshold: Threshold for initial value comparison.
+  :type initial_value_threshold: float, optional
+
+  :return: The dictionary of callbacks.
+  :rtype: dict
+  """
   all_callbacks={}
   #return all_callbacks
   #add the history callback
@@ -197,7 +284,6 @@ def define_callbacks(usersettings, model, train_iterations_per_epoch, file_write
                                             save_freq='epoch',
                                             previous_model_params=previous_model_params,
                                             initial_value_threshold=initial_value_threshold)
-
 
   if callable(usersettings.custom_tensorboard_logs):
     #print('Adding custom Tensorboard logger ON EPOCH END. keep some time, have a look at existing tools in tools/custom_display_tensorboard.py')
@@ -244,3 +330,6 @@ def define_callbacks(usersettings, model, train_iterations_per_epoch, file_write
       all_callbacks.update(custom_callbacks)
 
   return all_callbacks
+
+
+

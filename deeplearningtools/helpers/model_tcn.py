@@ -1,6 +1,15 @@
+# ========================================
+# FileName: model_tcn.py
+# Date: 29 june 2023 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: A set of blocks for Temporal Convolutional Network model
+# for DeepLearningTools.
+# =========================================
+
 import inspect
 from typing import List
-
 from tensorflow.keras import backend as K, Model, Input, optimizers
 from tensorflow.keras import layers
 from tensorflow.keras.layers import Activation, SpatialDropout1D, Lambda
@@ -8,16 +17,30 @@ from tensorflow.keras.layers import Layer, Conv1D, Dense, BatchNormalization, La
 
 
 def is_power_of_two(num: int):
+    """
+    Check if a number is a power of two.
+
+    :param num: The number to check.
+    :return: True if the number is a power of two, False otherwise.
+    """
     return num != 0 and ((num & (num - 1)) == 0)
 
-
 def adjust_dilations(dilations: list):
+    """
+    Adjusts the dilations to ensure that all values in the list are powers of two.
+
+    :param dilations: The list of dilations to adjust.
+    :return: The adjusted list of dilations.
+    """
     if all([is_power_of_two(i) for i in dilations]):
         return dilations
     else:
         new_dilations = [2 ** i for i in dilations]
         return new_dilations
 
+#-----------------------------------------------------------
+# Defines the residual block for the WaveNet TCN
+#-----------------------------------------------------------
 
 class ResidualBlock(Layer):
 
@@ -33,23 +56,21 @@ class ResidualBlock(Layer):
                  use_layer_norm: bool = False,
                  use_weight_norm: bool = False,
                  **kwargs):
-        """Defines the residual block for the WaveNet TCN
-        Args:
-            x: The previous layer in the model
-            training: boolean indicating whether the layer should behave in training mode or in inference mode
-            dilation_rate: The dilation power of 2 we are using for this residual block
-            nb_filters: The number of convolutional filters to use in this block
-            kernel_size: The size of the convolutional kernel
-            padding: The padding used in the convolutional layers, 'same' or 'causal'.
-            activation: The final activation used in o = Activation(x + F(x))
-            dropout_rate: Float between 0 and 1. Fraction of the input units to drop.
-            kernel_initializer: Initializer for the kernel weights matrix (Conv1D).
-            use_batch_norm: Whether to use batch normalization in the residual layers or not.
-            use_layer_norm: Whether to use layer normalization in the residual layers or not.
-            use_weight_norm: Whether to use weight normalization in the residual layers or not.
-            kwargs: Any initializers for Layer class.
         """
+        Defines the residual block for the WaveNet TCN.
 
+        :param dilation_rate: The dilation power of 2 used for this residual block.
+        :param nb_filters: The number of convolutional filters used in this block.
+        :param kernel_size: The size of the convolutional kernel.
+        :param padding: The padding used in the convolutional layers, 'same' or 'causal'.
+        :param activation: The final activation used in o = Activation(x + F(x)).
+        :param dropout_rate: Float between 0 and 1. Fraction of the input units to drop.
+        :param kernel_initializer: Initializer for the kernel weights matrix (Conv1D).
+        :param use_batch_norm: Whether to use batch normalization in the residual layers or not.
+        :param use_layer_norm: Whether to use layer normalization in the residual layers or not.
+        :param use_weight_norm: Whether to use weight normalization in the residual layers or not.
+        :param kwargs: Any initializers for Layer class.
+        """
         self.dilation_rate = dilation_rate
         self.nb_filters = nb_filters
         self.kernel_size = kernel_size
@@ -69,17 +90,22 @@ class ResidualBlock(Layer):
         super(ResidualBlock, self).__init__(**kwargs)
 
     def _build_layer(self, layer):
-        """Helper function for building layer
-        Args:
-            layer: Appends layer to internal layer list and builds it based on the current output
-                   shape of ResidualBlocK. Updates current output shape.
+        """
+        Helper function for building a layer.
+
+        :param layer: Layer to append to the internal layer list and build it based on the current output
+                    shape of ResidualBlock. Updates the current output shape.
         """
         self.layers.append(layer)
         self.layers[-1].build(self.res_output_shape)
         self.res_output_shape = self.layers[-1].compute_output_shape(self.res_output_shape)
 
     def build(self, input_shape):
+        """
+        Builds the ResidualBlock.
 
+        :param input_shape: Shape of the input tensor.
+        """
         with K.name_scope(self.name):  # name scope used to make sure weights get unique names
             self.layers = []
             self.res_output_shape = input_shape
@@ -145,8 +171,11 @@ class ResidualBlock(Layer):
 
     def call(self, inputs, training=None):
         """
-        Returns: A tuple where the first element is the residual model tensor, and the second
-                 is the skip connection tensor.
+        Executes the ResidualBlock.
+
+        :param inputs: Input tensor.
+        :param training: Boolean indicating whether the layer should be trained or not.
+        :return: A tuple where the first element is the residual model tensor, and the second is the skip connection tensor.
         """
         x = inputs
         self.layers_outputs = [x]
@@ -164,34 +193,35 @@ class ResidualBlock(Layer):
         return [res_act_x, x]
 
     def compute_output_shape(self, input_shape):
+        """
+        Computes the output shape of the ResidualBlock.
+
+        :param input_shape: Shape of the input tensor.
+        :return: A list containing two elements, both representing the output shape of the layer.
+        """
         return [self.res_output_shape, self.res_output_shape]
 
 
 class TCN(Layer):
-    """Creates a TCN layer.
+    """
+    Creates a TCN layer.
 
-        Input shape:
-            A tensor of shape (batch_size, timesteps, input_dim).
-
-        Args:
-            nb_filters: The number of filters to use in the convolutional layers. Can be a list.
-            kernel_size: The size of the kernel to use in each convolutional layer.
-            dilations: The list of the dilations. Example is: [1, 2, 4, 8, 16, 32, 64].
-            nb_stacks : The number of stacks of residual blocks to use.
-            padding: The padding to use in the convolutional layers, 'causal' or 'same'.
-            use_skip_connections: Boolean. If we want to add skip connections from input to each residual blocK.
-            return_sequences: Boolean. Whether to return the last output in the output sequence, or the full sequence.
-            activation: The activation used in the residual blocks o = Activation(x + F(x)).
-            dropout_rate: Float between 0 and 1. Fraction of the input units to drop.
-            kernel_initializer: Initializer for the kernel weights matrix (Conv1D).
-            use_batch_norm: Whether to use batch normalization in the residual layers or not.
-            kwargs: Any other arguments for configuring parent class Layer. For example "name=str", Name of the model.
+    :param nb_filters: The number of filters to use in the convolutional layers. Can be a list.
+    :param kernel_size: The size of the kernel to use in each convolutional layer.
+    :param dilations: The list of the dilations. Example is: [1, 2, 4, 8, 16, 32, 64].
+    :param nb_stacks: The number of stacks of residual blocks to use.
+    :param padding: The padding to use in the convolutional layers, 'causal' or 'same'.
+    :param use_skip_connections: Boolean. If we want to add skip connections from input to each residual blocK.
+    :param return_sequences: Boolean. Whether to return the last output in the output sequence, or the full sequence.
+    :param activation: The activation used in the residual blocks o = Activation(x + F(x)).
+    :param dropout_rate: Float between 0 and 1. Fraction of the input units to drop.
+    :param kernel_initializer: Initializer for the kernel weights matrix (Conv1D).
+    :param use_batch_norm: Whether to use batch normalization in the residual layers or not.
+    :param kwargs: Any other arguments for configuring parent class Layer. For example "name=str", Name of the model.
                     Use unique names when using multiple TCN.
 
-        Returns:
-            A TCN layer.
-        """
-
+    :return: A TCN layer.
+    """
     def __init__(self,
                  nb_filters=64,
                  kernel_size=2,
@@ -243,12 +273,21 @@ class TCN(Layer):
 
     @property
     def receptive_field(self):
+        """
+        Computes the receptive field of the TCN layer.
+
+        :return: The receptive field size.
+        """
         assert_msg = 'The receptive field formula works only with power of two dilations.'
         assert all([is_power_of_two(i) for i in self.dilations]), assert_msg
         return self.kernel_size * self.nb_stacks * self.dilations[-1]
 
     def build(self, input_shape):
+        """
+        Builds the TCN layer.
 
+        :param input_shape: Shape of the input tensor.
+        """
         # member to hold current output shape of the layer for building purposes
         self.build_output_shape = input_shape
 
@@ -295,7 +334,12 @@ class TCN(Layer):
 
     def compute_output_shape(self, input_shape):
         """
-        Overridden in case keras uses it somewhere... no idea. Just trying to avoid future errors.
+        Computes the output shape of the TCN layer.
+
+        Note: Overridden in case keras uses it somewhere... no idea. Just trying to avoid future errors.
+
+        :param input_shape: Shape of the input tensor.
+        :return: A list containing the output shape of the layer.
         """
         if not self.built:
             self.build(input_shape)
@@ -309,6 +353,13 @@ class TCN(Layer):
             return [v.value if hasattr(v, 'value') else v for v in self.build_output_shape]
 
     def call(self, inputs, training=None):
+        """
+        Call the TCN model and define layers trainable.
+
+        :param inputs: The input tensor.
+        :param training: Boolean flag indicating whether the layer should be trained.
+        :return: TCN model.
+        """
         x = inputs
         self.layers_outputs = [x]
         self.skip_connections = []
@@ -335,6 +386,7 @@ class TCN(Layer):
     def get_config(self):
         """
         Returns the config of a the layer. This is used for saving and loading from a model
+
         :return: python dictionary with specs to rebuild layer
         """
         config = super(TCN, self).get_config()
@@ -353,7 +405,6 @@ class TCN(Layer):
         config['kernel_initializer'] = self.kernel_initializer
         return config
 
-
 def compiled_tcn(num_feat,  # type: int
                  num_classes,  # type: int
                  nb_filters,  # type: int
@@ -367,43 +418,43 @@ def compiled_tcn(num_feat,  # type: int
                  return_sequences=True,
                  regression=False,  # type: bool
                  dropout_rate=0.05,  # type: float
-                 name='tcn',  # type: str,
-                 kernel_initializer='he_normal',  # type: str,
-                 activation='relu',  # type:str,
+                 name='tcn',  # type: str
+                 kernel_initializer='he_normal',  # type: str
+                 activation='relu',  # type:str
                  opt='adam',
                  lr=0.002,
                  use_batch_norm=False,
                  use_layer_norm=False,
                  use_weight_norm=False):
     # type: (...) -> Model
-    """Creates a compiled TCN model for a given task (i.e. regression or classification).
+    """
+    Creates a compiled TCN model for a given task (i.e. regression or classification).
     Classification uses a sparse categorical loss. Please input class ids and not one-hot encodings.
 
-    Args:
-        num_feat: The number of features of your input, i.e. the last dimension of: (batch_size, timesteps, input_dim).
-        num_classes: The size of the final dense layer, how many classes we are predicting.
-        nb_filters: The number of filters to use in the convolutional layers.
-        kernel_size: The size of the kernel to use in each convolutional layer.
-        dilations: The list of the dilations. Example is: [1, 2, 4, 8, 16, 32, 64].
-        nb_stacks : The number of stacks of residual blocks to use.
-        max_len: The maximum sequence length, use None if the sequence length is dynamic.
-        padding: The padding to use in the convolutional layers.
-        use_skip_connections: Boolean. If we want to add skip connections from input to each residual blocK.
-        return_sequences: Boolean. Whether to return the last output in the output sequence, or the full sequence.
-        regression: Whether the output should be continuous or discrete.
-        dropout_rate: Float between 0 and 1. Fraction of the input units to drop.
-        activation: The activation used in the residual blocks o = Activation(x + F(x)).
-        name: Name of the model. Useful when having multiple TCN.
-        kernel_initializer: Initializer for the kernel weights matrix (Conv1D).
-        opt: Optimizer name.
-        lr: Learning rate.
-        use_batch_norm: Whether to use batch normalization in the residual layers or not.
-        use_layer_norm: Whether to use layer normalization in the residual layers or not.
-        use_weight_norm: Whether to use weight normalization in the residual layers or not.
-    Returns:
-        A compiled keras TCN.
+    :param num_feat: The number of features of your input, i.e. the last dimension of: (batch_size, timesteps, input_dim).
+    :param num_classes: The size of the final dense layer, how many classes we are predicting.
+    :param nb_filters: The number of filters to use in the convolutional layers.
+    :param kernel_size: The size of the kernel to use in each convolutional layer.
+    :param dilations: The list of the dilations. Example is: [1, 2, 4, 8, 16, 32, 64].
+    :param nb_stacks: The number of stacks of residual blocks to use.
+    :param max_len: The maximum sequence length, use None if the sequence length is dynamic.
+    :param output_len: The length of the output sequence.
+    :param padding: The padding to use in the convolutional layers.
+    :param use_skip_connections: Boolean. If we want to add skip connections from input to each residual block.
+    :param return_sequences: Boolean. Whether to return the last output in the output sequence, or the full sequence.
+    :param regression: Whether the output should be continuous or discrete.
+    :param dropout_rate: Float between 0 and 1. Fraction of the input units to drop.
+    :param name: Name of the model. Useful when having multiple TCN.
+    :param kernel_initializer: Initializer for the kernel weights matrix (Conv1D).
+    :param activation: The activation used in the residual blocks o = Activation(x + F(x)).
+    :param opt: Optimizer name.
+    :param lr: Learning rate.
+    :param use_batch_norm: Whether to use batch normalization in the residual layers or not.
+    :param use_layer_norm: Whether to use layer normalization in the residual layers or not.
+    :param use_weight_norm: Whether to use weight normalization in the residual layers or not.
+    
+    :return: A compiled Keras TCN model.
     """
-
     dilations = adjust_dilations(dilations)
 
     input_layer = Input(shape=(max_len, num_feat))
@@ -454,8 +505,13 @@ def compiled_tcn(num_feat,  # type: int
     print('model.y = {}'.format(output_layer.shape))
     return model
 
-
 def tcn_full_summary(model: Model, expand_residual_blocks=True):
+    """
+    Prints the full summary of a TCN model, including the layers within ResidualBlocks if specified.
+
+    :param model: The TCN model.
+    :param expand_residual_blocks: Boolean. If True, expands the ResidualBlocks to show the layers within them.
+    """
     layers = model._layers.copy()  # store existing layers
     model._layers.clear()  # clear layers
 

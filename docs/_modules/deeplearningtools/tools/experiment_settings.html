@@ -1,0 +1,598 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html" /><link rel="search" title="Search" href="../../../search.html" />
+
+    <link rel="shortcut icon" href="../../../_static/logo_listic.png"/><!-- Generated with Sphinx 6.2.1 and Furo 2023.05.20 -->
+        <title>deeplearningtools.tools.experiment_settings - DeepLearningTools 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #2E3440;
+  --color-code-foreground: #d8dee9;
+  --font-stack: Roboto, sans-serif;
+  --font-stack--monospace: Open Sans, monospace;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<div class="announcement">
+  <aside class="announcement-content">
+     <em>Deeplearningtools is currently in development.</em> 
+  </aside>
+</div>
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../index.html"><div class="brand">DeepLearningTools 0.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="../../../_static/main_light.png" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="../../../_static/main_dark.png" alt="Dark Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">DeepLearningTools 0.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../example.html">Examples and demonstrations</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../reference.html">Reference manual</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Reference manual</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../reference_index.html">DeepLearningTools package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of DeepLearningTools package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../main_script.html">Main subpackage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../unit_test.html">Test script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../reference_helpers.html">deeplearningtools.helpers subpackage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../reference_tools.html">deeplearningtools.tools subpackage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute.html">Community involvement and contributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../version.html">Release notes</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <h1>Source code for deeplearningtools.tools.experiment_settings</h1><div class="highlight"><pre>
+<span></span><span class="c1"># ========================================</span>
+<span class="c1"># FileName: experiment_settings.py</span>
+<span class="c1"># Date: 29 june 2023 - 08:00</span>
+<span class="c1"># Author: Alexandre Benoit</span>
+<span class="c1"># Email: alexandre.benoit@univ-smb.fr</span>
+<span class="c1"># GitHub: https://github.com/albenoit/DeepLearningTools</span>
+<span class="c1"># Brief: A set of tools to validate the load and check experiments settings file used to train and serve a given model</span>
+<span class="c1"># for DeepLearningTools.</span>
+<span class="c1"># =========================================</span>
+
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">importlib</span><span class="o">,</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="n">SETTINGSFILE_COPY_NAME</span><span class="o">=</span><span class="s1">&#39;experiment_settings.py&#39;</span>
+
+<div class="viewcode-block" id="loadModel_def_file"><a class="viewcode-back" href="../../../reference_tools.html#deeplearningtools.tools.experiment_settings.loadModel_def_file">[docs]</a><span class="k">def</span> <span class="nf">loadModel_def_file</span><span class="p">(</span><span class="n">usersettings</span><span class="p">,</span> <span class="n">absolute_path</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Basic method to load the model targeted by usersettings.model_file.</span>
+
+<span class="sd">  :param usersettings: The user (sessionFolder) settings object that contains the model file path.</span>
+<span class="sd">  :type usersettings: object</span>
+<span class="sd">  :param absolute_path: Flag indicating whether the model_file path is an absolute path. Defaults to False.</span>
+<span class="sd">  :type absolute_path: bool, optional</span>
+<span class="sd">  :return: The loaded Keras model.</span>
+<span class="sd">  :rtype: keras.Model</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="n">absolute_path</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+    <span class="n">model_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">usersettings</span><span class="o">.</span><span class="n">model_file</span><span class="p">)</span>
+  <span class="k">if</span> <span class="n">absolute_path</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="n">model_path</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">model_file</span>
+  <span class="k">try</span><span class="p">:</span>
+    <span class="n">spec</span><span class="o">=</span><span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span><span class="s1">&#39;model_def&#39;</span><span class="p">,</span> <span class="n">model_path</span><span class="p">)</span>
+    <span class="n">model_def</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">module_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+    <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">model_def</span><span class="p">)</span>
+  <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;loadModel_def_file: Failed to load model file </span><span class="si">{model}</span><span class="s1">, error message=</span><span class="si">{err}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">model_file</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="n">e</span><span class="p">))</span>
+  <span class="n">model</span><span class="o">=</span><span class="n">model_def</span><span class="o">.</span><span class="n">model</span>
+
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;loaded model file </span><span class="si">{file}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">model_path</span><span class="p">))</span>
+  <span class="k">return</span> <span class="n">model</span></div>
+
+<div class="viewcode-block" id="loadExperimentsSettings"><a class="viewcode-back" href="../../../reference_tools.html#deeplearningtools.tools.experiment_settings.loadExperimentsSettings">[docs]</a><span class="k">def</span> <span class="nf">loadExperimentsSettings</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">call_from_session_folder</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">restart_from_sessionFolder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">isServingModel</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Load experiments parameters from the mysettingsxxx.py script.</span>
+<span class="sd">  Also mask GPUs to only use the ones specified in the settings file.</span>
+
+<span class="sd">  :param filename: The settings file. If restarting an interrupted training session, you should target the experiments_settings.py copy available in the experiment folder to restart.</span>
+<span class="sd">  :type filename: str</span>
+<span class="sd">  :param call_from_session_folder: Flag indicating whether the function is called from the session folder. Defaults to False.</span>
+<span class="sd">  :type call_from_session_folder: bool, optional</span>
+<span class="sd">  :param restart_from_sessionFolder: [OPTIONAL] Set the session folder of a previously interrupted training session to restart.</span>
+<span class="sd">  :type restart_from_sessionFolder: str, optional</span>
+<span class="sd">  :param isServingModel: [OPTIONAL] Set True in the case of using model serving (server or client mode) so that some settings are not checked.</span>
+<span class="sd">  :type isServingModel: bool, optional</span>
+<span class="sd">  :return: The loaded ExperimentSettings object and the session folder.</span>
+<span class="sd">  :rtype: Tuple[ExperimentSettings, str]</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  
+  <span class="k">if</span> <span class="n">restart_from_sessionFolder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">restart_from_sessionFolder</span><span class="p">):</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Attempting to restart a previously ran training job...&#39;</span><span class="p">)</span>
+      <span class="n">sessionFolder</span><span class="o">=</span><span class="n">restart_from_sessionFolder</span>
+      <span class="c1">#target the initial experiments settings file</span>
+      <span class="n">filename</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">restart_from_sessionFolder</span><span class="p">,</span> <span class="n">SETTINGSFILE_COPY_NAME</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;From working folder&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()))</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;looking for &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+      <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Found&#39;</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Could not find experiment_settings.py file in the experiment folder:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">sessionFolder</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Could not restart interrupted training session, working folder not found:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">restart_from_sessionFolder</span><span class="p">))</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Process starts...&#39;</span><span class="p">)</span>
+
+  <span class="n">usersettings</span><span class="o">=</span><span class="n">ExperimentSettings</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">isServingModel</span><span class="p">,</span> <span class="n">call_from_session_folder</span><span class="p">)</span>
+
+  <span class="k">if</span> <span class="n">isServingModel</span><span class="p">:</span>
+    <span class="n">sessionFolder</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+  <span class="c1">#manage the working folder in the case of a new experiment</span>
+  <span class="n">workingFolder</span><span class="o">=</span><span class="n">usersettings</span><span class="o">.</span><span class="n">workingFolder</span>
+  <span class="k">if</span> <span class="n">restart_from_sessionFolder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">sessionFolder</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">workingFolder</span><span class="p">,</span> <span class="n">usersettings</span><span class="o">.</span><span class="n">session_name</span><span class="o">+</span><span class="s1">&#39;_&#39;</span><span class="o">+</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">--%H:%M:%S&quot;</span><span class="p">))</span>
+    <span class="n">usersettings</span><span class="o">.</span><span class="n">recoverFromCheckpoint</span><span class="o">=</span><span class="kc">False</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="n">usersettings</span><span class="o">.</span><span class="n">recoverFromCheckpoint</span><span class="o">=</span><span class="kc">True</span>
+
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Considered usersettings.hparams=&#39;</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">usersettings</span><span class="o">.</span><span class="n">hparams</span><span class="p">))</span>
+  <span class="k">return</span> <span class="n">usersettings</span><span class="p">,</span> <span class="n">sessionFolder</span></div>
+
+
+<div class="viewcode-block" id="ExperimentSettings"><a class="viewcode-back" href="../../../reference_tools.html#deeplearningtools.tools.experiment_settings.ExperimentSettings">[docs]</a><span class="k">class</span> <span class="nc">ExperimentSettings</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  An experiment settings object with some validators</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settingsFile</span><span class="p">,</span> <span class="n">isServingModel</span><span class="p">,</span> <span class="n">call_from_session_folder</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Loads a python script file that describes an experiment setup and loads its required parameters</span>
+
+<span class="sd">    :param settingsFile: The settings filename.</span>
+<span class="sd">    :type settingsFile: str</span>
+<span class="sd">    :param isServingModel: Boolean value indicating whether the file is loaded to serve the target model.</span>
+<span class="sd">    :type isServingModel: bool</span>
+<span class="sd">    :param call_from_session_folder: Optional parameter to indicate if the method is called from the session folder. Defaults to False.</span>
+<span class="sd">    :type call_from_session_folder: bool, optional</span>
+
+<span class="sd">    :raises ValueError: If the expected parameters are missing or wrong.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># load the settings file</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Trying to load experiments settings file : &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">settingsFile</span><span class="p">))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">settingsFile</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">settingsFile</span><span class="p">)</span> <span class="c1">#convert to standard path with single &#39;/&#39; separators</span>
+
+        <span class="n">module_spec</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span><span class="s1">&#39;settings&#39;</span><span class="p">,</span> <span class="n">settingsFile</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">module_from_spec</span><span class="p">(</span><span class="n">module_spec</span><span class="p">)</span>
+        <span class="n">module_spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span><span class="p">)</span>
+
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;settings_module=settingsFile[:-3].split(&#39;/&#39;)</span>
+<span class="sd">        if len(settings_module)&gt;1:</span>
+<span class="sd">          settingsFolder=os.path.join(*settings_module[:-1]).replace(&#39;/&#39;,&#39;.&#39;)</span>
+<span class="sd">          settings_module=settings_module[-1]</span>
+<span class="sd">          settings_module=settingsFolder+&#39;.&#39;+settings_module</span>
+<span class="sd">        else:# as for serve and predict mode, working directory is expected to be the experiment folder</span>
+<span class="sd">          settings_module=settingsFile[:-3]</span>
+<span class="sd">        print(&#39;-&gt; loading as module : &#39;+settings_module)</span>
+<span class="sd">        print(os.getcwd())</span>
+<span class="sd">        print(os.listdir())</span>
+<span class="sd">        print(&#39;settings file exists:&#39;,os.path.exists(settings_module+&#39;.py&#39;))</span>
+<span class="sd">        self.experiment_settings = importlib.import_module(settings_module)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Failed to load </span><span class="si">{settings}</span><span class="s1"> file. Error message is </span><span class="si">{error}</span><span class="s1">. This generally comes from a) file does not exist, b)basic python syntax errors&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">settings</span><span class="o">=</span><span class="n">settingsFile</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">e</span><span class="p">))</span>
+
+    <span class="c1">#experiment session parameters</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;******************************************************&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;* Checking the experiments settings file...&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;* look at the README.md file to read a working example&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;* look at the experiment_settings_checker script to see all the required fields&#39;</span><span class="p">)</span>
+
+    <span class="c1">#experiment session parameters</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">random_seed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertType</span><span class="p">(</span><span class="s1">&#39;random_seed&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="s1">&#39;an integer to specify the random seed to apply&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">recoverFromCheckpoint</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;recoverFromCheckpoint&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">sessionFolder</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">session_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertType</span><span class="p">(</span><span class="s1">&#39;session_name&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;a string that specifies the name of the experiment&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">workingFolder</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertType</span><span class="p">(</span><span class="s1">&#39;workingFolder&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;a string that specifies the parent pathname where the training procedure data is being stored&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;debug&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">debug_server_addresses</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s2">&quot;debug_server_addresses&quot;</span><span class="p">,</span> <span class="s2">&quot;127.0.0.1:2333&quot;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">useXLA</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertType</span><span class="p">(</span><span class="s1">&#39;useXLA&#39;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s1">&#39;activate or not XLA graph optimization, must be boolean&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">model_export_filename</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">weights_moving_averages</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertType</span><span class="p">(</span><span class="s1">&#39;weights_moving_averages&#39;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s1">&#39;weights_moving_averages must be boolean&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">enable_mixed_precision</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;enable_mixed_precision&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">cid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;cid&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="c1"># enmpty str except in distributed and simulated context, cid indicates the simulated client id and allows subfolders management for logs, checkpoints and expoted_models</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">hparams_ext</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;hparams_ext&#39;</span><span class="p">,</span> <span class="p">{})</span> <span class="c1">#maybe supplementary hyperparameters, not reported in headers</span>
+    <span class="c1">#model fitting parameters</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertPositive_above_zero</span><span class="p">(</span><span class="s1">&#39;batch_size&#39;</span><span class="p">,</span> <span class="s1">&#39;the number of samples processed for each batch&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">nbEpoch</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertPositive_above_zero</span><span class="p">(</span><span class="s1">&#39;nbEpoch&#39;</span><span class="p">,</span> <span class="s1">&#39;the number of times the training set is processed for training&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="o">=</span><span class="mi">1</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">class_weight</span><span class="o">=</span><span class="p">[]</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">sample_weight</span><span class="o">=</span><span class="p">[]</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">initial_epoch</span><span class="o">=</span><span class="mi">0</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">validation_freq</span><span class="o">=</span><span class="mi">1</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">max_queue_size</span><span class="o">=</span><span class="mi">10</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">workers</span><span class="o">=</span><span class="mi">1</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">use_multiprocessing</span><span class="o">=</span><span class="kc">False</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">quantization_aware_training</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;quantization_aware_training&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">federated_learning</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;enable_federated_learning&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">federated_learning_server_address</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;federated_learning_server_address&#39;</span><span class="p">,</span> <span class="s2">&quot;localhost:8080&quot;</span><span class="p">)</span>
+    <span class="c1"># learning rate management</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">early_stopping_patience</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertPositive_above_zero</span><span class="p">(</span><span class="s1">&#39;early_stopping_patience&#39;</span><span class="p">,</span> <span class="s1">&#39;the number of epoch without val_loss decrease to wait for before stopping training&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">get_learningRate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s1">&#39;get_learningRate&#39;</span><span class="p">,</span> <span class="s1">&#39;the training speed factor, returns a float or a tf.keras.optimizers.schedules object&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">monitored_loss_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;monitored_loss_name&#39;</span><span class="p">,</span> <span class="s1">&#39;val_loss&#39;</span><span class="p">)</span>
+    <span class="c1">#input data parameters</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">raw_data_dir_val</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s1">&#39;raw_data_dir_val&#39;</span><span class="p">,</span> <span class="s1">&#39;path to the validation dataset&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">raw_data_dir_train</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s1">&#39;raw_data_dir_train&#39;</span><span class="p">,</span> <span class="s1">&#39;path to the training dataset&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">raw_data_filename_extension</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertType</span><span class="p">(</span><span class="s1">&#39;raw_data_filename_extension&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;extension of the dataset files&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">consume_data_from_kafka</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;enable_federated_learning&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="c1">#GPU IDs allocation</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">used_gpu_IDs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertType</span><span class="p">(</span><span class="s1">&#39;used_gpu_IDs&#39;</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="s1">&#39;a list of GPU ids to use for the experiment&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">distribution_strategy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;distribution_strategy&#39;</span><span class="p">,</span> <span class="s1">&#39;MirroredStrategy&#39;</span><span class="p">)</span>
+    <span class="c1">#profiling</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">use_profiling</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertType</span><span class="p">(</span><span class="s1">&#39;use_profiling&#39;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s1">&#39;Boolean to ativate processing workflow profiling&#39;</span><span class="p">)</span>
+    <span class="c1">#check train and validation dataset parameters</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">nb_train_samples</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertPositive_above_equal_zero</span><span class="p">(</span><span class="s1">&#39;nb_train_samples&#39;</span><span class="p">,</span> <span class="s1">&#39;the number of samples used for training&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">nb_val_samples</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertPositive_above_equal_zero</span><span class="p">(</span><span class="s1">&#39;nb_val_samples&#39;</span><span class="p">,</span> <span class="s1">&#39;the number of samples used for validation&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">kafka_bootstrap_servers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;kafka_bootstrap_servers&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;localhost:9092&#39;</span><span class="p">])</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">consume_data_from_kafka</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;consume_data_from_kafka&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="c1">#input pipelines</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">get_input_pipeline</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s1">&#39;get_input_pipeline&#39;</span><span class="p">,</span> <span class="s1">&#39;the train and validation input data pipelines function params=[batch_size, raw_data_files_folder, shuffle_batches], must return an input function as described here : https://www.tensorflow.org/programmers_guide/datasets&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">custom_tensorboard_logs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;custom_tensorboard_logs&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s1">&#39;specify a function able to add some tf.summary.x (x could be image, etc.&#39;</span><span class="p">)</span>
+    <span class="c1">#tensorflow serving and client dialog</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">save_only_last_best_model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;save_only_last_best_model&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s1">&#39;set True in order to only save the last best model in the exported model folder (keep disk space)&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">wait_for_server_ready_int_secs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertPositive_above_zero</span><span class="p">(</span><span class="s1">&#39;wait_for_server_ready_int_secs&#39;</span><span class="p">,</span> <span class="s1">&#39;the number of seconds to wait for a tensorflow service before timeout on first contact&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">serving_client_timeout_int_secs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertPositive_above_zero</span><span class="p">(</span><span class="s1">&#39;serving_client_timeout_int_secs&#39;</span><span class="p">,</span> <span class="s1">&#39;the number of seconds to wait for a tensorflow service before timeout for each request&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">served_head_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertType</span><span class="p">(</span><span class="s1">&#39;served_head_names&#39;</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="s1">&#39;a list string(s) providing the name(s) of the target output, relates to the get_served_module function behaviors&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">served_input_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertType</span><span class="p">(</span><span class="s1">&#39;served_input_names&#39;</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="s1">&#39;a list of string(s) providing the name(s) of the input(s) of the served model, relates to the get_served_module function behaviors&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">Client_IO</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s1">&#39;Client_IO&#39;</span><span class="p">,</span> <span class="s1">&#39;a Client_IO class that defines how a client talks to a tensorflow server&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">tensorflow_server_address</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s1">&#39;tensorflow_server_address&#39;</span><span class="p">,</span> <span class="s1">&#39;a string specifying the IP adress of the tensorflow server to be contacted by a client&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">tensorflow_server_port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s1">&#39;tensorflow_server_port&#39;</span><span class="p">,</span> <span class="s1">&#39;an integer that specifies the port use to communicate whith the tensorflow server&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">get_served_module</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s1">&#39;get_served_module&#39;</span><span class="p">,</span> <span class="s1">&#39;a function that returns a @tf.function that specifies how to use the model in production/serving&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">grpc_max_message_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hasOrDefault</span><span class="p">(</span><span class="s1">&#39;grpc_max_message_length&#39;</span><span class="p">,</span> <span class="mi">536870912</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s1">&#39;specify this parameter if the messages sent to/received from the served model exceed the standard 4Mb size, here using large value (512Mb)&#39;</span><span class="p">)</span>
+
+    <span class="c1">#look for an optionnal hyperparameters dictionnary</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">=</span><span class="p">{}</span> <span class="c1"># acollection of external hyperparameters that will decorate session folder name</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span><span class="p">,</span> <span class="s1">&#39;hparams&#39;</span><span class="p">):</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span><span class="p">,</span><span class="s1">&#39;hparams&#39;</span><span class="p">)</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Found hyperparameters:&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="p">)</span>
+      <span class="k">if</span> <span class="s1">&#39;cid&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span> <span class="c1">#for convenience</span>
+         <span class="bp">self</span><span class="o">.</span><span class="n">cid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="p">[</span><span class="s1">&#39;cid&#39;</span><span class="p">]</span>
+    <span class="c1">#check model</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">model_file</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">assertType</span><span class="p">(</span><span class="s1">&#39;model_file&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;model_file must be set as a filename targetting the model description to optimise&#39;</span><span class="p">))</span>
+    <span class="c1">#since model file is expected to be in the current directory, get the basename</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">call_from_session_folder</span><span class="p">):</span>
+       <span class="bp">self</span><span class="o">.</span><span class="n">model_file</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_file</span><span class="p">)</span>
+    <span class="c1"># #-&gt; set model_name accordingly</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__get_model_name</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">isServingModel</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+      <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_file</span><span class="p">),</span> <span class="s1">&#39;</span><span class="si">{model}</span><span class="s1"> targetted by model_file filename does not exist in the current working directory: </span><span class="si">{cwd}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_file</span><span class="p">,</span> <span class="n">cwd</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
+
+    <span class="c1">#train and validation flags and functions</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">get_total_loss</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s1">&#39;get_total_loss&#39;</span><span class="p">,</span> <span class="s1">&#39;function that receives parameters [inputs, model_outputs_dict, labels, weights_loss] that must return a graph node that represents the optimisation loss. This node will be drawn on the tensorboard as the </span><span class="se">\&#39;</span><span class="s1">loss</span><span class="se">\&#39;</span><span class="s1"> variable.&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">get_metrics</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s1">&#39;get_metrics&#39;</span><span class="p">,</span> <span class="s1">&#39;function that receives parameters [inputs, model_outputs_dict, labels] and that returns a dictionnary of tf.metrics&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">get_optimizer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s1">&#39;get_optimizer&#39;</span><span class="p">,</span> <span class="s1">&#39;function that receives as parameters [loss, learning_rate, global_step] and that outputs an optimisation node (generally a loss minimization op)&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">reference_labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">assertType</span><span class="p">(</span><span class="s1">&#39;reference_labels&#39;</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="s1">&#39;a list of strings THAT MUST BE of the same length as the number of model output tensors&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">addon_callbacks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s1">&#39;addon_callbacks&#39;</span><span class="p">,</span> <span class="s1">&#39;a function that receives tf.keras.model and train and val input pipelines as parameters and retruns a list of tf.keras.callbacks &#39;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+      <span class="k">assert</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">key</span><span class="p">)</span><span class="o">!=</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;Parameter &#39;</span><span class="o">+</span><span class="n">key</span><span class="o">+</span><span class="s1">&#39; not initialized&#39;</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;INFO: All required parameters are set&#39;</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;*** Parameters check ended successfuly&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;******************************************************&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ExperimentSettings.hasOrDefault"><a class="viewcode-back" href="../../../reference_tools.html#deeplearningtools.tools.experiment_settings.ExperimentSettings.hasOrDefault">[docs]</a>  <span class="k">def</span> <span class="nf">hasOrDefault</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">defaultValue</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks if a parameter exists in the experiment settings object and returns its value if it exists, or a default value if it doesn&#39;t.</span>
+
+<span class="sd">    :param param: The name of the parameter to check.</span>
+<span class="sd">    :type param: str</span>
+<span class="sd">    :param defaultValue: The default value to return if the parameter doesn&#39;t exist.</span>
+<span class="sd">    :type defaultValue: Any</span>
+<span class="sd">    :param message: Optional message to print when the parameter is not found. Defaults to None.</span>
+<span class="sd">    :type message: str, optional</span>
+
+<span class="sd">    :return: The value of the parameter if it exists, or the default value if it doesn&#39;t.</span>
+<span class="sd">    :rtype: Any</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
+      <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span><span class="p">,</span><span class="n">param</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Did not find parameter&#39;</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="s1">&#39;using as default&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">defaultValue</span><span class="p">))</span>
+      <span class="k">if</span> <span class="n">message</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&gt;&#39;</span><span class="p">,</span><span class="n">message</span><span class="p">)</span>
+      <span class="k">return</span> <span class="n">defaultValue</span></div>
+
+  <span class="k">def</span> <span class="nf">__get_model_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_file</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+<div class="viewcode-block" id="ExperimentSettings.assertPositive_above_zero"><a class="viewcode-back" href="../../../reference_tools.html#deeplearningtools.tools.experiment_settings.ExperimentSettings.assertPositive_above_zero">[docs]</a>  <span class="k">def</span> <span class="nf">assertPositive_above_zero</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">param_description</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Asserts that a parameter exists in the experiment settings object and its value is positive and above zero.</span>
+
+<span class="sd">    :param param: The name of the parameter to check.</span>
+<span class="sd">    :type param: str</span>
+<span class="sd">    :param param_description: Description of the parameter for the error message.</span>
+<span class="sd">    :type param_description: str</span>
+
+<span class="sd">    :return: The value of the parameter if it exists and is positive and above zero.</span>
+
+<span class="sd">    :raises AssertionError: If the parameter is not found or its value is not positive and above zero.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Specification error on variable </span><span class="si">{param}</span><span class="s1">: </span><span class="si">{descr}</span><span class="s1">. It must be set and be above 0&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param</span><span class="o">=</span><span class="n">param</span><span class="p">,</span> <span class="n">descr</span><span class="o">=</span><span class="n">param_description</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span><span class="p">,</span><span class="n">param</span><span class="p">),</span> <span class="n">message</span>
+    <span class="k">assert</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span><span class="p">,</span><span class="n">param</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">,</span> <span class="n">message</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span><span class="p">,</span><span class="n">param</span><span class="p">)</span></div>
+  
+<div class="viewcode-block" id="ExperimentSettings.assertPositive_above_equal_zero"><a class="viewcode-back" href="../../../reference_tools.html#deeplearningtools.tools.experiment_settings.ExperimentSettings.assertPositive_above_equal_zero">[docs]</a>  <span class="k">def</span> <span class="nf">assertPositive_above_equal_zero</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">param_description</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Asserts that a parameter exists in the experiment settings object and its value is positive and above or equal to zero.</span>
+<span class="sd">    </span>
+<span class="sd">    :param param: The name of the parameter to check.</span>
+<span class="sd">    :type param: str</span>
+<span class="sd">    :param param_description: Description of the parameter for the error message.</span>
+<span class="sd">    :type param_description: str</span>
+
+<span class="sd">    :return: The value of the parameter if it exists and is positive and above or equal to zero.</span>
+
+<span class="sd">    :raises AssertionError: If the parameter is not found or its value is not positive and above or equal to zero.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Specification error on variable </span><span class="si">{param}</span><span class="s1">: </span><span class="si">{descr}</span><span class="s1">. It must be set and be above 0&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param</span><span class="o">=</span><span class="n">param</span><span class="p">,</span> <span class="n">descr</span><span class="o">=</span><span class="n">param_description</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span><span class="p">,</span><span class="n">param</span><span class="p">),</span> <span class="n">message</span>
+    <span class="k">assert</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span><span class="p">,</span><span class="n">param</span><span class="p">)</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">,</span> <span class="n">message</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span><span class="p">,</span><span class="n">param</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExperimentSettings.assertType"><a class="viewcode-back" href="../../../reference_tools.html#deeplearningtools.tools.experiment_settings.ExperimentSettings.assertType">[docs]</a>  <span class="k">def</span> <span class="nf">assertType</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">param_description</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Asserts that a parameter exists in the experiment settings object and its value is of the specified type.</span>
+
+<span class="sd">    :param param: The name of the parameter to check.</span>
+<span class="sd">    :type param: str</span>
+<span class="sd">    :param type: The expected type of the parameter&#39;s value.</span>
+<span class="sd">    :type type: type</span>
+<span class="sd">    :param param_description: Description of the parameter for the error message.</span>
+<span class="sd">    :type param_description: str</span>
+
+<span class="sd">    :return: The value of the parameter if it exists and is of the specified type.</span>
+
+<span class="sd">    :raises AssertionError: If the parameter is not found or its value is not of the specified type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Specification error on variable </span><span class="si">{param}</span><span class="s1">: </span><span class="si">{descr}</span><span class="s1">. It must be of type &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param</span><span class="o">=</span><span class="n">param</span><span class="p">,</span> <span class="n">descr</span><span class="o">=</span><span class="nb">type</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span><span class="p">,</span><span class="n">param</span><span class="p">),</span> <span class="nb">type</span><span class="p">),</span> <span class="n">message</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span><span class="p">,</span><span class="n">param</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExperimentSettings.has"><a class="viewcode-back" href="../../../reference_tools.html#deeplearningtools.tools.experiment_settings.ExperimentSettings.has">[docs]</a>  <span class="k">def</span> <span class="nf">has</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">error_message</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks if a parameter exists in the experiment settings object.</span>
+<span class="sd">    </span>
+<span class="sd">    :param param: The name of the parameter to check.</span>
+<span class="sd">    :type param: str</span>
+<span class="sd">    :param error_message: The error message to display if the parameter is missing.</span>
+<span class="sd">    :type error_message: str</span>
+
+<span class="sd">    :return: The value of the parameter if it exists.</span>
+
+<span class="sd">    :raises AssertionError: If the parameter is missing in the experiment settings object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span><span class="p">,</span> <span class="n">param</span><span class="p">),</span> <span class="s1">&#39;Missing </span><span class="si">{param}</span><span class="s1"> : </span><span class="si">{msg}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param</span><span class="o">=</span><span class="n">param</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="n">error_message</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment_settings</span><span class="p">,</span><span class="n">param</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ExperimentSettings.summary"><a class="viewcode-back" href="../../../reference_tools.html#deeplearningtools.tools.experiment_settings.ExperimentSettings.summary">[docs]</a>  <span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;******************************************************&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Experiment setup:&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Setting&#39;</span><span class="p">,</span><span class="n">key</span><span class="p">,</span> <span class="s1">&#39;=&#39;</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">key</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;******************************************************&#39;</span><span class="p">)</span></div></div>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, Alexandre Benoit
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/scripts/furo.js"></script>
+    <script src="../../../_static/clipboard.min.js"></script>
+    <script src="../../../_static/copybutton.js"></script>
+    </body>
+</html>

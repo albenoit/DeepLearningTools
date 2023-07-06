@@ -1,73 +1,89 @@
+# ========================================
+# FileName: model.py
+# Date: 29 june 2023 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: A set of custom method to tf model
+# for DeepLearningTools.
+# =========================================
+
 import tensorflow as tf
 import numpy as np
-
 from tensorflow.keras import layers
 from tensorflow.python.layers.core import Dense
 from deeplearningtools.helpers import loss
 from deeplearningtools.helpers.distance_network import deep_relative_trust
-
 import os
 
-#add a method to track model weights changes on model.set_weights() calls
+#--------------------------------------------------------------------------------
+# Add a method to track model weights changes on model.set_weights() calls
+#--------------------------------------------------------------------------------
+
 def track_weights_change(model, weights, round:int, prefix:str=''): # as for keras/keras/engine/base_layer.py
+    """
+    Tracks the change in weights between two sets of weights and writes simple numeric values for later analysis in TensorBoard.
+
+    :param model: The model whose weights are being tracked.
+    :param weights: The reference set of weights to compare with.
+    :param round: The current training round or step.
+    :param prefix: Optional prefix for the summary names.
+    """
     weights_change_norm=[tf.linalg.norm(model.get_weights()[i]-weights[i]) for i in range(len(weights))]
     weights_change_norm_relative=[tf.cast(weights_change_norm[i], tf.float32)/tf.cast(tf.linalg.norm(model.get_weights()[i]), tf.float32) for i in range(len(weights))]
     #print('gradient norm move tracking')
     #for i in range(len(weights)):
     #  tf.summary.scalar('layer_weights_changes_l'+str(i),data=weights_change_norm[i], step=round)
     #  tf.summary.scalar('layer_weights_changes_l'+str(i)+'relative',data=weights_change_norm_relative[i], step=round)
-    tf.summary.scalar(prefix+'layer_weights_changes_avg',data=np.mean(weights_change_norm), step=round)
-    tf.summary.scalar(prefix+'layer_weights_changes_avg_relative',data=np.mean(weights_change_norm_relative), step=round)
-    trusted_dist=deep_relative_trust(first_network= model.get_weights(),
-                                            second_network= weights,
-                                            return_drt_product=True)[0]
-    tf.summary.scalar(prefix+'local_global_model_trusted_dist',data=np.float32(trusted_dist), step=round)
+    tf.summary.scalar(prefix+'layer_weights_changes_avg', data=np.mean(weights_change_norm), step=round)
+    tf.summary.scalar(prefix+'layer_weights_changes_avg_relative', data=np.mean(weights_change_norm_relative), step=round)
+    trusted_dist=deep_relative_trust(first_network= model.get_weights(), second_network= weights, return_drt_product=True)[0]
+    tf.summary.scalar(prefix+'local_global_model_trusted_dist', data=np.float32(trusted_dist), step=round)
 
 class ReplicatedOrthogonalInitialize(tf.keras.initializers.Orthogonal):
-  
 
-  def __init__(self, scale, gain=1.0, seed=None):
-      super(ReplicatedOrthogonalInitialize, self).__init__(gain, seed)
-      self.scale=scale
-      self.sampling_shape_factor=tf.constant([1,1,1,self.scale**2], dtype=tf.int64)
+    def __init__(self, scale, gain=1.0, seed=None):
+        super(ReplicatedOrthogonalInitialize, self).__init__(gain, seed)
+        self.scale=scale
+        self.sampling_shape_factor=tf.constant([1,1,1,self.scale**2], dtype=tf.int64)
 
-  def __call__(self, shape, dtype=tf.dtypes.float32):
-    """ Overrides the parent call function
-        does the same op but replicates initialization for a set of q filters
-        => useful for shuffle upsampling convolution as proposed in https://arxiv.org/abs/1707.02937
-    Returns a tensor object initialized as specified by the initializer.
-    Args:
-      shape: Shape of the tensor.
-      dtype: Optional dtype of the tensor. Only floating point types are
-        supported.
-    Raises:
-      ValueError: If the dtype is not floating point or the input shape is not
-       valid.
-    """
-    #tf.print('ReplicatedOrthogonalInitialize: inputshape', shape)
-    subsampled_shape=shape//self.sampling_shape_factor
-    #tf.print('ReplicatedOrthogonalInitialize: subsampled shape', subsampled_shape)
-    sampled_inits = super(ReplicatedOrthogonalInitialize, self).__call__(subsampled_shape, dtype)
-    
-    sampled_inits_t = tf.transpose(sampled_inits, perm=[2, 0, 1, 3])
-    #tf.print('ReplicatedOrthogonalInitialize: subsampled transposed shape', sampled_inits_t.shape)
-    
-    sampled_inits_t_nn = tf.image.resize(sampled_inits_t,
-                                         size=(shape[0] * self.scale, shape[1] * self.scale),
-                                         method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    #tf.print('ReplicatedOrthogonalInitialize: tiled inits transposed NN shape', sampled_inits_t_nn.shape)
-    sampled_inits_t_nn = tf.nn.space_to_depth(sampled_inits_t_nn, block_size=self.scale)
-    #tf.print('ReplicatedOrthogonalInitialize: tiled transposed NN depth2space shape', sampled_inits_t_nn.shape)
-    sampled_inits_t = tf.transpose(sampled_inits_t_nn, perm=[1, 2, 0, 3])
-    #tf.print('ReplicatedOrthogonalInitialize: tiled inits shape', sampled_inits_t.shape)
-    return sampled_inits_t
+    def __call__(self, shape, dtype=tf.dtypes.float32):
+        """ 
+        Overrides the parent call function, does the same op but replicates initialization for a set of q filters useful for shuffle upsampling convolution as proposed in https://arxiv.org/abs/1707.02937
 
-  def get_config(self):
-    config=super(ReplicatedOrthogonalInitialize, self).get_config()
-    config['scale']=self.scale
-    return config
+        Returns a tensor object initialized as specified by the initializer.
+        
+        :param shape: Shape of the tensor.
+        :param dtype: Optional dtype of the tensor. Only floating point types are supported.
+        :raises ValueError: If the dtype is not floating point or the input shape is not valid.
+        """
+        #tf.print('ReplicatedOrthogonalInitialize: inputshape', shape)
+        subsampled_shape=shape//self.sampling_shape_factor
+        #tf.print('ReplicatedOrthogonalInitialize: subsampled shape', subsampled_shape)
+        sampled_inits = super(ReplicatedOrthogonalInitialize, self).__call__(subsampled_shape, dtype)
+        sampled_inits_t = tf.transpose(sampled_inits, perm=[2, 0, 1, 3])
+        #tf.print('ReplicatedOrthogonalInitialize: subsampled transposed shape', sampled_inits_t.shape)
+        sampled_inits_t_nn = tf.image.resize(sampled_inits_t, size=(shape[0] * self.scale, shape[1] * self.scale), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        #tf.print('ReplicatedOrthogonalInitialize: tiled inits transposed NN shape', sampled_inits_t_nn.shape)
+        sampled_inits_t_nn = tf.nn.space_to_depth(sampled_inits_t_nn, block_size=self.scale)
+        #tf.print('ReplicatedOrthogonalInitialize: tiled transposed NN depth2space shape', sampled_inits_t_nn.shape)
+        sampled_inits_t = tf.transpose(sampled_inits_t_nn, perm=[1, 2, 0, 3])
+        #tf.print('ReplicatedOrthogonalInitialize: tiled inits shape', sampled_inits_t.shape)
+        return sampled_inits_t
+
+    def get_config(self):
+        config=super(ReplicatedOrthogonalInitialize, self).get_config()
+        config['scale']=self.scale
+        return config
     
 def test_ReplicatedOrthogonalInitialize(shape=[3,3,16,32], scale=2):
+    """
+    Tests ReplicatedOrthogonalInitialize by initializing a tensor and displaying its representation using matplotlib.
+
+    :param shape: Shape of the tensor. Default is [3, 3, 16, 32].
+    :param scale: Scale factor for replication. Default is 2.
+    :return: Normalized representation of the initialized tensor.
+    """
     import matplotlib.pyplot as plt
     inits=ReplicatedOrthogonalInitialize(scale=2)(shape=shape)
     inits_3c_disp= tf.nn.depth_to_space(tf.transpose(inits, perm = [2, 0, 1, 3]), scale )[0,:,:,:3].numpy()
@@ -77,81 +93,79 @@ def test_ReplicatedOrthogonalInitialize(shape=[3,3,16,32], scale=2):
     return inits_3c_disp_normed
 
 class SubpixelConv2D(tf.Module):
-  """
-    subpixel convolution/pixelshuffling approach (https://arxiv.org/abs/1609.05158)
+    """
+    Subpixel convolution/pixelshuffling approach (https://arxiv.org/abs/1609.05158)
+
     Upscaling Tensor from (any, h, w, c) to (any, h*factor, w*factor, c)
-  """
-
-  
-  def __init__(self, input_dims, factor):
     """
-    Args:
-    input_dims : the list of dimensions of the input tensor to be upscaled
-    factor : the upscaling factor to be applied
-    """
-    self.input_dims=input_dims
-    self.factor=factor
-    self.conv_output_dims = ( self.input_dims[0],
-                    self.input_dims[1] * self.factor,
-                    self.input_dims[2] * self.factor,
-                    self.input_dims[3] // (self.factor ** 2)
-                )
-    self.lr_conv_channels=self.input_dims[3]*(self.factor**2)
+    def __init__(self, input_dims, factor):
+        """
+            :param input_dims: The list of dimensions of the input tensor to be upscaled.
+            :param factor: The upscaling factor to be applied.
+        """
+        self.input_dims=input_dims
+        self.factor=factor
+        self.conv_output_dims = ( self.input_dims[0],
+                        self.input_dims[1] * self.factor,
+                        self.input_dims[2] * self.factor,
+                        self.input_dims[3] // (self.factor ** 2)
+                    )
+        self.lr_conv_channels=self.input_dims[3]*(self.factor**2)
+        #kernel_regul=tf.keras.regularizers.L2(0.001)
+        kernel_regul=loss.Regularizer_L1L2Ortho(l1=0.0, l2=0.0, ortho=0.0001, ortho_type='srip', nb_filters=self.lr_conv_channels)
+        #conv=None
+        #if mode == '2D':
+        self.lr_conv=tf.keras.layers.Conv2D(
+                                filters=self.lr_conv_channels,
+                                kernel_size=[3, 3],
+                                strides=(1, 1),
+                                padding='same',
+                                data_format='channels_last',
+                                dilation_rate=(1, 1),
+                                activation=None,
+                                use_bias=True,
+                                kernel_initializer=ReplicatedOrthogonalInitialize(scale=factor),#tf.keras.initializers.Orthogonal(), #TODO, following https://arxiv.org/abs/1707.02937, copy the same ortho init for each of sub convs 
+                                bias_initializer=tf.initializers.constant(0.1),
+                                kernel_regularizer=kernel_regul,
+                                bias_regularizer=None,
+                                activity_regularizer=None,
+                                kernel_constraint=None,
+                                bias_constraint=None,
+                                #name=name
+                                )
 
-    #kernel_regul=tf.keras.regularizers.L2(0.001)
-    kernel_regul=helpers.loss.Regularizer_L1L2Ortho( l1=0.0,
-                                                     l2=0.0,
-                                                     ortho=0.0001,
-                                                     ortho_type='srip',
-                                                     nb_filters=self.lr_conv_channels)
-     
-    #conv=None
-    #if mode == '2D':
-    self.lr_conv=tf.keras.layers.Conv2D(
-                          filters=self.lr_conv_channels,
-                          kernel_size=[3, 3],
-                          strides=(1, 1),
-                          padding='same',
-                          data_format='channels_last',
-                          dilation_rate=(1, 1),
-                          activation=None,
-                          use_bias=True,
-                          kernel_initializer=ReplicatedOrthogonalInitialize(scale=factor),#tf.keras.initializers.Orthogonal(), #TODO, following https://arxiv.org/abs/1707.02937, copy the same ortho init for each of sub convs 
-                          bias_initializer=tf.initializers.constant(0.1),
-                          kernel_regularizer=kernel_regul,
-                          bias_regularizer=None,
-                          activity_regularizer=None,
-                          kernel_constraint=None,
-                          bias_constraint=None,
-                          #name=name
-                        )
+    def __call__(self,input_features):
+        """
+        :param input_features : The tensor of shape (h,w,c) to be upscaled.
+        :return: The upscaled factor to be applied of shape.
+        """
+        # apply conv in the initial low resolution : from (h,w,c) to (h, w, c*(factor**2)) 
+        lr_features=self.lr_conv(input_features)
+        #upsampling : from (h, w, c*(factor**2)) to (h*factor,w*factor,c) 
+        return tf.nn.depth_to_space(lr_features, self.factor)
 
-  def __call__(self,input_features):
-    """
-    Args:
-    input_features : the tensor of shape (h,w,c) to be upscaled
-    returns : the upscaled factor to be applied of shape 
-    """
-    # apply conv in the initial low resolution : from (h,w,c) to (h, w, c*(factor**2)) 
-    lr_features=self.lr_conv(input_features)
-    #upsampling : from (h, w, c*(factor**2)) to (h*factor,w*factor,c) 
-    return tf.nn.depth_to_space(lr_features, self.factor)
-
-  def get_config(self):
-      return {'input_dims':self.input_dims, 'factor':self.factor}
+    def get_config(self):
+        return {'input_dims':self.input_dims, 'factor':self.factor}
 
 
 
 def atrous_Spatial_pyramid_pooling(input_features, outing_nb_features=256, rates=[1,6,12,18], kernel_sizes=[1,3,3,3]):
+    """
+    Applies atrous spatial pyramid pooling to the input features.
 
-
+    :param input_features: Input features to apply atrous spatial pyramid pooling on.
+    :param outing_nb_features: Number of output features. Default is 256.
+    :param rates: List of dilation rates for the dilated convolutions. Default is [1, 6, 12, 18].
+    :param kernel_sizes: List of kernel sizes for the dilated convolutions. Default is [1, 3, 3, 3].
+    :return: Features after applying atrous spatial pyramid pooling.
+    """
     features_aspp=[]
     #1. global average information
     ## global average pooling
     pooled_features=tf.math.reduce_mean(input_features,axis=[1,2], keepdims=True)
     #pooled_features=tf.keras.layers.GlobalAveragePooling2D(input_features)
     ##1x1 conv
-    pooled_features_regul=helpers.loss.Regularizer_L1L2Ortho( l1=0.0,
+    pooled_features_regul=loss.Regularizer_L1L2Ortho(l1=0.0,
                                                 l2=0.0,#001,
                                                 ortho=0.001,
                                                 ortho_type='srip',
@@ -182,7 +196,7 @@ def atrous_Spatial_pyramid_pooling(input_features, outing_nb_features=256, rates
     #2. 3x3 dilated convolutions
     for rate, kernel_size in zip(rates, kernel_sizes):
         print('rate, kernel',(rate, kernel_size))
-        kernel_regul=helpers.loss.Regularizer_L1L2Ortho( l1=0.0,
+        kernel_regul=loss.Regularizer_L1L2Ortho(l1=0.0,
                                                 l2=0.0,#001,
                                                 ortho=0.001,
                                                 ortho_type='srip',
@@ -232,7 +246,7 @@ def atrous_Spatial_pyramid_pooling(input_features, outing_nb_features=256, rates
     aspp_features=tf.keras.activations.relu(aspp_features)
 
     #fusion and compression layer
-    kernel_regul_asppout=helpers.loss.Regularizer_L1L2Ortho( l1=0.0,
+    kernel_regul_asppout=loss.Regularizer_L1L2Ortho( l1=0.0,
                                                 l2=0.0,
                                                 ortho=0.001,
                                                 ortho_type='srip',
@@ -258,54 +272,78 @@ def atrous_Spatial_pyramid_pooling(input_features, outing_nb_features=256, rates
     aspp_features=tf.keras.activations.relu(aspp_features)
     return aspp_features
 
-#CONCRETE DROPOUT from Yarin Gal & al : https://arxiv.org/abs/1705.07832
-class ConcreteDropout(tf.keras.layers.Wrapper):
-    """This wrapper allows to learn the dropout probability
-        for any given input layer.
-    ```python
-        # as the first layer in a model
-        model = Sequential()
-        model.add(ConcreteDropout(Dense(8), input_shape=(16)))
-        # now model.output_shape == (None, 8)
-        # subsequent layers: no need for input_shape
-        model.add(ConcreteDropout(Dense(32)))
-        # now model.output_shape == (None, 32)
-    ```
-    `ConcreteDropout` can be used with arbitrary layers, not just `Dense`,
-    for instance with a `Conv2D` layer:
-    ```python
-        model = Sequential()
-        model.add(ConcreteDropout(Conv2D(64, (3, 3)),
-                                  input_shape=(299, 299, 3)))
-    ```
-    # Arguments
-        layer: a layer instance.
-        weight_regularizer:
-            A positive number which satisfies
-                $weight_regularizer = l**2 / (\tau * N)$
-            with prior lengthscale l, model precision $\tau$
-             (inverse observation noise),
-            and N the number of instances in the dataset.
-            Note that kernel_regularizer is not needed.
-        dropout_regularizer:
-            A positive number which satisfies
-                $dropout_regularizer = 2 / (\tau * N)$
-            with model precision $\tau$ (inverse observation noise) and
-             N the number of
-            instances in the dataset.
-            Note the relation between dropout_regularizer and weight_regularizer:
-                $weight_regularizer / dropout_regularizer = l**2 / 2$
-            with prior lengthscale l. Note also that the factor of two should be
-            ignored for cross-entropy loss, and used only for the eucledian
-            loss.
+#---------------------------------------------------------------------------------
+# CONCRETE DROPOUT from Yarin Gal & al : https://arxiv.org/abs/1705.07832
+#---------------------------------------------------------------------------------
 
-    # Warning
-        You must import the actual layer class from tf layers,
-         else this will not work.
-    """
+class ConcreteDropout(tf.keras.layers.Wrapper):
 
     def __init__(self, layer, weight_regularizer=1e-6, dropout_regularizer=1e-5,
                  init_min=0.1, init_max=0.1, **kwargs):
+        """
+        The weight regularizer follows this equation :
+
+        ..math::
+            weight_{regularizer} = \\frac{l**2}{(\\tau * N)}
+
+        where:
+            - prior lengthscale :math:`l`, 
+            - :math:`\\tau` is inverse observation noise for model precision,
+            - :math:`N` is the number of instances in the dataset.
+        
+        Note that kernel_regularizer is not needed.
+
+        And the dropout regularizer follows this equation:
+
+        ..math::
+            dropout_{regularizer} = \\frac{2}{(\\tau * N)}
+        
+        where:
+            - model precision :math:`\\tau` (inverse observation noise),
+            - :math:`N` the number of instances in the dataset.
+
+        Note the relation between dropout_regularizer and weight_regularizer:
+
+        ..math::
+            \\frac{weight_{regularizer}}{dropout_{regularizer}} = \\frac{l**2}{2}
+        
+        where:
+            - prior lengthscale :math:`l`.
+            
+        Note also that the factor of two should be ignored for cross-entropy loss, and used only for the eucledian loss.
+
+        :param layer: A layer instance.
+        :param weight_regularizer: A positive number
+        :type weight_regularizer: int
+        :param dropout_regularizer: A positive number
+        :type dropout_regularizer: int
+
+        .. warning::
+            You must import the actual layer class from tf layers, else this will not work.
+        
+        .. note::
+
+            This wrapper allows to learn the dropout probability
+            for any given input layer.
+
+            .. code-block:: python
+
+                # as the first layer in a model
+                model = Sequential()
+                model.add(ConcreteDropout(Dense(8), input_shape=(16)))
+                # now model.output_shape == (None, 8)
+                # subsequent layers: no need for input_shape
+                model.add(ConcreteDropout(Dense(32)))
+                # now model.output_shape == (None, 32)
+
+            `ConcreteDropout` can be used with arbitrary layers, not just `Dense`, for instance with a `Conv2D` layer:
+
+            .. code-block:: python
+
+                model = Sequential()
+                model.add(ConcreteDropout(Conv2D(64, (3, 3)),
+                                        input_shape=(299, 299, 3)))
+        """
         assert 'kernel_regularizer' not in kwargs
         super(ConcreteDropout, self).__init__(layer, **kwargs)
         self.weight_regularizer = weight_regularizer
@@ -317,6 +355,11 @@ class ConcreteDropout(tf.keras.layers.Wrapper):
         self.init_max = (np.log(init_max) - np.log(1. - init_max))
 
     def build(self, input_shape=None):
+        """
+        Builds the ConcreteDropout layer.
+
+        :param input_shape (tuple): Shape of the input tensor.
+        """
         self.input_spec = layers.InputSpec(shape=input_shape)
         if hasattr(self.layer, 'built') and not self.layer.built:
             self.layer.build(input_shape)
@@ -353,11 +396,12 @@ class ConcreteDropout(tf.keras.layers.Wrapper):
         return self.layer.compute_output_shape(input_shape)
 
     def concrete_dropout(self, x):
-        '''
-        Concrete dropout - used at training time (gradients can be propagated)
-        :param x: input
-        :return:  approx. dropped out input
-        '''
+        """
+        Generate concrete dropout following a sigmoid distribution.
+
+        :param x: Input.
+        :return: Probability dropped out.
+        """
         with tf.name_scope('dropout_on_input'):
             eps = 1e-7
             temp = 0.1
@@ -376,8 +420,15 @@ class ConcreteDropout(tf.keras.layers.Wrapper):
             x *= random_tensor
             x /= retain_prob
         return x
-
+    
     def call(self, inputs):
+        """
+        Apply Concrete Dropout regularization to the input and execute the wrapped layer.
+
+        :param inputs: Input tensor.
+
+        :return: Result of executing the wrapped layer with Concrete Dropout regularization applied.
+        """
         return self.layer.call(self.concrete_dropout(inputs))
 
 
@@ -389,7 +440,30 @@ def concrete_dropout(inputs, layer,
                      training=True,
                      name=None,
                      **kwargs):
+    """
+    Applies concrete dropout regularization to the inputs.
 
+    :param inputs: The input tensor.
+    :type inputs: tf.Tensor
+    :param layer: The layer to apply concrete dropout to.
+    :type layer: tf.keras.layers.Layer
+    :param trainable: Whether the concrete dropout parameters are trainable (True) or fixed (False). Defaults to True.
+    :type trainable: bool
+    :param weight_regularizer: The weight regularization strength. Defaults to 1e-6.
+    :type weight_regularizer: float
+    :param dropout_regularizer: The dropout regularization strength. Defaults to 1e-5.
+    :type dropout_regularizer: float
+    :param init_min: The minimum value for initializing the dropout parameters. Defaults to 0.1.
+    :type init_min: float
+    :param init_max: The maximum value for initializing the dropout parameters. Defaults to 0.1.
+    :type init_max: float
+    :param training: Whether the model is in training mode or not. Defaults to True.
+    :param name: Name of the concrete dropout layer. Defaults to None.
+    :type name: str
+
+    :return: The output tensor after applying concrete dropout.
+    :rtype: tf.Tensor
+    """
     cd_layer = ConcreteDropout(layer, weight_regularizer=weight_regularizer,
                                dropout_regularizer=dropout_regularizer,
                                init_min=init_min, init_max=init_max,
@@ -397,47 +471,37 @@ def concrete_dropout(inputs, layer,
                                name=name)
     return cd_layer.apply(inputs, training=training)
 
-
-
 def track_gradients(loss):
-  ''' Helper function to use in the getOptimizer function
-      to compute and gradients and log them into the Tensorboard
-      Args:
-        loss: the loss to be appled for gradients computation
-      Returns:
-        tvars: the trainable variables
-        raw_grads: the raw gradient values
-        gradient_norm: the gradient global norm
-  '''
-  #get all trained variables that will be optimized
-  tvars = tf.trainable_variables()
-  #compute gradients and track them
-  raw_grads = tf.gradients(loss, tvars)
-  #track gradient global norm
-  gradient_norm=tf.global_norm(raw_grads, name='loss_grad_global_norm')
-  tf.summary.scalar('gradient_global_norm_raw', gradient_norm)
-  for grad in raw_grads:
-    if grad is not None:
-      trainable_nb_values=np.prod(grad.get_shape().as_list())
-      if trainable_nb_values>1:
-          tf.summary.histogram(grad.op.name, grad)
-  return tvars, raw_grads, gradient_norm
+    """
+    Helper function to use in the getOptimizer function to compute and gradients and log them into the Tensorboard
+    
+    :param loss: the loss to be appled for gradients computation
+
+    :return tvars: the trainable variables
+    :return raw_grads: the raw gradient values
+    :return gradient_norm: the gradient global norm
+    """
+    #get all trained variables that will be optimized
+    tvars = tf.trainable_variables()
+    #compute gradients and track them
+    raw_grads = tf.gradients(loss, tvars)
+    #track gradient global norm
+    gradient_norm=tf.global_norm(raw_grads, name='loss_grad_global_norm')
+    tf.summary.scalar('gradient_global_norm_raw', gradient_norm)
+    for grad in raw_grads:
+        if grad is not None:
+            trainable_nb_values=np.prod(grad.get_shape().as_list())
+            if trainable_nb_values>1:
+                tf.summary.histogram(grad.op.name, grad)
+    return tvars, raw_grads, gradient_norm
 
 def make_circle_cloud_dataset(samples_number):
-    ''' create a circle dataset with unit average radius and gaussain noise dispersion
-    # use/test example : 
-    import helpers.model as model
-    import matplotlib.pyplot as plt 
-    dataset = model.make_circle_cloud_dataset(1000).numpy()
+    """"
+    Create a circle dataset with unit average radius and gaussain noise dispersion
 
-    plt.scatter(dataset[:,0],dataset[:,1])
-    plt.show()
-
-    Args:
-        samples_number : the number of points to generate
-    Returns:
-        the (x,y) coordinates of the sampled points
-    '''
+    :param samples_number : The number of points to generate.
+    :return circle_samples: The (x,y) coordinates of the sampled points.
+    """
     sampled_angles=tf.random.uniform(shape=[samples_number,1], minval=0, maxval=2*np.pi)
     x = tf.math.cos(sampled_angles)
     y = tf.math.sin(sampled_angles)
@@ -448,9 +512,17 @@ def make_circle_cloud_dataset(samples_number):
     circle_samples+=tf.random.normal(shape=[samples_number,2], stddev=.01)
     return circle_samples
 
-
-
 def load_model(path, custom_objects=None):
+    """
+    Load a saved Keras model from the given path.
+
+    :param path: The path to the saved model file.
+    :type path: str
+    :param custom_objects: Optional dictionary mapping names (strings) to custom classes or functions to be used during loading.
+    :type custom_objects: dict, optional
+    :return: The loaded Keras model.
+    :rtype: tf.keras.Model
+    """
     assert os.path.exists(path)
     model = tf.keras.models.load_model(path, custom_objects)
     return model

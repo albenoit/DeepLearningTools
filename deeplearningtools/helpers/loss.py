@@ -1,23 +1,32 @@
-''' helpers_loss, a collection of helpers to compute various losses and related tools
-    @author, Alexandre Benoit, LISTIC Lab, FRANCE
+# ========================================
+# FileName: loss.py
+# Date: 29 june 2023 - 08:00
+# Author: Alexandre Benoit
+# Email: alexandre.benoit@univ-smb.fr
+# GitHub: https://github.com/albenoit/DeepLearningTools
+# Brief: A collection of helpers to compute various losses and related tools
+# Warning: WARNING, many loss to be tested ! check/compare with the original papers !!!
+# Note: Maybe have a look here: https://niftynet.readthedocs.io/en/dev/niftynet.layer.loss_segmentation.html
+# for DeepLearningTools.
+# =========================================
 
-    WARNING, many loss to be tested ! check/compare with the original papers !!!
-
-    NOTE,maybe have a look here: https://niftynet.readthedocs.io/en/dev/niftynet.layer.loss_segmentation.html
-'''
 import tensorflow as tf
 import numpy as np
 import tensorflow.keras.backend as K
 
-
 def class_weights(samples_per_class, beta=None):
-  ''' from https://arxiv.org/abs/1901.05555
-      compute a class weight use to balance per class loss along optimization
-      Args:
-          a numpy array that contains dataset class samples count (1D vector of len=nb classes)
-      Return:
-          class weights (factor to be applied for each class loss)
-  '''
+  """
+  Compute class weights used to balance per-class loss during optimization.
+
+  :param samples_per_class: A numpy array containing the count of samples for each class (1D vector of length equal to the number of classes).
+  :type samples_per_class: numpy.ndarray
+
+  :param beta: The beta value used in the computation. If not provided, it is calculated as (N-1)/N, where N is the total number of samples.
+  :type beta: float, optional
+
+  :return: Class weights to be applied for each class loss.
+  :rtype: numpy.ndarray
+  """
   class_nb=len(samples_per_class)
   if beta == None:
     N=np.sum(samples_per_class)
@@ -32,10 +41,15 @@ def class_weights(samples_per_class, beta=None):
   
 @tf.function(reduce_retracing=True)
 def get_sample_class_probabilities(one_hot_labels):
-  ''' returns the vector of class probabilities of 3D [batch, n, labels] one hot encoded labels tensor
-      Args: one_hot_labels, a tensor of shape [batchsize, n , one hot labels]
-      Returns tensor that contains class probabilities for each of the samples
-  '''
+  """
+  Returns the vector of class probabilities of a 3D [batch, n, labels] one-hot encoded labels tensor.
+
+  :param one_hot_labels: A tensor of shape [batchsize, n, one-hot labels].
+  :type one_hot_labels: tf.Tensor
+
+  :return: A tensor containing class probabilities for each sample.
+  :rtype: tf.Tensor
+  """
   #labels_shape=one_hot_labels.get_shape().as_list()
   counts = tf.reduce_sum(one_hot_labels, axis=1)
   weights = counts/one_hot_labels.shape[1]
@@ -43,271 +57,335 @@ def get_sample_class_probabilities(one_hot_labels):
 
 @tf.function(reduce_retracing=True)
 def get_per_sample_class_weights(y_true):
-  ''' returns the vector of class weights of 3D [batch, n, labels] one hot encoded labels tensor
-      Args: one_hot_labels, a tensor of shape [batchsize, n , one hot labels]
-      Returns tensor that contains class probabilities for each of the samples
-      WARNING, weights are normalized to sum to 1, then when some classes are not present, the others weight increase !
-  '''
+  """
+  Returns the vector of class weights of a 3D [batch, n, labels] one-hot encoded labels tensor.
+
+  :param y_true: A tensor of shape [batchsize, n, one-hot labels].
+  :type y_true: tf.Tensor
+
+  :return: A tensor that contains class weights for each sample.
+  :rtype: tf.Tensor
+
+  WARNING: Weights are normalized to sum to 1. When some classes are not present, the weights of other classes increase!
+  """
   per_sample_class_weights = tf.math.reciprocal_no_nan(get_sample_class_probabilities(y_true))
   per_sample_class_weights/= tf.reduce_sum(per_sample_class_weights, axis=1, keepdims=True)
   return per_sample_class_weights
 
 @tf.function(reduce_retracing=True)
 def get_batch_flat_tensors(labels, logits):
-  '''
-    Prepare logits and label batch samples in a per sample flat shape
-    Args: 
-        logits the predicted logits with shape [batchsize, ..., classes]
-        labels (integer values, will be one hot encoded internally [batchsize, ..., 1]
-    Returns :
-        y_true, one hot encoded labels, shape=[batchsize, n, classes] with n=the dimension of the flatten samples 
-        y_pred, flat logits, shape=[batchsize, n, classes]
-  '''
+  """
+  Prepare logits and label batch samples in a per-sample flat shape.
 
+  :param labels: The integer values that will be one-hot encoded internally. Shape: [batchsize, ..., 1].
+  :type labels: tf.Tensor
+  :param logits: The predicted logits with shape [batchsize, ..., classes].
+  :type logits: tf.Tensor
+
+  :return: y_true, the one-hot encoded labels with shape [batchsize, n, classes], where n is the dimension of the flattened samples.
+            y_pred, the flattened logits with shape [batchsize, n, classes].
+  :rtype: Tuple[tf.Tensor, tf.Tensor]
+  """
   logits_shape = tf.shape(logits)
   flat_sample_dim=tf.reduce_prod(logits_shape[1:-1])
   y_true = tf.reshape(tf.one_hot(labels, depth=logits_shape[-1]), [logits_shape[0], flat_sample_dim, logits_shape[-1]])
   y_pred = tf.reshape(logits, [logits_shape[0], flat_sample_dim, logits_shape[-1]])
   return y_true, y_pred
 
-
 @tf.function
 def preds_labels_preprocess_softmax_flatten(logits, labels):
-  '''
-  a tf.function to simplify the optimisation graph:
-  1. apply softmax to input logits
-  2. flatten each sample of the input batch
-  Args:
-          logits the predicted logits with shape [batchsize, ..., classes]
-          labels (integer values, will be one hot encoded internally [batchsize, ..., 1]
-  Returns  sample flatten y_true, y_pred (softmaxed logits) tensors
-  '''
+  """
+  A tf.function to simplify the optimization graph:
+
+  1. Apply softmax to the input logits.
+
+  2. Flatten each sample of the input batch.
+
+  :param logits: The predicted logits with shape [batchsize, ..., classes].
+  :type logits: tf.Tensor
+  :param labels: The integer values that will be one-hot encoded internally. Shape: [batchsize, ..., 1].
+  :type labels: tf.Tensor
+
+  :return: y_true, the flattened one-hot encoded labels with shape [batchsize, n, classes], where n is the dimension of the flattened samples.
+            y_pred, the flattened softmaxed logits with shape [batchsize, n, classes].
+  :rtype: Tuple[tf.Tensor, tf.Tensor]
+  """
   pred_probs = tf.nn.softmax(logits, axis=-1)
   y_true, y_pred=get_batch_flat_tensors(labels, pred_probs)
   return y_true, y_pred
 
 @tf.function
 def smooth_labels(labels, factor):
-    # smooth the labels
-    labels *= (tf.constant(1., tf.float32) - factor)
-    labels += (factor / labels.shape[-1])
-    #tf.print('labels', labels)
-    return labels
+  """
+  Smooths the labels.
+
+  :param labels: The input labels to be smoothed.
+  :type labels: tf.Tensor
+  :param factor: The smoothing factor.
+  :type factor: float
+
+  :return: The smoothed labels.
+  :rtype: tf.Tensor
+  """
+  # smooth the labels
+  labels *= (tf.constant(1., tf.float32) - factor)
+  labels += (factor / labels.shape[-1])
+  #tf.print('labels', labels)
+  return labels
 
 def weighted_xcrosspow_loss_softmax(logits, labels, gamma=0.3, weight_class_sample_prob=False, weight_class_global_prob=False, train_class_probs=None, name='loss'):
-    """
-    a cross entropy loss with a power low, same idea as for focal loss but, limits oversupression of high scores
-    from https://arxiv.org/pdf/1809.00076.pdf
-    added specific weightings
+  """
+  A cross entropy loss with a power low, same idea as for focal loss but, limits oversupression of high scores
+  from https://arxiv.org/pdf/1809.00076.pdf
+  added specific weightings
 
-    Args:
-      labels: A tensor of shape [batch_size,...] with class indexes (that willbe one hot encoded internally).
-      logits: A float32 tensor of shape [batch_size,...,num_classes].
-      gamma
-      weight_class_sample_prob: if True, per sample class loss by the related class sample probability
-      weight_class_global_prob, set True to weight the loss with respect to train dataset true class probabilities
-      train_class_probs, a numpy array of class weights
-    Returns:
-      A cross entropy tensor of shape [batchsize, classes]
-    """
-    y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
-    
-    eps=1e-10
-    y_pred=tf.clip_by_value(y_pred, eps, 1.-eps)#avoid undefined values
-    #standard cross entropy ^ gamma
-    L=y_true*tf.math.pow(-tf.math.log(y_pred), gamma)
+  :param labels: A tensor of shape [batch_size,...] with class indexes (that will be one hot encoded internally).
+  :param logits: A float32 tensor of shape [batch_size,...,num_classes].
+  :param gamma: The power value for the power law.
+  :param weight_class_sample_prob: If True, per-sample class loss is weighted by the related class sample probability.
+  :param weight_class_global_prob: If True, weight the loss with respect to the true class probabilities in the training dataset.
+  :param train_class_probs: A numpy array of class weights.
+  :param name: The name of the loss tensor.
 
-    if weight_class_sample_prob:
-        class_rates = get_sample_class_probabilities(y_true)
-        class_rates=tf.reshape(class_rates, [-1,1,y_pred.shape[-1]])
-        weighting_factor=pow(tf.ones_like(L) * 3.0, class_rates)
-        L*=weighting_factor
-    if weight_class_global_prob:
-      train_class_weights_factor=tf.constant(train_class_probs, dtype=tf.float32)
-      train_class_weights_factor=tf.reshape(train_class_weights_factor, [-1,1,y_pred.shape[-1]])
-      L*=train_class_weights_factor
-      per_sample_loss=tf.reduce_sum(L, axis=-1)
-      return tf.math.reduce_mean(per_sample_loss, name=name)
-            
-def focal_loss_softmax(logits, labels,  gamma=3., weight_class_sample_prob=False, weight_class_global_prob=False, train_class_probs=None, name='loss'):
-    """
-    Focal loss, a cross entropy like loss that favors hard examples
-    ... such that imbalanced data can be handled more easily
-    original work : https://arxiv.org/abs/1708.02002
-    --> also have a look at the proposed strategy on the last bias init
+  :return: A cross entropy tensor of shape [batchsize, classes]
+  """
+  y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
+  
+  eps=1e-10
+  y_pred=tf.clip_by_value(y_pred, eps, 1.-eps)#avoid undefined values
+  #standard cross entropy ^ gamma
+  L=y_true*tf.math.pow(-tf.math.log(y_pred), gamma)
 
-    Args:
-      labels: A tensor of shape [batch_size,...] with class indexes (that willbe one hot encoded internally).
-      logits: A float32 tensor of shape [batch_size,...,num_classes].
-      gamma: A scalar for focal loss gamma hyper-parameter.
-      weight_class_sample_prob: if True, per sample class loss by the related class sample probability
-      weight_class_global_prob, set True to weight the loss with respect to train dataset true class probabilities
-      train_class_probs, a numpy array of class weights
-    Returns:
-      A scalar loss value
-    """
-    y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
-    
-    eps=1e-15
-    y_pred=tf.clip_by_value(y_pred, eps, 1.-eps)#avoid undefined values
-    L=-y_true*((1-y_pred)**gamma)*tf.math.log(y_pred)
-    if weight_class_sample_prob:
-        class_rates = get_sample_class_probabilities(y_true)
-        class_rates=tf.reshape(class_rates, [-1,1,y_pred.shape[-1]])
-        weighting_factor=pow(tf.ones_like(L) * 3.0, class_rates)
-        L*=weighting_factor
-    if weight_class_global_prob:
-      train_class_weights_factor=tf.constant(train_class_probs, dtype=tf.float32)
-      train_class_weights_factor=tf.reshape(train_class_weights_factor, [-1,1,y_pred.shape[-1]])
-      L*=train_class_weights_factor
+  if weight_class_sample_prob:
+      class_rates = get_sample_class_probabilities(y_true)
+      class_rates=tf.reshape(class_rates, [-1,1,y_pred.shape[-1]])
+      weighting_factor=pow(tf.ones_like(L) * 3.0, class_rates)
+      L*=weighting_factor
+  if weight_class_global_prob:
+    train_class_weights_factor=tf.constant(train_class_probs, dtype=tf.float32)
+    train_class_weights_factor=tf.reshape(train_class_weights_factor, [-1,1,y_pred.shape[-1]])
+    L*=train_class_weights_factor
     per_sample_loss=tf.reduce_sum(L, axis=-1)
     return tf.math.reduce_mean(per_sample_loss, name=name)
+            
+def focal_loss_softmax(logits, labels,  gamma=3., weight_class_sample_prob=False, weight_class_global_prob=False, train_class_probs=None, name='loss'):
+  """
+  Focal loss, a cross entropy like loss that favors hard examples
+  such that imbalanced data can be handled more easily
+  original work: https://arxiv.org/abs/1708.02002
+  --> also have a look at the proposed strategy on the last bias init.
+
+  :param labels: A tensor of shape [batch_size,...] with class indexes (that will be one hot encoded internally).
+  :param logits: A float32 tensor of shape [batch_size,...,num_classes].
+  :param gamma: A scalar for focal loss gamma hyper-parameter.
+  :param weight_class_sample_prob: If True, per-sample class loss is weighted by the related class sample probability.
+  :param weight_class_global_prob: If True, weight the loss with respect to the true class probabilities in the training dataset.
+  :param train_class_probs: A numpy array of class weights.
+  :param name: The name of the loss tensor.
+
+  :return: A scalar loss value
+  """
+  y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
+  
+  eps=1e-15
+  y_pred=tf.clip_by_value(y_pred, eps, 1.-eps)#avoid undefined values
+  L=-y_true*((1-y_pred)**gamma)*tf.math.log(y_pred)
+  if weight_class_sample_prob:
+      class_rates = get_sample_class_probabilities(y_true)
+      class_rates=tf.reshape(class_rates, [-1,1,y_pred.shape[-1]])
+      weighting_factor=pow(tf.ones_like(L) * 3.0, class_rates)
+      L*=weighting_factor
+  if weight_class_global_prob:
+    train_class_weights_factor=tf.constant(train_class_probs, dtype=tf.float32)
+    train_class_weights_factor=tf.reshape(train_class_weights_factor, [-1,1,y_pred.shape[-1]])
+    L*=train_class_weights_factor
+  per_sample_loss=tf.reduce_sum(L, axis=-1)
+  return tf.math.reduce_mean(per_sample_loss, name=name)
 
 def multiclass_dice_loss_softmax(logits, labels, weight_class_sample_prob=False, weight_class_global_prob=False, train_class_probs=None, name='loss'):
-    """ multiclass Sørensen-Dice index measure, softmax is applied internally on the y_preds
-      Args:
-          logits the predicted logits with shape [batchsize, ..., classes]
-          labels (integer values, will be one hot encoded internally [batchsize, ..., 1]
-          weight_class_sample_prob, set True to weight the loss with respect to sample true class probabilities
-          weight_class_global_prob, set True to weight the loss with respect to train dataset true class probabilities
-          train_class_probs, a numpy array of class weights
-      Returns the average dice loss
-    """
-    y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
-    true_pos = tf.reduce_sum(    y_true * y_pred,     axis=1)
-    false_pos = tf.reduce_sum( (1-y_true) * y_pred,     axis=1)
-    false_neg = tf.reduce_sum(     y_true * (1-y_pred), axis=1)
-    smooth=tf.keras.backend.epsilon()
-    alpha=0.5
-    dice_losses = 1.0-(true_pos + smooth)/(true_pos + alpha*false_neg + (1-alpha)*false_pos + smooth)
+  """
+  Multiclass Sørensen-Dice index measure, softmax is applied internally on the y_preds.
 
-    if weight_class_sample_prob:
-      dice_losses*=get_per_sample_class_weights(y_true)
-    if weight_class_global_prob:
-      train_class_weights_factor=tf.constant(train_class_probs, dtype=tf.float32)
-      train_class_weights_factor=tf.reshape(train_class_weights_factor, [-1,y_pred.shape[-1]])
-      dice_losses*=train_class_weights_factor
-    
-    return tf.reduce_mean(dice_losses, name=name)
+  :param logits: The predicted logits with shape [batchsize, ..., classes].
+  :param labels: Integer values, will be one hot encoded internally [batchsize, ..., 1].
+  :param weight_class_sample_prob: Set True to weight the loss with respect to sample true class probabilities.
+  :param weight_class_global_prob: Set True to weight the loss with respect to train dataset true class probabilities.
+  :param train_class_probs: A numpy array of class weights.
+  :param name: The name of the loss tensor.
 
+  :return: The average dice loss.
+  """
+  y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
+  true_pos = tf.reduce_sum(    y_true * y_pred,     axis=1)
+  false_pos = tf.reduce_sum( (1-y_true) * y_pred,     axis=1)
+  false_neg = tf.reduce_sum(     y_true * (1-y_pred), axis=1)
+  smooth=tf.keras.backend.epsilon()
+  alpha=0.5
+  dice_losses = 1.0-(true_pos + smooth)/(true_pos + alpha*false_neg + (1-alpha)*false_pos + smooth)
+
+  if weight_class_sample_prob:
+    dice_losses*=get_per_sample_class_weights(y_true)
+  if weight_class_global_prob:
+    train_class_weights_factor=tf.constant(train_class_probs, dtype=tf.float32)
+    train_class_weights_factor=tf.reshape(train_class_weights_factor, [-1,y_pred.shape[-1]])
+    dice_losses*=train_class_weights_factor
+  
+  return tf.reduce_mean(dice_losses, name=name)
 
 def multiclass_lovasz_loss_softmax(logits, labels, weight_class_sample_prob=False, weight_class_global_prob=False, train_class_probs=None, name='loss'):
-  """ multiclass Jaccard loss measure, softmax is applied internally on the y_preds
-    Args: 
-        logits the predicted logits with shape [batchsize, ..., classes]
-        labels (integer values, will be one hot encoded internally [batchsize, ..., 1]
-        weight_class_sample_prob, set True to weight the loss with respect to sample true class probabilities
-        weight_class_global_prob, set True to weight the loss with respect to train dataset true class probabilities
-        train_class_probs, a numpy array of class weights
-    Returns the average jaccard loss
-    """
+  """
+  Multiclass Jaccard loss measure, softmax is applied internally on the y_preds.
+
+  :param logits: The predicted logits with shape [batchsize, ..., classes].
+  :param labels: Integer values, will be one hot encoded internally [batchsize, ..., 1].
+  :param weight_class_sample_prob: Set True to weight the loss with respect to sample true class probabilities.
+  :param weight_class_global_prob: Set True to weight the loss with respect to train dataset true class probabilities.
+  :param train_class_probs: A numpy array of class weights.
+  :param name: The name of the loss tensor.
+
+  :return: The average Jaccard loss.
+  """
   y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
 
   errors=tf.math.abs(y_true-y_pred)
-  errors_sorted, perm = tf.math.top_k(errors, k=tf.shape(errors)[1], name="descending_sort_{}".format(c))
+  errors_sorted, perm = tf.math.top_k(errors, k=tf.shape(errors)[1], name="descending_sort_{}".format(name))
 
   signs = 2. * y_true - 1. # target class present : value =1 vs not present, value=-1
   print('signs, SHOULD BE FLOATS!',signs)
   errors = (1. - logits * signs) # good preds with good margins, value<0 vs bad preds AND good preds with low margins, value>0 
 
+  return tf.reduce_mean(errors, name=name)
+
+def multiclass_jaccard_loss_softmax(logits, labels, weight_class_sample_prob=False, weight_class_global_prob=False, train_class_probs=None, name='loss'):
+  """
+  Multiclass Jaccard loss measure, softmax is applied internally on the y_preds.
+
+  :param logits: The predicted logits with shape [batchsize, ..., classes].
+  :param labels: Integer values, will be one hot encoded internally [batchsize, ..., 1].
+  :param weight_class_sample_prob: Set True to weight the loss with respect to sample true class probabilities.
+  :param weight_class_global_prob: Set True to weight the loss with respect to train dataset true class probabilities.
+  :param train_class_probs: A numpy array of class weights.
+  :param name: The name of the loss tensor.
+
+  :return: The average Jaccard measures of shape [batchsize, classes].
+  """
+  y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
+
+  intersects = tf.reduce_sum(y_true * y_pred, axis=1)
+  denominators = tf.reduce_sum(y_true + y_pred, axis=1)-intersects
+  smooth=1.
+  jaccard_losses = 1.- (intersects+smooth) / (denominators+smooth)
+  print('jaccard.shape', jaccard_losses.shape)
+
+  if weight_class_sample_prob:
+    jaccard_losses*=get_per_sample_class_weights(y_true)
+  if weight_class_global_prob:
+    train_class_weights_factor=tf.constant(train_class_probs, dtype=tf.float32)
+    train_class_weights_factor=tf.reshape(train_class_weights_factor, [-1,y_pred.shape[-1]])
+    jaccard_losses*=train_class_weights_factor
 
   return tf.reduce_mean(jaccard_losses, name=name)
 
-def multiclass_jaccard_loss_softmax(logits, labels, weight_class_sample_prob=False, weight_class_global_prob=False, train_class_probs=None, name='loss'):
-    """ multiclass Jaccard loss measure, softmax is applied internally on the y_preds
-      Args: 
-          logits the predicted logits with shape [batchsize, ..., classes]
-          labels (integer values, will be one hot encoded internally [batchsize, ..., 1]
-          weight_class_sample_prob, set True to weight the loss with respect to sample true class probabilities
-          weight_class_global_prob, set True to weight the loss with respect to train dataset true class probabilities
-          train_class_probs, a numpy array of class weights
-      Returns the average jaccard measures of shape [batchsize, classes]
-    """
-    y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
-
-    intersects = tf.reduce_sum(y_true * y_pred, axis=1)
-    denominators = tf.reduce_sum(y_true + y_pred, axis=1)-intersects
-    smooth=1.
-    jaccard_losses = 1.- (intersects+smooth) / (denominators+smooth)
-    print('jaccard.shape', jaccard_losses.shape)
-
-    if weight_class_sample_prob:
-      jaccard_losses*=get_per_sample_class_weights(y_true)
-    if weight_class_global_prob:
-      train_class_weights_factor=tf.constant(train_class_probs, dtype=tf.float32)
-      train_class_weights_factor=tf.reshape(train_class_weights_factor, [-1,y_pred.shape[-1]])
-      jaccard_losses*=train_class_weights_factor
-
-    return tf.reduce_mean(jaccard_losses, name=name)
-
 def multiclass_tversky_loss_softmax(logits, labels, alpha=0.7, weight_class_sample_prob=False, weight_class_global_prob=False, train_class_probs=None, focal=0., name='loss'):
-    """ multiclass Tversky loss measure, softmax is applied internally on the y_preds
-      https://arxiv.org/pdf/1706.05721.pdf
-      
-      Args: 
-          logits, the predicted logits with shape [batchsize, ..., classes]
-          labels, (integer values, will be one hot encoded internally [batchsize, ..., 1]
-          alpha, the weight of the false negatives penalty, (1-alpha) will be set to weigh false positives
-          weight_class_sample_prob, set True to weight the loss with respect to sample true class probabilities
-          weight_class_global_prob, set True to weight the loss with respect to train dataset true class probabilities
-          train_class_probs, a numpy array of class weights
-          focal if value 0., activate the focal loss as presented in https://arxiv.org/pdf/1810.07842.pdf, recommended value was 0.75
-      Returns the average jaccard loss
-    """
-    y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
-    eps = tf.keras.backend.epsilon()
-    y_pred=tf.clip_by_value(y_pred, eps, 1.-eps)#avoid undefined values
+  """
+  Multiclass Tversky loss measure, softmax is applied internally on the y_preds.
 
-    true_pos = tf.reduce_sum(    y_true * y_pred,     axis=1)
-    false_pos = tf.reduce_sum( (1-y_true) * y_pred,     axis=1)
-    false_neg = tf.reduce_sum(     y_true * (1-y_pred), axis=1)
-    smooth=eps
-    tversky_losses = 1.- (true_pos + smooth)/(true_pos + alpha*false_neg + (1-alpha)*false_pos + smooth)
-    #tf.print('tversky_losses : tp', true_pos)
-    #tf.print('tversky_losses : fp', false_pos)
-    #tf.print('tversky_losses : fn', false_neg)
-    #tf.print('tversky_losses : loss', tversky_losses)
+  Reference: https://arxiv.org/pdf/1706.05721.pdf
 
-    if focal>0.:
-      tversky_losses=tf.math.pow(tversky_losses, focal)
-      #tf.print('weighted tversky_losses : loss', tversky_losses)
-    #print('tversky_losses.shape', tversky_losses.shape)
+  :param logits: The predicted logits with shape [batchsize, ..., classes].
+  :param labels: Integer values, will be one hot encoded internally [batchsize, ..., 1].
+  :param alpha: The weight of the false negatives penalty, (1-alpha) will be set to weigh false positives.
+  :param weight_class_sample_prob: Set True to weight the loss with respect to sample true class probabilities.
+  :param weight_class_global_prob: Set True to weight the loss with respect to train dataset true class probabilities.
+  :param train_class_probs: A numpy array of class weights.
+  :param focal: If value 0., activate the focal loss as presented in https://arxiv.org/pdf/1810.07842.pdf,
+                recommended value was 0.75.
+  :param name: The name of the loss tensor.
 
-    if weight_class_sample_prob:
-      tversky_losses*=get_per_sample_class_weights(y_true)
-      #tf.print('weighted tversky_losses : class probs', get_per_sample_class_weights(y_true))
-      #tf.print('weighted tversky_losses : loss', tversky_losses)
-    
-    if weight_class_global_prob:
-      train_class_weights_factor=tf.constant(train_class_probs, dtype=tf.float32)
-      train_class_weights_factor=tf.reshape(train_class_weights_factor, [-1,y_pred.shape[-1]])
-      tversky_losses*=train_class_weights_factor
+  :return: The average Tversky loss.
+  """
+  y_true, y_pred=preds_labels_preprocess_softmax_flatten(logits, labels)
+  eps = tf.keras.backend.epsilon()
+  y_pred=tf.clip_by_value(y_pred, eps, 1.-eps)#avoid undefined values
 
-    #tf.print('tversky is finite', tf.math.reduce_prod(tf.cast(tf.math.is_finite(tversky_losses), dtype=tf.int8)))
-    #tf.print('final_loss', tf.reduce_mean(tversky_losses, name=name))
-    return tf.reduce_mean(tversky_losses, name=name)
+  true_pos = tf.reduce_sum(    y_true * y_pred,     axis=1)
+  false_pos = tf.reduce_sum( (1-y_true) * y_pred,     axis=1)
+  false_neg = tf.reduce_sum(     y_true * (1-y_pred), axis=1)
+  smooth=eps
+  tversky_losses = 1.- (true_pos + smooth)/(true_pos + alpha*false_neg + (1-alpha)*false_pos + smooth)
+  #tf.print('tversky_losses : tp', true_pos)
+  #tf.print('tversky_losses : fp', false_pos)
+  #tf.print('tversky_losses : fn', false_neg)
+  #tf.print('tversky_losses : loss', tversky_losses)
+
+  if focal>0.:
+    tversky_losses=tf.math.pow(tversky_losses, focal)
+    #tf.print('weighted tversky_losses : loss', tversky_losses)
+  #print('tversky_losses.shape', tversky_losses.shape)
+
+  if weight_class_sample_prob:
+    tversky_losses*=get_per_sample_class_weights(y_true)
+    #tf.print('weighted tversky_losses : class probs', get_per_sample_class_weights(y_true))
+    #tf.print('weighted tversky_losses : loss', tversky_losses)
+  
+  if weight_class_global_prob:
+    train_class_weights_factor=tf.constant(train_class_probs, dtype=tf.float32)
+    train_class_weights_factor=tf.reshape(train_class_weights_factor, [-1,y_pred.shape[-1]])
+    tversky_losses*=train_class_weights_factor
+
+  #tf.print('tversky is finite', tf.math.reduce_prod(tf.cast(tf.math.is_finite(tversky_losses), dtype=tf.int8)))
+  #tf.print('final_loss', tf.reduce_mean(tversky_losses, name=name))
+  return tf.reduce_mean(tversky_losses, name=name)
 
 def exponentialLogLoss(loss, gamma=0.3, name='loss'):
-  ''' REMINDER from https://arxiv.org/pdf/1809.00076.pdf
-    apply a power low on the input loss function
-    Args: a tensor of (preliminary weighted) metrics in range [0,1]
-    Returns the average of (-log(loss))^gamma
-  '''
+  """
+  Apply a power law on the input loss function.
+
+  Reference: https://arxiv.org/pdf/1809.00076.pdf
+
+  :param loss: A tensor of (preliminary weighted) metrics in the range [0,1].
+  :param gamma: The exponent value for the power law.
+  :param name: The name of the loss tensor.
+
+  :return: The average of (-log(loss))^gamma.
+  """
   return tf.reduce_mean(tf.math.pow(-1.*tf.math.log(loss), gamma), name=name)
 
-# a loss gradient lipshitz regularizer
+#-----------------------------------------
+# A loss gradient lipshitz regularizer
+#-----------------------------------------
+
 def get_IOgradient_norm_lipschitzPenalty(inputs, outputs, target_lipschitz):
-    gradients = tf.gradients(outputs, [inputs])[0]
-    print('Gradient=', gradients)
-    slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=[1]))
-    return tf.reduce_mean((slopes-target_lipschitz)**2)
+  """
+  Computes a loss gradient Lipschitz regularizer.
 
-################################
+  This function calculates the norm of the gradients of the outputs with respect to the inputs and penalizes deviations from the target Lipschitz constant.
+
+  :param inputs: The input tensor.
+  :param outputs: The output tensor.
+  :param target_lipschitz: The target Lipschitz constant.
+
+  :return: The mean squared difference between the slopes (norms of the gradients) and the target Lipschitz constant.
+  """
+  gradients = tf.gradients(outputs, [inputs])[0]
+  print('Gradient=', gradients)
+  slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=[1]))
+  return tf.reduce_mean((slopes-target_lipschitz)**2)
+
+#---------------------------------------------
+#
+#---------------------------------------------
+
 def tensor_gram_matrix(tensor):
-  ''' returns the gram matrix of a given tensor matrix
-  Note that the input tensor is reshaped to a 2D matrix, preserving the last dimension
-  '''
+  """
+  Returns the Gram matrix of a given tensor matrix.
 
+  Note that the input tensor is reshaped to a 2D matrix, preserving the last dimension.
+
+  :param tensor: The input tensor.
+
+  :return: The Gram matrix of the tensor.
+  """
   inp_shape = tensor.get_shape().as_list()
   row_dims = np.prod(inp_shape[:-1])
   col_dims = inp_shape[-1]
@@ -316,19 +394,31 @@ def tensor_gram_matrix(tensor):
   return gm
 
 class Regularizer_soft_orthogonality(tf.Module):
+  """
+  Soft orthogonalization regularizer.
+
+  This regularizer encourages the weight matrix of a layer to have a Gram matrix close to the identity matrix, promoting orthogonality among the weights.
+
+  :param l: Regularization factor.
+  """
   def __init__(self, l=0.0001):
-    ''' Soft orthogonalization regularizer
-    Args:
-      l, regularization factor
-    '''
+    """
+    Initialize the Soft Orthogonalization Regularizer.
+
+    :param l: Regularization factor.
+    """
     self.l=l
 
   def __call__(self,x):
-    ''' soft orthogonal regularization for weights:
-      => require the Gram matrix of the weight matrix to be close to identity
-    Args: x, the weights tensor of a given layer
-    Returns the weight penalty
-    '''
+    """
+    Apply the soft orthogonal regularization to the weights of a given layer.
+
+    Require  the Gram matrix of the weight matrix to be close to identity.
+
+    :param x: The weights tensor of the layer.
+
+    :return: The weight penalty.
+    """
     weights_gram_matrix=tensor_gram_matrix(x)
     I = tf.linalg.eye(weights_gram_matrix.get_shape().as_list()[0])
     gram_minus_ident = weights_gram_matrix-I
@@ -336,22 +426,28 @@ class Regularizer_soft_orthogonality(tf.Module):
     return self.l*loss
 
   def get_config(self):
+    """
+    Get the configuration of the regularizer.
+    """
     return{'l':self.l}
 
 class Regularizer_Spectral_Restricted_Isometry(tf.Module):
   def __init__(self, l=0.0001, nb_filters=0):
-    ''' orthogonal regularization for weights presented here :  https://arxiv.org/abs/1810.09102
-      => generally more efficient than weights_regularizer_soft_orthogonality
-      => WARNING, works best at the beginning if the training but too
-      restrictive when fine tuning and should be replaced by classical l2 weights penalty
-    Args:
-      l, regularization factor
-      nb_filters, the number of output features
+    """
+    Spectral Restricted Isometry regularizer for weights.
+    
+    Orthogonal regularization for weights presented here: https://arxiv.org/abs/1810.09102
 
+      - Generally more efficient than weights_regularizer_soft_orthogonality
+
+      - WARNING, works best at the beginning if the training but too restrictive when fine tuning and should be replaced by classical l2 weights penalty
+
+    :param l: Regularization factor.
+    :param nb_filters: The number of output features.
 
     SRIPv2 variant here (TO BE TESTED): https://github.com/VITA-Group/Orthogonality-in-CNNs/blob/master/SVHN/train.py
     REMINDER : Other ideas with spectral norm : https://github.com/taki0112/Spectral_Normalization-Tensorflow
-    '''
+    """
     self.l=l
     self.nb_filters = tf.keras.backend.constant(nb_filters, tf.int32, name='nb_filters')
     w_init = tf.random_normal_initializer()
@@ -396,22 +492,40 @@ class Regularizer_Spectral_Restricted_Isometry(tf.Module):
     return{'l':self.l, 'nb_filters':int(self.nb_filters)}
 
 class Regularizer_None(tf.Module):
+  """
+  Custom regularizer that applies no regularization.
+  """
   def __call__(self, x):
     return K.constant(0., dtype=tf.float32)
   def get_config(self):
     return{}
 
 class Regularizer_L1L2Ortho(tf.Module):
-  ''' a regularizer that combine multiple ones (testing) '''
+  """
+  A regularizer that combine multiple ones (testing)
+  """
 
   def __init__(self, l1=0.0, l2=0.0, ortho=0.0, ortho_type='soft', nb_filters=0):
-    '''
-      l1, regularization factor for l1 penalty
-      l2, regularization factor for l2 penalty
-      ortho, regularization factor for orthogonality penalty
-      ortho_type, the type of orthogonalization penalty
-      nb_filters, the number of output features (only required for SRIP orthogonalization)
-    '''
+    """
+    Custom regularizer for L1/L2 weight regularization and soft orthogonality regularization.
+
+    This regularizer combines L1/L2 weight regularization and soft orthogonality regularization.
+    The regularization factors and orthogonality type can be specified during initialization.
+
+    :param l1: Regularization factor for L1 penalty.
+    :param l2: Regularization factor for L2 penalty.
+    :param ortho: Regularization factor for orthogonality penalty.
+    :param ortho_type: Type of orthogonalization penalty ('soft' or 'srip').
+    :param nb_filters: Number of output features (required for SRIP orthogonalization).
+
+    :ivar l1: Regularization factor for L1 penalty.
+    :ivar l2: Regularization factor for L2 penalty.
+    :ivar ortho: Regularization factor for orthogonality penalty.
+    :ivar nb_filters: Number of output features (required for SRIP orthogonalization).
+    :ivar ortho_type: Type of orthogonalization penalty ('soft' or 'srip').
+    :ivar L1L2_reg: Instance of L1L2 regularizer for L1/L2 weight regularization.
+    :ivar Ortho_reg: Instance of orthogonality regularizer for soft orthogonality regularization.
+    """
     self.l1 = tf.keras.backend.cast_to_floatx(l1)
     self.l2 = tf.keras.backend.cast_to_floatx(l2)
     self.ortho = tf.keras.backend.cast_to_floatx(ortho)
@@ -442,13 +556,16 @@ class Regularizer_L1L2Ortho(tf.Module):
 
 
 def multi_loss(lossesList):
-  ''' refactored from the original work of Y. Gal https://github.com/yaringal/multi-task-learning-example/blob/master/multi-task-learning-example.ipynb
-      Args:
-        lossesList:the python list of dicts with keys ('loss_value', 'name') to combine
-        logvars:   the list of associated prediction logvars
-      Returns:
-        the loss combination as a single scalar value
-  '''
+  """
+  Combine multiple losses into a single loss.
+
+  Reference: refactored from the original work of Y. Gal https://github.com/yaringal/multi-task-learning-example/blob/master/multi-task-learning-example.ipynb
+
+  :param lossesList: A list of dictionaries with keys ('loss_value', 'name') representing the losses to combine.
+  :param logvars: A list of associated prediction logvars
+
+  :return: The combined loss as a single scalar value.
+  """
   output_logvars=[]
   for id, loss in enumerate(lossesList):
       #create a dedicated output log variance variable to regress
@@ -466,6 +583,16 @@ def multi_loss(lossesList):
   return tf.math.reduce_mean(loss_sum)
 
 def reconstruction_loss_L1(inputs, reconstruction):
+  """
+  Compute the reconstruction L1 loss.
+
+  This function computes the reconstruction L1 loss (mean absolute error).
+
+  :param inputs: The input tensor.
+  :param reconstruction: The reconstructed tensor.
+
+  :return: The computed L1 loss.
+  """
   with tf.name_scope('reconstruction_loss_l1'):
     inputs_flat = tf.layers.flatten(inputs)
     reconstruction_flat = tf.layers.flatten(reconstruction)
@@ -476,6 +603,16 @@ def reconstruction_loss_L1(inputs, reconstruction):
     return l1_loss
 
 def reconstruction_loss_MSE(inputs, reconstruction):
+  """
+  Compute the mean squared error (MSE) loss for reconstruction.
+
+  This function computes the MSE loss for the reconstruction of inputs and reconstruction.
+
+  :param inputs: The input tensor.
+  :param reconstruction: The reconstructed tensor.
+
+  :return: The computed MSE loss.
+  """
   with tf.name_scope('reconstruction_loss_MSE'):
     # Reconstruction loss
     mse_loss=tf.keras.losses.MSE(
@@ -486,6 +623,17 @@ def reconstruction_loss_MSE(inputs, reconstruction):
     return mse_loss
 
 def reconstruction_loss_BCE(inputs, reconstruction, pos_weight=1.):
+  """
+  Compute the binary cross-entropy (BCE) loss for reconstruction.
+
+  This function computes the BCE loss for the reconstruction of inputs and reconstruction.
+
+  :param inputs: The input tensor.
+  :param reconstruction: The reconstructed tensor.
+  :param pos_weight: The weight to assign to the positive class in the BCE loss. Default is 1.
+
+  :return: The computed BCE loss.
+  """
   with tf.name_scope('reconstruction_loss_BCE'):
     inputs_flat = tf.layers.flatten(inputs)
     reconstruction_flat = tf.layers.flatten(reconstruction)
@@ -502,6 +650,17 @@ def reconstruction_loss_BCE(inputs, reconstruction, pos_weight=1.):
     return xcross_loss
 
 def reconstruction_loss_BCE_soft(inputs, reconstruction, w=0.8):
+  """
+  Compute the binary cross-entropy (BCE) loss with soft labels for reconstruction.
+
+  This function computes the BCE loss with soft labels for the reconstruction of inputs and reconstruction.
+
+  :param inputs: The input tensor.
+  :param reconstruction: The reconstructed tensor.
+  :param w: The weight for balancing the loss between white and non-white pixels. Default is 0.8.
+
+  :return: The computed BCE loss with soft labels.
+  """
   with tf.name_scope('reconstruction_loss_BCE_soft'):
     inputs_flat = tf.layers.flatten(inputs)
     reconstruction_flat = tf.layers.flatten(reconstruction)
@@ -519,8 +678,18 @@ def reconstruction_loss_BCE_soft(inputs, reconstruction, w=0.8):
     return xcross_loss
 
 def kl_loss(z_mean, logvar, id):
-  ''' KL loss between two distributions,
-  an identifier 'id' is considered for visibility on Tensorboard '''
+  """
+  Compute the KL divergence loss between two distributions.
+
+  This function computes the KL divergence loss between two distributions, an identifier 'id' is considered for visibility on Tensorboard 
+  with tf.name_scope('kl_Divergence_loss').
+
+  :param z_mean: The mean of the distribution.
+  :param logvar: The log variance of the distribution.
+  :param id: An identifier for visibility on TensorBoard.
+
+  :return: The computed KL divergence loss.
+  """
   with tf.name_scope('kl_Divergence_loss'):
     # KL Divergence loss
     kl_div_loss = 1. + logvar - tf.square(z_mean) - tf.exp(logvar)
@@ -530,20 +699,43 @@ def kl_loss(z_mean, logvar, id):
     return kl_div_loss
 
 def generateTheta(L,endim):
-  # This function generates L random samples from the unit `ndim'-u
+  """
+  Generate L random samples from the unit (endim)-dimensional space.
+
+  This function generates L random samples from the unit (endim)-dimensional space.
+
+  :param L: The number of samples to generate.
+  :param endim: The dimension of the samples.
+
+  :return: Generated random samples from the unit (endim)-dimensional space.
+  """
   theta=[w/np.sqrt((w**2).sum()) for w in np.random.normal(size=(L,endim))]
   return np.asarray(theta, dtype=np.float32)
 
 def generateZ_ring(batchsize):
-  # This function generates 2D samples from a `circle' distribution in
-  # a 2-dimensional space
+  """
+  Generate samples from a ring distribution in a 2-dimensional space.
+
+  This function generates 2D samples from a ring distribution in a 2-dimensional space.
+
+  :param batchsize: The number of samples to generate.
+
+  :return: Generated samples from the ring distribution.
+  """
   from sklearn.datasets import make_circles
   temp=make_circles(2*batchsize,noise=.01)
   return np.squeeze(temp[0][np.argwhere(temp[1]==0),:]).astype(np.float32)
 
 def generateZ_circle(batchsize):
-  # This function generates 2D samples from a `circle' distribution in
-  # a 2-dimensional space
+  """
+  Generate samples from a circle distribution in a 2-dimensional space.
+
+  This function generates 2D samples from a circle distribution in a 2-dimensional space.
+
+  :param batchsize: The number of samples to generate.
+
+  :return: Generated samples from the circle distribution.
+  """
   r=np.random.uniform(size=(batchsize))
   theta=2*np.pi*np.random.uniform(size=(batchsize))
   x=r*np.cos(theta)
@@ -552,6 +744,18 @@ def generateZ_circle(batchsize):
   return z_
 
 def slicedWasserteinLoss_single(code, target_z, sample_points, batch_size):
+  """
+  Calculate the Sliced Wasserstein loss for a single code.
+
+  This function computes the Sliced Wasserstein loss for a single code based on the given target z samples and sample points.
+
+  :param code: The code for which to calculate the loss.
+  :param target_z: The target z samples.
+  :param sample_points: The sample points for projection.
+  :param batch_size: The batch size.
+
+  :return: The Sliced Wasserstein loss for the single code.
+  """
   # Let projae be the projection of the encoded samples
   projae=tf.matmul(code,tf.transpose(sample_points))
   # Let projz be the projection of the $q_Z$ samples
@@ -568,16 +772,18 @@ def slicedWasserteinLoss_single(code, target_z, sample_points, batch_size):
   return W2Loss
 
 def swae_loss(code_list, target_z, batch_size, L=50):
-  '''Sliced Wasserstein Autoencodeur (AE) loss definition
-    Args:
-      inputs
-      codes_list: a python list of AE codes
-      reconstructed_data: the reconstructed data at the output of the AE
-      L, the number of sample points to project on
-  '''
+  """
+  Calculate the Sliced Wasserstein Autoencoder (AE) loss.
 
-  from tensorflow.keras.layers import Flatten
-  from tensorflow.keras.layers import Reshape
+  This function computes the Sliced Wasserstein Autoencoder (AE) loss based on the given AE codes and target z samples.
+
+  :param code_list: A list of AE codes.
+  :param target_z: The target z samples.
+  :param batch_size: The batch size.
+  :param L: The number of sample points to project on (default: 50).
+
+  :return: The Sliced Wasserstein Autoencoder (AE) loss.
+  """
   print('Setting up a Sliced Wasserstein loss following https://arxiv.org/abs/1804.01947')
   if len(code_list)==0:
     raise ValueError('swae_loss error : input code list is empty')
@@ -599,17 +805,31 @@ def swae_loss(code_list, target_z, batch_size, L=50):
   #loss=tf.Print(loss, [loss], message='SWAE')
   return loss
 
-
-
-#from https://github.com/apple/ml-cvpr2019-swd
 def discrepancy_slice_wasserstein(p1, p2):
+  """
+  Calculate the slice Wasserstein discrepancy between two distributions.
 
+  This function computes the slice Wasserstein discrepancy between two distributions `p1` and `p2` using random projections.
+
+  Reference: https://github.com/apple/ml-cvpr2019-swd
+  
+  :param p1: The first distribution tensor.
+  :param p2: The second distribution tensor.
+
+  :return: The slice Wasserstein discrepancy.
+  """
   def sort_rows(matrix, num_rows):
+    """
+    Sort the rows of a matrix in descending order.
+
+    :param matrix: The input matrix.
+    :param num_rows: The number of rows to keep.
+
+    :return: The sorted matrix.
+    """
     matrix_T = tf.transpose(matrix, [1, 0])
     sorted_matrix_T = tf.nn.top_k(matrix_T, num_rows)[0]
     return tf.transpose(sorted_matrix_T, [1, 0])
-
-  
   s = tf.shape(p1)
   if p1.get_shape().as_list()[1] > 1:
       # For data more than one-dimensional, perform multiple random projection to 1-D
@@ -622,34 +842,66 @@ def discrepancy_slice_wasserstein(p1, p2):
   wdist = tf.math.reduce_mean(tf.math.square(p1 - p2))
   return tf.math.reduce_mean(wdist)
 
+class UncorrelatedFeaturesConstraint(tf.keras.constraints.Constraint):
+  """
+  Uncorrelated Features Constraint.
 
-class UncorrelatedFeaturesConstraint (tf.keras.constraints.Constraint):
-    ''' from https://towardsdatascience.com/build-the-right-autoencoder-tune-and-optimize-using-pca-principles-part-ii-24b9cca69bd6
-    '''
-    def __init__(self, encoding_dim, weightage = 1.0):
-        self.encoding_dim = encoding_dim
-        self.weightage = weightage
+  This constraint encourages the features of a layer to be uncorrelated by penalizing the covariance matrix deviation from the identity matrix.
 
-    def get_covariance(self, x):
-        x_centered_list = []
+  :param encoding_dim: The dimension of the encoded features.
+  :param weightage: The weightage of the constraint penalty.
 
-        for i in range(self.encoding_dim):
-            x_centered_list.append(x[:, i] - K.mean(x[:, i]))
+  Usage:
+  ```python
+  constraint = UncorrelatedFeaturesConstraint(encoding_dim, weightage=1.0)
+  ```
 
-        x_centered = tf.stack(x_centered_list)
-        covariance = K.dot(x_centered, K.transpose(x_centered)) / tf.cast(x_centered.get_shape()[0], tf.float32)
+  """
+  def __init__(self, encoding_dim, weightage=1.0):
+    """
+    Initialize the Uncorrelated Features Constraint.
 
-        return covariance
+    :param encoding_dim: The dimension of the encoded features.
+    :param weightage: The weightage of the constraint penalty.
+    """
+    self.encoding_dim = encoding_dim
+    self.weightage = weightage
 
-    # Constraint penalty
-    def uncorrelated_feature(self, x):
-        if(self.encoding_dim <= 1):
-            return 0.0
-        else:
-            output = K.sum(K.square(
-                self.covariance - tf.math.multiply(self.covariance, K.eye(self.encoding_dim))))
-            return output
+  def get_covariance(self, x):
+    """
+    Calculate the covariance matrix of the input tensor.
 
-    def __call__(self, x):
-        self.covariance = self.get_covariance(x)
-        return self.weightage * self.uncorrelated_feature(x)
+    :param x: The input tensor.
+
+    :return: The covariance matrix.
+    """
+    x_centered_list = []
+
+    for i in range(self.encoding_dim):
+        x_centered_list.append(x[:, i] - K.mean(x[:, i]))
+
+    x_centered = tf.stack(x_centered_list)
+    covariance = K.dot(x_centered, K.transpose(x_centered)) / tf.cast(x_centered.get_shape()[0], tf.float32)
+
+    return covariance
+
+  def uncorrelated_feature(self, x):
+    """
+    Compute the uncorrelated feature penalty.
+
+    :param x: The input tensor.
+
+    :return: The penalty value.
+    """
+    if self.encoding_dim <= 1:
+        return 0.0
+    else:
+        output = K.sum(K.square(self.covariance - tf.math.multiply(self.covariance, K.eye(self.encoding_dim))))
+        return output
+
+  def __call__(self, x):
+    """
+    Apply the uncorrelated features constraint to the input tensor.
+    """
+    self.covariance = self.get_covariance(x)
+    return self.weightage * self.uncorrelated_feature(x)
