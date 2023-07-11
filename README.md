@@ -6,13 +6,16 @@ Here is a set of python3 scripts that demonstrate the use of Tensorflow2.x for m
 The proposed toolchain enables different experiments (model training/validating) to be launched in a unified way. All models are automatically exported periodically to enable model deployment (serving in production).
 All the resulting experiment logs can be compared. Model versioning is enabled. The hyperparameters management enables the Tensorboard HPARAMS interface.
 
-This framework can be driven by higher-level tools such as [hyperopt](https://hyperopt.github.io/) to explore the hyperparameters space, etc. (see examples/hyperopt for demos)
+This framework can be driven by higher-level tools such as [hyperopt](https://hyperopt.github.io/) to explore the hyperparameters space, etc. (see examples/hyperopt for demos). Similarly the DeepLearningTools can be the high level interface of other advanced libraries such as [Kafka](https://kafka.apache.org/) and [flower.dev](https://flower.dev/).
 
-@brief : the main script 'experiments_manager.py'  enables training, validating and serving Tensorflow2.x models with python3
+
+@brief : the main module 'deeplearningtools.experiments_manager'  enables training, validating and serving Tensorflow2.x models with python3
 
 @author : Alexandre Benoit, Professor at LISTIC lab, FRANCE
 
 A quick presentation of the system is available [here](https://docs.google.com/presentation/d/1tFetD27PK9kt29rdwwZ6QKLYNDyJkHoCLT8GHweve_8/edit?usp=sharing), details are given below.
+
+Online API doc is proposed [here](https://albenoit.github.io/DeepLearningTools/) (Thank you Christophe Lin-Kwong-Chon @LISTIC lab for that work!)
 
 This work has been facilitated by intensive experiments conducted on the JeanZay French supercomputer (Grants 2020-AD011011418 and 2021-AD011011418R1) (http://www.idris.fr/jean-zay/)
 
