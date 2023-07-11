@@ -229,8 +229,6 @@ pypdf2==3.0.1
 pyproj==3.5.0
 pyrsistent==0.19.2
 pytest==7.1.2
-pytest-cov==4.1.0
-python-apt==2.0.0+ubuntu0.20.4.8
 python-dateutil==2.8.2
 python-igraph==0.10.5
 python-Levenshtein==0.21.1
