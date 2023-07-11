@@ -259,7 +259,6 @@ typeguard==2.13.3
 typing-extensions==4.4.0
 tzdata==2023.3
 tzlocal==5.0.1
-urllib3==2.0.3
 virtualenv==20.21.0
 visions==0.7.5
 visitor==0.1.3
