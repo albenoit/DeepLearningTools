@@ -1,3 +1,4 @@
+pip==20.2.4
 fairness-indicators==0.43.0
 aequitas==0.42.0
 pytest==7.1.2
