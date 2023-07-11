@@ -9,9 +9,10 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
         with:
-          python-version: '3.8.9' 
+          python-version: '3.8.10' 
       - name: Install dependencies
         run: |
+          pip install --upgrade pip==20.2.4
           pip install -r requirements.txt;
           pip install sphinx furo sphinx_click sphinx-copybutton
           pip install sphinx-toolbox
