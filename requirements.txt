@@ -231,7 +231,6 @@ tensorboard-plugin-profile==2.13.0
 tensorboard-plugin-wit==1.8.1
 tensorflow==2.11.0
 tensorflow-addons==0.19.0
-tensorflow-datasets==4.9.2
 tensorflow-estimator==2.11.0
 tensorflow-examples @ git+https://github.com/tensorflow/examples.git@a55d94841a9cbf7b3b77d35bf81189fc6010dcc5
 tensorflow-io==0.31.0
