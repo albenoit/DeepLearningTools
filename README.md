@@ -1,5 +1,6 @@
-[![Test](https://app.travis-ci.com/albenoit/DeepLearningTools.svg?branch=master)](https://app.travis-ci.com/albenoit/DeepLearningTools)
-[![API doc](https://github.com/albenoit/DeepLearningTools/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/albenoit/DeepLearningTools/actions/workflows/pages/pages-build-deployment)
+[![Tests](https://app.travis-ci.com/albenoit/DeepLearningTools.svg?branch=master)](https://app.travis-ci.com/albenoit/DeepLearningTools)
+[![Docs](https://github.com/albenoit/DeepLearningTools/actions/workflows/documentation.yaml/badge.svg)](https://github.com/albenoit/DeepLearningTools/actions/workflows/documentation.yaml)
+[![Pages](https://github.com/albenoit/DeepLearningTools/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/albenoit/DeepLearningTools/actions/workflows/pages/pages-build-deployment)
 # Train, monitor, evaluate and deploy/serve your Tensorflow Machine Learning models rapidly in a unified way !
 
 Here is a set of python3 scripts that demonstrate the use of Tensorflow2.x for model optimization and deployment on your data (1D, 2D, 3D...).
