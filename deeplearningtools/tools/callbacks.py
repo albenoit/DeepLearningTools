@@ -218,14 +218,26 @@ class CustomHistory(tf.keras.callbacks.History):
 # Prepare all standard callbacks as a dictionary
 #--------------------------------------------------------------
 
+class ImageSummaryCallback(tf.keras.callbacks.Callback):
+    def __init__(self, object):
+      if hasattr(object, 'get_image_summary'):
+        self.object=object
+      else:
+        raise ValueError('passed object has no get_summary method')
+    def on_epoch_end(self, epoch, logs=None):
+        super(ImageSummaryCallback, self).on_epoch_end(epoch, logs)
+        tf.summary.image('confusion_matrix', self.object.get_image_summary(), step=epoch)
+
 def define_callbacks(usersettings, 
                      model, 
                      train_iterations_per_epoch, 
                      file_writer, 
                      log_dir, 
+                     metrics=[],
                      previous_model_params=None, 
                      custom_callbacks:dict={}, 
-                     initial_value_threshold=None):
+                     initial_value_threshold=None,
+                     ):
   """
   Define callbacks for training a model.
 
@@ -253,6 +265,9 @@ def define_callbacks(usersettings,
   :param initial_value_threshold: Threshold for initial value comparison.
   :type initial_value_threshold: float, optional
 
+  :param metrics: The set of metrics used along the optimisation process.
+  :type initial_value_threshold: list, optional
+  
   :return: The dictionary of callbacks.
   :rtype: dict
   """
@@ -328,6 +343,14 @@ def define_callbacks(usersettings,
      if len(custom_callbacks.keys())>0:
       print('Found custom callbacks, adding to default callbacks')
       all_callbacks.update(custom_callbacks)
+
+  # look for metric callbacks
+  # if any new custom metric has a target method that generates
+  #  data to be logged on Tensorboard, the following loop look for them and adds the appropriate callbacks
+  # For now, only  ImageSummaryCallback is called if a metric has the get_image_summary method
+  for metric in metrics:
+    if hasattr(metric, 'get_image_summary'):
+      all_callbacks[metric.name]=ImageSummaryCallback(metric)
 
   return all_callbacks
 
