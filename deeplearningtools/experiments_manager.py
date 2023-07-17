@@ -338,6 +338,14 @@ def build_run_training_session(cid: str=''):
         must_create_new_model=False
       except Exception as e:
         print('Could not load existing model, training from scratch...')
+  
+  # logs and summaries management:
+  #-> classical logging on Tensorboard (scalars, historams, and so on)
+  log_dir=os.path.join(os.getcwd(),"logs",cid)
+  #-> specify a summary writer (for more customisation capabilities)
+  file_writer = tf.summary.create_file_writer(log_dir)
+  file_writer.set_as_default()
+
   if must_create_new_model: #if could not restore from checkpoint or start training from scratch
 
     print('**** Training from scratch...')
@@ -394,14 +402,7 @@ def build_run_training_session(cid: str=''):
         
       except Exception as e:
           print('WARNING !!! Experiments Manager says : could not serialize the model, did all model elements defined in the model prior model.compile are serialisable and have their get_config(self) method ? Error message=',e)
-    
-  # logs and summaries management:
-  #-> classical logging on Tensorboard (scalars, historams, and so on)
-  log_dir=os.path.join(os.getcwd(),"logs",cid)
-  #-> specify a summary writer (for more customisation capabilities)
-  file_writer = tf.summary.create_file_writer(log_dir)
-  file_writer.set_as_default()
-  
+      
   # register a specific method to the model to record weights change gradient when manually specifying new weights
   model.track_weights_change = types.MethodType( track_weights_change, model )
   
@@ -466,7 +467,7 @@ def build_run_training_session(cid: str=''):
     raise ValueError('train_data and val_data are the same, please fix this error')
   
   # prepare callbacks
-  all_callbacks=define_callbacks(usersettings, model, train_iterations_per_epoch, file_writer, log_dir)
+  all_callbacks=define_callbacks(usersettings, model, train_iterations_per_epoch, file_writer, log_dir, metrics)
 
   if usersettings.federated_learning is False or federated_learning_available is False:
     print('Now starting a CENTRALIZED model training session...')
@@ -499,7 +500,7 @@ def build_run_training_session(cid: str=''):
     #implicit else
     print('-> client model configured')
     # Start Flower client
-    federated_learner=FlClient(usersettings, model, train_data, train_iterations_per_epoch, val_data, val_iterations_per_epoch, workers, file_writer, log_dir)
+    federated_learner=FlClient(usersettings, model, train_data, train_iterations_per_epoch, val_data, val_iterations_per_epoch, workers, file_writer, log_dir, metrics)
     if 'cid' not in usersettings.hparams.keys(): #if not in simulation mode, start flower client
       print('CLient is real runner')
       fl.client.start_numpy_client(server_address=usersettings.federated_learning_server_address, client=federated_learner)
