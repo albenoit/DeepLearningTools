@@ -108,6 +108,7 @@ def get_evaluate_fn(usersettings, model, val_data, file_writer, log_dir):
                                                                           train_iterations_per_epoch=0,#not useful in that use case
                                                                           file_writer=file_writer,
                                                                           log_dir=log_dir,
+                                                                          metrics=usersettings.get_metrics(model, None),
                                                                           previous_model_params=None,
                                                                           custom_callbacks={},
                                                                           initial_value_threshold=monitored_value_threshold)
@@ -115,7 +116,11 @@ def get_evaluate_fn(usersettings, model, val_data, file_writer, log_dir):
         res_raw = model.evaluate(val_data['data_pipeline'],
                                        steps=val_data['steps_per_epoch'],
                                        callbacks=all_callbacks_dict.values())
-        #model.on_epoch_end(epoch=round)
+        # try to trigger on_epoch_end for all metrics
+        # -> this may required for some of them to finish their processing (ex: helpers.metrics::ConfusionMatrix draw the confusion matrix on the tensorboard logs)
+        for metric in model.metrics:
+          if hasattr(metric, 'on_epoch_end'):
+            metric.on_epoch_end(epoch=round)
         #workaround related to https://github.com/keras-team/keras/issues/14045
         print('reformating evaluation results, expecting metrics:', model.metrics_names)
         result = {out: res_raw[i] for i, out in enumerate(model.metrics_names)}
