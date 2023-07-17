@@ -21,7 +21,7 @@ from deeplearningtools.helpers.distance_network import deep_relative_trust, cosi
 # -------------------------------------------
 
 class FlClient(fl.client.NumPyClient):
-    def __init__(self, settings, model, train_data, train_iterations_per_epoch, val_data, val_iterations_per_epoch, workers, file_writer, log_dir, monitored_metric_initial_threshold=None):
+    def __init__(self, settings, model, train_data, train_iterations_per_epoch, val_data, val_iterations_per_epoch, workers, file_writer, log_dir, metrics=[], monitored_metric_initial_threshold=None):
         self.history=None
         self.round=-1
         self.last_val_loss=np.inf
@@ -34,9 +34,10 @@ class FlClient(fl.client.NumPyClient):
         self.workers=workers
         self.file_writer=file_writer
         self.log_dir=log_dir
+        self.metrics=metrics
         #initialized a first time to allow for model first evaluation
         self.initial_value_threshold=monitored_metric_initial_threshold
-        self.all_callbacks_dict=define_callbacks(self.settings, self.model, self.train_iterations_per_epoch, self.file_writer, self.log_dir, previous_model_params=self.model.get_weights(), initial_value_threshold=self.initial_value_threshold)
+        self.all_callbacks_dict=define_callbacks(self.settings, self.model, self.train_iterations_per_epoch, self.file_writer, self.log_dir, metrics=self.metrics, previous_model_params=self.model.get_weights(), initial_value_threshold=self.initial_value_threshold)
 
         # some log info recovered on new round participation
         self.rounds_calls=0
@@ -136,7 +137,7 @@ class FlClient(fl.client.NumPyClient):
         self.model.set_weights(parameters)
         # define each callbacks
         if self.round>0:
-            self.all_callbacks_dict=define_callbacks(self.settings, self.model, self.train_iterations_per_epoch, self.file_writer, self.log_dir, previous_model_params=self.model.get_weights(), initial_value_threshold=self.initial_value_threshold)
+            self.all_callbacks_dict=define_callbacks(self.settings, self.model, self.train_iterations_per_epoch, self.file_writer, self.log_dir, metrics=self.metrics, previous_model_params=self.model.get_weights(), initial_value_threshold=self.initial_value_threshold)
 
         #training for one epoch
         history=self.model.fit(
@@ -177,8 +178,13 @@ class FlClient(fl.client.NumPyClient):
         fit_log['l2_distance'] = float(l2(last_model_parameters, parameters))
         fit_log['l1_distance'] = float(l1(last_model_parameters, parameters))
         fit_log['client_id'] = self.settings.hparams['procID']
-        #print('==> fit log=', fit_log)
-
+        # TODO, maybe check earlier if some metrics return non compatible types
+        # =>  scalars are expected to be python dtype, no numpy allowed in the current Flwer state
+        for key in fit_log.keys():
+            if isinstance(fit_log[key], np.floating):
+                fit_log[key]=float(fit_log[key])
+        print('==> fit log=', fit_log)
+                
         #save last fit log values that will allow for updated restart
         #print('LAST MONITORED VALUE=', (self.settings.monitored_loss_name,
         #                               self.all_callbacks_dict['checkpoint_callback'].best))
