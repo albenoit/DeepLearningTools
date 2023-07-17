@@ -35,7 +35,10 @@ import tensorflow as tf
 import os
 from deeplearningtools.datasets.load_federated_mnist import maybe_download_data
 from deeplearningtools.DataProvider_input_pipeline import extractFilenames
+from deeplearningtools.helpers import metrics
 import cv2 #only used on the ClientIO side to capture and display images
+
+from tensorflow_addons.metrics import MultiLabelConfusionMatrix
 
 #-> set here your own working folder
 workingFolder='experiments/examples/federated/mnist/'
@@ -49,7 +52,7 @@ session_name='my_trials'
 hparams={
          'federated':'FedAvg',#set '' if not making use of federated learning or set the flower strategy name of a custom one from deeplearningtools.helpers
          'minCl':10,#minimum number of clients to allow for federated learning
-         'minFit':5,#minimum number of clients to allow for a federated learning fitting round
+         'minFit':3,#minimum number of clients to allow for a federated learning fitting round
          'learningRate':0.001,
          'nbEpoch':1,#sets either the number of epoch per cleint for each federated round OR sets the total number of epoch for centralised learning
          'procID':0, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
@@ -123,7 +126,7 @@ nb_val_samples=10000
 #if relying on centralized learning, the total amount of data is the sum of all client data
 if not(enable_federated_learning):
     nb_train_samples*=10
-    nb_val_samples*=10
+    nb_val_samples
 batch_size=32
 steps_per_epoch=nb_train_samples//batch_size
 validation_steps=nb_val_samples//batch_size
@@ -179,7 +182,7 @@ def get_optimizer(model, loss, learning_rate):
     return optimizer
 
 def get_metrics(model, loss):
-	return [tf.keras.metrics.SparseCategoricalAccuracy(), tf.keras.metrics.SparseCategoricalCrossentropy()]
+    return [ metrics.ConfusionMatrix(num_classes=10), tf.keras.metrics.SparseCategoricalCrossentropy()]
 
 def get_total_loss(model):#inputs, model_outputs_dict, labels, weights_loss):
     '''a specific loss can be defined here or simply use a string that refers to a keras loss
