@@ -11,7 +11,6 @@
 import tensorflow as tf
 import numpy as np
 from tensorflow.keras import layers
-from tensorflow.python.layers.core import Dense
 from deeplearningtools.helpers import loss
 from deeplearningtools.helpers.distance_network import deep_relative_trust
 import os
@@ -285,7 +284,7 @@ class ConcreteDropout(tf.keras.layers.Wrapper):
 
     def __init__(self, layer, weight_regularizer=1e-6, dropout_regularizer=1e-5,
                  init_min=0.1, init_max=0.1, **kwargs):
-        """
+        r"""
         The weight regularizer follows this equation :
 
         ..math::
