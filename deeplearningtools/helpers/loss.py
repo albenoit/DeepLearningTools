@@ -454,16 +454,16 @@ class Regularizer_Spectral_Restricted_Isometry(tf.Module):
     self.v = tf.Variable(initial_value=w_init(shape=(self.nb_filters,1),dtype=tf.float32), trainable=False, name='srip_v')
 
   def __call__(self,x):
-    '''
+    """
     Args: x, the weights tensor of a given layer
     Returns the weight penalty
-    '''
+    """
     weights_gram_matrix=tensor_gram_matrix(x)
 
     Ident = tf.linalg.eye(weights_gram_matrix.get_shape().as_list()[0])
     Norm  = weights_gram_matrix - Ident
 
-    '''v1 = tf.math.multiply(Norm, self.v)
+    """v1 = tf.math.multiply(Norm, self.v)
     norm1 = tf.reduce_sum(tf.math.square(v1))**0.5
 
     v2 = tf.math.divide(v1,norm1)
@@ -478,7 +478,7 @@ class Regularizer_Spectral_Restricted_Isometry(tf.Module):
     u = normalize(torch.matmul(w_tmp, v), dim=0, eps=1e-12)
     sigma = torch.dot(u, torch.matmul(w_tmp, v))
     loss=(torch.norm(sigma,2))**2
-    '''
+    """
     u=tf.math.l2_normalize(tf.random.normal(shape=(Norm.get_shape().as_list()[0],1), mean=0.0, stddev=1.0))
     v=tf.math.l2_normalize(tf.linalg.matmul(a=Norm, b=u, transpose_a=True))
     matmul_norm_v=tf.linalg.matmul(a=Norm, b=v, transpose_a=False)
@@ -637,12 +637,12 @@ def reconstruction_loss_BCE(inputs, reconstruction, pos_weight=1.):
   with tf.name_scope('reconstruction_loss_BCE'):
     inputs_flat = tf.layers.flatten(inputs)
     reconstruction_flat = tf.layers.flatten(reconstruction)
-    '''xcross_loss=tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits( targets=inputs_flat,
+    """xcross_loss=tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits( targets=inputs_flat,
                                               logits=reconstruction_flat,
                                               pos_weight=pos_weight))
 
     xcross_loss=tf.reduce_mean(xcross_loss)
-    '''
+    """
     xcross_loss=tf.reduce_mean(K.binary_crossentropy(inputs_flat,reconstruction_flat))
 
     tf.summary.scalar('reconstruction_loss_BCE', xcross_loss)

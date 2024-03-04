@@ -5,12 +5,12 @@
 
 FULL PROCESS USE EXAMPLE:
 1. TRAIN/VAL : 
-
-1.1 FEDERATED LEARNING
+    
+1 FEDERATED LEARNING
 start the decentralized learning
-apptainer run --nv tf2_addons.sif -m deeplearningtools.start_federated_server --usersettings=examples/federated/mysettings_image_classification.py
+apptainer run --nv tf2_addons.sif -m deeplearningtools.start_federated_server --usersettings=examples/federated/mysettings_mnist_classification.py
 
--> once 1.1 or 1.2 is ran, check for and use in the following steps the resulting folders, say for example one being /abs/path/to/deeplearningtools/experiments/examples/federated/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36/
+-> once done, check for and use in the following steps the resulting folders, say for example one being /abs/path/to/deeplearningtools/experiments/examples/federated/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36/
 
 2. SERVE ONE OF THE RESULTING MODEL : start a tensorflow model server on the produced eperiment models using command (the -psi command permits to start tensorflow model server installed in a singularity/apptainer container, here tf_server.sif):
 python3 -m deeplearningtools.start_model_serving --model_dir /abs/path/to/deeplearningtools/experiments/examples/cats_dogs_classification/my_trials_learningRate0.001_nbEpoch15_dataAugmentFalse_dropout0.2_imgHeight150_imgWidth150_2023-04-03--22:05:36/ -psi /abs/path/to/tf_server.sif 
@@ -37,8 +37,6 @@ from deeplearningtools.datasets.load_federated_mnist import maybe_download_data
 from deeplearningtools.DataProvider_input_pipeline import extractFilenames
 from deeplearningtools.helpers import metrics
 import cv2 #only used on the ClientIO side to capture and display images
-
-from tensorflow_addons.metrics import MultiLabelConfusionMatrix
 
 #-> set here your own working folder
 workingFolder='experiments/examples/federated/mnist/'
@@ -82,7 +80,7 @@ if 'federated' in hparams.keys():
 useXLA=False
 
 #the metric monitored to enable early stopping and learning rate decay
-monitored_loss_name='sparse_categorical_crossentropy'
+monitored_loss_name='val_sparse_categorical_crossentropy'
 
 #profile some training steps to check pipeline processing time bottlenecks (from Tensorboard)
 use_profiling=True
@@ -104,9 +102,6 @@ nbEpoch=hparams['nbEpoch']
 # stop condition, taking into account if val_loss does not decrease for early_stopping_patience epoch
 early_stopping_patience=10
 
-# add here any additionnal callback to use along the train/val process
-addon_callbacks=[]
-
 #set here paths to your data used for train, val -> only for config1
 # -> the hyperparameter hparams['procID'] (i.e. federated client ID) is used to select the right data
 maybe_download_data()
@@ -118,7 +113,7 @@ if enable_federated_learning:
 else:
     #look for all client files as a single dataset as for centralised learning
     raw_data_dir_train = os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data/', 'config'+str(hparams['dataConfig']))
-raw_data_dir_val = os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data')
+raw_data_dir_val = os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data/mnist_test.csv')
 
 raw_data_filename_extension=''
 nb_train_samples=6000 #manually adjust here the number of temporal items out of the temporal block size
@@ -168,7 +163,11 @@ def get_learningRate():
   ''' define here the learning rate
   Returns a sclalar (float) or a scheduler
   '''
-
+  if 'isFLserver' in hparams.keys():
+    if hparams['isFLserver']==True:
+      # no fine tuning on the centralised model
+      return 0.0
+  
   return hparams['learningRate']
 
 
@@ -182,7 +181,7 @@ def get_optimizer(model, loss, learning_rate):
     return optimizer
 
 def get_metrics(model, loss):
-    return [ metrics.ConfusionMatrix(num_classes=10), tf.keras.metrics.SparseCategoricalCrossentropy()]
+    return [tf.keras.metrics.SparseCategoricalCrossentropy(from_logits=False), metrics.ConfusionMatrix(num_classes=10)]
 
 def get_total_loss(model):#inputs, model_outputs_dict, labels, weights_loss):
     '''a specific loss can be defined here or simply use a string that refers to a keras loss
@@ -224,22 +223,10 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     @param isTraining : a boolean that indicates if this function is called to prepare the training or validation data pipeline
     '''
     print('Creating data pipeline, loading data from ', raw_data_files_folder, ' is training mode : ', isTraining)
-    if isTraining:
-        dataframe = load_dataframes(raw_data_files_folder)
-        features = dataframe.iloc[:,1:]
-        targets = dataframe.iloc[:,:1]
-    else:
-        # a single test dataset is used here for all clients and the federated server
-        # -> TODO, personnalize this behavior if required
-        dataframe = load_dataframes(os.path.join(raw_data_files_folder,'mnist_test.csv'))
-
-        '''print("\n")
-        print(dataframe)
-        print(raw_data_files_folder)
-        print("\n")
-        '''
-        features = dataframe.iloc[:,1:]
-        targets = dataframe.iloc[:,:1]
+    
+    dataframe = load_dataframes(raw_data_files_folder)
+    features = dataframe.iloc[:,1:]
+    targets = dataframe.iloc[:,:1]
 
     #convert each sample from shape (784,1) to (28,28,1) to allow for convolutional layers processing
     #also, data samples are normalised to range [0;1] (casted to float) instead of the original uint8 format with range [0;255]

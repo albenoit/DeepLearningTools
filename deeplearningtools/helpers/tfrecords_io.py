@@ -14,7 +14,7 @@ import numpy as np
 import cv2
 
 def image_tfrecords_dataset(filename, hasLabels=False):
-  '''
+  """
   Assuming a set of tfrecords file is pointed by filename, ex:'images.tfrecords',
   create a data provider that loads them for training/testing models
 
@@ -23,7 +23,7 @@ def image_tfrecords_dataset(filename, hasLabels=False):
   :param haslabel: A boolean, false by default that specifies if an iteger label is expected or not
 
   :returns: A tf.data.Dataset WITHOUT PREFETCH NOR BATCH, specify your own
-  '''
+  """
 
   raw_image_dataset = tf.data.TFRecordDataset(filename)
 

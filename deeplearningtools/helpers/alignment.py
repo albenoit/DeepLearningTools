@@ -17,7 +17,7 @@ from typing import Tuple
 # Distance Algorithms
 # ------------------------------------------------------------
 def pearson_cost(x: np.ndarray, y: np.ndarray, sort=True) -> float:
-    """
+    r"""
     Calculate the Pearson correlation coefficient between two arrays, the measure of dissimilarity between two variables [-1:1].
 
     It quantifies the strength and direction of the linear association between the variables.
@@ -51,7 +51,7 @@ def pearson_cost(x: np.ndarray, y: np.ndarray, sort=True) -> float:
     return r if r is not np.nan else 0
 
 def spearman_cost(x: np.ndarray, y: np.ndarray, sort=True) -> float:
-    """
+    r"""
     Calculate the Spearman correlation coefficient between two arrays.
 
     The Spearman correlation coefficient measures the strength and direction of the monotonic relationship between two variables. 
@@ -88,7 +88,7 @@ def spearman_cost(x: np.ndarray, y: np.ndarray, sort=True) -> float:
     return r if r is not np.nan else 0
 
 def pearson(x: np.ndarray, y: np.ndarray, sort=True) -> float:
-    """
+    r"""
     Calculate the normalized Pearson correlation between two arrays, the measure of similarity between two variables [0:1].
 
     :param x: The first array.
@@ -103,7 +103,7 @@ def pearson(x: np.ndarray, y: np.ndarray, sort=True) -> float:
     return 1 - pearson_cost(x, y, sort=False)
 
 def pearson_sorted(x: np.ndarray, y: np.ndarray) -> float:
-    """
+    r"""
     Calculate the normalized Pearson correlation between two sorted arrays.
     
     :param x: The first sorted array.
@@ -118,7 +118,7 @@ def pearson_sorted(x: np.ndarray, y: np.ndarray) -> float:
     return 1 - pearson_cost(x, y, sort=True)
 
 def spearman(x: np.ndarray, y: np.ndarray) -> float:
-    """
+    r"""
     Calculate the normalized Spearman correlation between two arrays.
 
     :param x: The first array.
@@ -133,7 +133,7 @@ def spearman(x: np.ndarray, y: np.ndarray) -> float:
     return 1 - spearman_cost(x, y, sort=False)
 
 def spearman_sorted(x: np.ndarray, y: np.ndarray) -> float:
-    """
+    r"""
     Calculate the normalized Spearman correlation between two sorted arrays.
 
     :param x: The first sorted array.
@@ -148,7 +148,7 @@ def spearman_sorted(x: np.ndarray, y: np.ndarray) -> float:
     return 1 - spearman_cost(x, y, sort=True)
 
 def gradient(x: np.ndarray, y: np.ndarray) -> int:
-    """
+    r"""
     Calculate the gradient dissimilarity between two arrays.
 
     The gradient dissimilarity between two arrays, x and y, is a measure of their dissimilarity based on the signs of their corresponding elements.
@@ -173,7 +173,7 @@ def gradient(x: np.ndarray, y: np.ndarray) -> int:
     return np.count_nonzero(x * y < 0)
 
 def l1(x: np.ndarray, y: np.ndarray) -> float:
-    """
+    r"""
     Calculate the L1 distance between two arrays or vectors.
 
     The L1 distance, also known as the Manhattan distance or taxicab distance, between two arrays (or vectors) is a measure of the absolute difference between 
@@ -199,7 +199,7 @@ def l1(x: np.ndarray, y: np.ndarray) -> float:
     return np.sum(np.abs(x - y))
 
 def l2(x: np.ndarray, y: np.ndarray) -> float:
-    """
+    r"""
     Calculate the L2 distance between two arrays or vectors. 
     
     The L2 distance, also known as the Euclidean distance, between two arrays (or vectors) is a measure of the distance between these two points in Euclidean space. 
@@ -294,7 +294,7 @@ def _linear_sum_assignment(target_layer: np.ndarray, align_layer: np.ndarray, di
 
     if distance is None:
         distance = DISTANCE_OPTIONS['l2']
-    elif type(distance) is str:
+    elif isinstance(distance, str):
         distance = DISTANCE_OPTIONS[distance]
     else:
         pass

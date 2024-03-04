@@ -1,4 +1,4 @@
-''' A basic example to launch a set of neural network training sessions to seek for the
+""" A basic example to launch a set of neural network training sessions to seek for the
 best hyperparameters set that minimize a target criteria
 
 @brief  based on hyperopt, start several training sessions concudted by the
@@ -16,7 +16,17 @@ The tuned hyperparameter values are stored in each trial folder as a python scri
 -> some ideas to study the hyperparameter and loss behaviors : https://python-for-multivariate-analysis.readthedocs.io/a_little_book_of_python_for_multivariate_analysis.html
 
 -> advanced method here : https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf
-'''
+"""
+#librairies imports
+
+from hyperopt import hp
+import matplotlib as mpl
+mpl.use('Agg') #force not to display plot but rather write them to file
+from hyperopt import fmin, tpe, space_eval, Trials, STATUS_FAIL, STATUS_OK, plotting
+import pandas as pd
+from pandas.plotting import scatter_matrix
+import os
+import matplotlib.pyplot as plt
 
 #basic parameters of the Hyperopt experiment
 MAX_TRIALS = 100 # the maximum number of optimisation attempts
@@ -25,7 +35,6 @@ outputlog_folder = 'examples/hyperopt/hyperopt_experiments_curve_fitting'
 toobig_loss=1e6 #the default trial loss value in case of job failure
 
 # define a search space
-from hyperopt import hp
 space = {
         'hiddenNeurons': hp.randint('hiddenNeurons', upper=20)+1,#test between 1 and 21 neurons
         'learningRate': hp.uniform('learningRate', 1e-2, 1e-5),
@@ -33,15 +42,6 @@ space = {
 
 
 ##### Hyperopt code starts here
-#librairies imports
-
-import matplotlib as mpl
-mpl.use('Agg') #force not to display plot but rather write them to file
-from hyperopt import fmin, tpe, space_eval, Trials, STATUS_FAIL, STATUS_OK, plotting
-import numpy as np
-import pandas as pd
-from pandas.plotting import scatter_matrix
-import os
 
 #ensure log dir exists
 if not(os.path.exists(outputlog_folder)):
@@ -84,8 +84,6 @@ print(best_trials)
 
 #experiments trials visualisation
 #=> plot the evolution of each of the hyperparameters along the trials
-import matplotlib.pyplot as plt
-import pandas as pd
 chosen_hparams_history=[]
 finished_jobs=0
 for trial in trials.trials:
@@ -122,8 +120,8 @@ if finished_jobs>0:
   #plotting.main_plot_vars(trials, scope)#FIXME, check https://github.com/hyperopt/hyperopt/blob/master/hyperopt/tests/test_plotting.py
   try:
     plt.show()
-  except:
-    print('matplotlib.pyplot.show() could not be run, maybe this computer does not have a X server')
+  except Exception as e:
+    print('matplotlib.pyplot.show() could not be run, maybe this computer does not have a X server. Reported error:', e)
     pass
 else:
   print('-> Could not run any trial correctly... look for errors, first try to start a single experiment manually')

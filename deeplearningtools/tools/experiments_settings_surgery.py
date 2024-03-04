@@ -35,7 +35,6 @@ def insert_additionnal_hparams(settings_file, hparams):
   #Here, we prepend the string we want to on first line
   additionnal_hparams="#NEXT FOLLOWS SOME ADDITIONNAL HYPERPARAMETERS UPDATES, AUTOMATICALY INSERTED, MAY UPDATE PREVIOUSLY DEFINED VALUES\n"+'hparams_addons='+str(hparams)+'\n'
   #make the link between those added hparams and the expected hand written hparams
-  hparams_line_id=0
 
   # FIXME : UGLY file processing follows to insert additionnal hyperparameters...
   def find_line_after_initial_hparams_dict(allLines):
@@ -75,7 +74,6 @@ def insert_additionnal_hparams(settings_file, hparams):
   has_hparams, hand_written_hparam_line=find_line_after_initial_hparams_dict(updated_settings_data[hparams_line_insert:])
   
   # also search for already added additional parameters (willing to add some more after them)
-  ADDITIONNAL_PARAMS_FINAL_LINE
   hparams_line_insert+=hand_written_hparam_line
   if has_hparams:
     hparams_line_insert+=find_last_hparams_addons_line(updated_settings_data[hparams_line_insert:])
@@ -94,19 +92,16 @@ def insert_additionnal_hparams(settings_file, hparams):
     print('Creating folder :', tmpdir)
     os.makedirs(tmpdir)
   except Exception as e:
-    print('Could not create ',tmpdir, 'already exists:', os.path.exists(tmpdir))
+    print('Could not create ',tmpdir, 'already exists:', os.path.exists(tmpdir), ' Exception:',e)
   updated_settings_filename=os.path.join(tmpdir, updated_settings_filename)
   print('updated_settings_filename',updated_settings_filename)
   try:
     new_settings_file=open(updated_settings_filename,'w')
   except Exception as e:
-    raise Exception('Something went wrong when writing temporary settings file...',e)
+    print('Something went wrong when writing temporary settings file...',e)
   new_settings_file.writelines(updated_settings_data)
   new_settings_file.close()
   settings_file=updated_settings_filename
   print('Created a temporary updated experiment settings file here : ' +settings_file)
   return settings_file
 
-### testing purpose
-#script='experiment_settings.py'
-#insert_additionnal_hparams(script, {'test':1})

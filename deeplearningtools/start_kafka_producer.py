@@ -41,8 +41,6 @@ sleep 10
 """
 
 import argparse
-import numpy as np
-
 import deeplearningtools.helpers.kafka_io
 import deeplearningtools.experiments_manager
 import deeplearningtools.helpers.tensor_msg_io
@@ -127,29 +125,29 @@ def run(commands):
         kafka_dataset_reader=deeplearningtools.helpers.kafka_io.KafkaIO(topic_name=log_queue_name, bootstrap_servers=usersettings.kafka_bootstrap_servers, element_spec=dataset.element_spec)
         dataset=kafka_dataset_reader.kafka_dataset_consumer_tf_custom(train_val_dataset_features, batch_size=usersettings.batch_size, shuffle=False)
         
+        """
+        # FIXME, unused
         # to be comparable with the original dataset:
         dataset_orig =usersettings.get_input_pipeline(  raw_data_files_folder=dataset_folder,
                                                         isTraining=not(commands.isvalidationdata),
                                                         batch_size=usersettings.batch_size,
                                                         nbEpoch=1)
-
-        '''for id, sample_duo in enumerate(datasetzip(dataset, dataset_orig)):
+        
+        for id, sample_duo in enumerate(datasetzip(dataset, dataset_orig)):
             sample=sample_duo[0]
             sample_orig=sample_duo[1]
             print('### KAFKA sample:', id)
             print('sample:',sample)
             print('### ORIG. sample:', id)
             print('sample:',sample_orig[0])
-        '''
+        """
         for id, sample in enumerate(dataset):
             print('### KAFKA sample:', id)
             print('sample:',sample)
         print('Read all the dataset with number of samples:', id)
 
 if __name__ == "__main__":
-
     # retreive command line arguents
     parser = get_commands()
     FLAGS=parser.parse_args()
     run(FLAGS)
-

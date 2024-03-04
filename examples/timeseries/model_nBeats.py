@@ -3,20 +3,20 @@ import tensorflow as tf
 from tensorflow.keras.utils import plot_model
 
 def basis_identity(theta, ts_length, name):
-	''' basic identity basis: thetas are directly considered as for/back casts
+	""" basic identity basis: thetas are directly considered as for/back casts
 	=> no additionnal computation
-	'''
+	"""
 	assert theta.get_shape().as_list()[-1]==ts_length
 	return theta
 
 def basis_func_trend(theta, ts_length, name):
-	'''
+	"""
 	setup a polynomial trend parametrized by the incoming theta features
 	-> applied to a single time series, either forecast of backcast
 	Args:
-	  theta: the parameters that control the trend function, its last dimension (-1) sets the polynom degree
-	  ts_lengh: the timeseries length
-	'''
+		theta: the parameters that control the trend function, its last dimension (-1) sets the polynom degree
+		ts_lengh: the timeseries length
+	"""
 	# the trend polynomial degree is directly related to the dimensions of theta
 	polynomial_degree_plus1=theta.get_shape().as_list()[-1]
 	polynomial_degree = polynomial_degree_plus1-1
@@ -25,14 +25,14 @@ def basis_func_trend(theta, ts_length, name):
 	powers=np.arange(polynomial_degree_plus1)
 	T=np.array([timesteps**p for p in powers], dtype=np.float32)
 	
-	''' finally apply theta parameters as coefficients on the target polynom
+	""" finally apply theta parameters as coefficients on the target polynom
 	this is actually a simple matrix product (T*theta) that can be done by a not trainable
 	dense neural layer  
 	...you may see some equivalent calculus with other codes such as:
 	einsum_np=np.einsum('bp,pt->bt', theta.numpy(), T.numpy())
 	dot_np=np.dot(theta.numpy(), T.numpy())
 	einsum_tf=tf.tensordot(theta, T, axes=1)
-	'''
+	"""
 	basis_tf=tf.keras.layers.Dense(units=ts_length,
 									kernel_initializer=tf.keras.initializers.Constant(value=T),
 									trainable=False,
@@ -53,13 +53,13 @@ def test_basis_func_trend():
 #test_basis_func_trend()
 
 def basis_func_seasonality(theta, ts_length, name):
-	'''
+	"""
 	setup a seasonal model parametrized by the incoming theta features
 	-> applied to a single time series, either forecast of backcast
 	Args:
-	  theta: the parameters that control the trend function, its last dimension (-1) sets twice the number of harmonics
-	  ts_lengh: the timeseries length
-	'''
+		theta: the parameters that control the trend function, its last dimension (-1) sets twice the number of harmonics
+		ts_lengh: the timeseries length
+	"""
 	p = theta.get_shape().as_list()[-1]
 	p1, p2 = (p // 2, p // 2) if p % 2 == 0 else (p // 2, p // 2 + 1)
 	timesteps=np.arange(ts_length, dtype=np.float)/ts_length
@@ -88,7 +88,7 @@ def test_basis_func_seasonality():
 #test_basis_func_seasonality()
 
 def static_features_encoder(features, neurons, dropout_rate=0.5, activation=tf.keras.layers.ReLU(), name_suffix:str=''):
-	''' basic feature encoding with a single non linear layer'''
+	""" basic feature encoding with a single non linear layer"""
 	enc= tf.keras.layers.Dense(units=neurons,
 								kernel_initializer=tf.keras.initializers.Orthogonal(),
 								kernel_regularizer=tf.keras.regularizers.L2(0.0001),
@@ -158,10 +158,10 @@ def model(usersettings):
 					model_outputs[block_name]=tf.keras.layers.Activation('linear', dtype='float32', name=block_name)(globalcast)
 					
 					# update residuals and forecast
-					residuals = tf.keras.layers.subtract([residuals, backcast], name=f"subtract_"+block_name) 
+					residuals = tf.keras.layers.subtract([residuals, backcast], name="subtract_"+block_name)
 					if 'global_forecast' in locals():
-						global_forecast = tf.keras.layers.add([global_forecast, forecast], name=f"add_f_"+block_name)
-						global_backcast = tf.keras.layers.add([global_backcast, backcast], name=f"add_b_"+block_name)
+						global_forecast = tf.keras.layers.add([global_forecast, forecast], name="add_f_"+block_name)
+						global_backcast = tf.keras.layers.add([global_backcast, backcast], name="add_b_"+block_name)
 					else:
 						global_forecast = forecast
 						global_backcast = backcast
@@ -204,10 +204,10 @@ if __name__ == "__main__":
 	y=df['market-price'].to_numpy().astype(np.float32)
 	
 	#y+=np.random.normal(size=y.shape)
-	'''plt.plot(x,y)
+	"""plt.plot(x,y)
 	plt.title('whole dataset')
 	plt.show()
-	'''
+	"""
 	#setup tensorflow config
 	tf.random.set_seed(42)
 
@@ -236,12 +236,12 @@ if __name__ == "__main__":
 	
 	#just to see the ordered val dataset values:
 	
-	'''
+	"""
 	for sample in dataset_val:
 		print(sample)
 		print('back', sample[0].shape)
 		print('for', sample[1]['forecast'].shape)
-	'''	
+	"""	
 	# Basic tests    
 	test_model = model(Setup())
 	test_model.summary()
@@ -277,13 +277,13 @@ if __name__ == "__main__":
 		preds=test_model.predict(ts_backcast)
 		plt.plot(x_forecast, preds['forecast'][:display_samples,:].transpose(), ('r'))
 		plt.plot(x_backcast, preds['backcast'][:display_samples,:].transpose(), ('r'))
-		'''
+		"""
 		for pred_name in preds.keys():
 			if pred_name=='forecast':
 				plt.plot(x_forecast, preds['forecast'][:display_samples,:].transpose(), ('r'))
 			else:
 				plt.plot(x_backcast, preds[pred_name][:display_samples,:].transpose(), ('r'))
-		'''		
+		"""		
 		#display backcast and forecast reference values
 		plt.plot(x_backcast, ts_backcast.transpose())
 		plt.plot(x_forecast, ts_future.transpose(), ('b'))

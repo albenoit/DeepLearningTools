@@ -8,8 +8,9 @@
 # for DeepLearningTools.
 # =========================================
 
-import os, sys, importlib, datetime
-import tensorflow as tf
+import os
+import importlib
+import datetime
 
 SETTINGSFILE_COPY_NAME='experiment_settings.py'
 
@@ -24,16 +25,16 @@ def loadModel_def_file(usersettings, absolute_path=False):
   :return: The loaded Keras model.
   :rtype: keras.Model
   """
-  if absolute_path == False:
+  if absolute_path is False:
     model_path=os.path.basename(usersettings.model_file)
-  if absolute_path == True:
+  if absolute_path is True:
     model_path=usersettings.model_file
   try:
     spec=importlib.util.spec_from_file_location('model_def', model_path)
     model_def = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(model_def)
   except Exception as e:
-    raise ValueError('loadModel_def_file: Failed to load model file {model}, error message={err}'.format(model=usersettings.model_file, err=e))
+    print('loadModel_def_file: Failed to load model file {model}, error message={err}'.format(model=usersettings.model_file, err=e))
   model=model_def.model
 
   print('loaded model file {file}'.format(file=model_path))
@@ -74,7 +75,6 @@ def loadExperimentsSettings(filename, call_from_session_folder=False, restart_fr
     print('Process starts...')
 
   usersettings=ExperimentSettings(filename, isServingModel, call_from_session_folder)
-
   if isServingModel:
     sessionFolder=os.path.dirname(filename)
 
@@ -86,7 +86,7 @@ def loadExperimentsSettings(filename, call_from_session_folder=False, restart_fr
   else:
     usersettings.recoverFromCheckpoint=True
 
-  print('Considered usersettings.hparams=',str(usersettings.hparams))
+  print('loadExperimentsSettings: considered usersettings.hparams=',str(usersettings.hparams))
   return usersettings, sessionFolder
 
 
@@ -116,7 +116,7 @@ class ExperimentSettings(object):
         self.experiment_settings = importlib.util.module_from_spec(module_spec)
         module_spec.loader.exec_module(self.experiment_settings)
 
-        '''settings_module=settingsFile[:-3].split('/')
+        """settings_module=settingsFile[:-3].split('/')
         if len(settings_module)>1:
           settingsFolder=os.path.join(*settings_module[:-1]).replace('/','.')
           settings_module=settings_module[-1]
@@ -128,9 +128,9 @@ class ExperimentSettings(object):
         print(os.listdir())
         print('settings file exists:',os.path.exists(settings_module+'.py'))
         self.experiment_settings = importlib.import_module(settings_module)
-        '''
+        """
     except Exception as e:
-        raise ValueError('Failed to load {settings} file. Error message is {error}. This generally comes from a) file does not exist, b)basic python syntax errors'.format(settings=settingsFile, error=e))
+        print('Failed to load {settings} file. Error message is {error}. This generally comes from a) file does not exist, b)basic python syntax errors'.format(settings=settingsFile, error=e))
 
     #experiment session parameters
     print('******************************************************')
@@ -171,6 +171,7 @@ class ExperimentSettings(object):
     self.early_stopping_patience=self.assertPositive_above_zero('early_stopping_patience', 'the number of epoch without val_loss decrease to wait for before stopping training')
     self.get_learningRate=self.has('get_learningRate', 'the training speed factor, returns a float or a tf.keras.optimizers.schedules object')
     self.monitored_loss_name=self.hasOrDefault('monitored_loss_name', 'val_loss')
+    self.monitored_metric=self.hasOrDefault('monitored_metric', [])
     #input data parameters
     self.raw_data_dir_val=self.has('raw_data_dir_val', 'path to the validation dataset')
     self.raw_data_dir_train=self.has('raw_data_dir_train', 'path to the training dataset')
@@ -188,7 +189,7 @@ class ExperimentSettings(object):
     self.consume_data_from_kafka=self.hasOrDefault('consume_data_from_kafka', False)
     #input pipelines
     self.get_input_pipeline=self.has('get_input_pipeline', 'the train and validation input data pipelines function params=[batch_size, raw_data_files_folder, shuffle_batches], must return an input function as described here : https://www.tensorflow.org/programmers_guide/datasets')
-    self.custom_tensorboard_logs=self.hasOrDefault('custom_tensorboard_logs', False, message='specify a function able to add some tf.summary.x (x could be image, etc.')
+    self.custom_tensorboard_logs=self.hasOrDefault('custom_tensorboard_logs', False, message='specify a function able to add some tf.summary.x (x could be image, etc.)')
     #tensorflow serving and client dialog
     self.save_only_last_best_model=self.hasOrDefault('save_only_last_best_model', True, message='set True in order to only save the last best model in the exported model folder (keep disk space)')
     self.wait_for_server_ready_int_secs=self.assertPositive_above_zero('wait_for_server_ready_int_secs', 'the number of seconds to wait for a tensorflow service before timeout on first contact')
@@ -204,7 +205,7 @@ class ExperimentSettings(object):
     #look for an optionnal hyperparameters dictionnary
     self.hparams={} # acollection of external hyperparameters that will decorate session folder name
     if hasattr(self.experiment_settings, 'hparams'):
-      self.hparams= getattr(self.experiment_settings,'hparams')
+      self.hparams= self.experiment_settings.hparams
       print('Found hyperparameters:',self.hparams)
       if 'cid' in self.hparams.keys(): #for convenience
          self.cid=self.hparams['cid']
@@ -217,7 +218,8 @@ class ExperimentSettings(object):
     self.model_name=self.__get_model_name()
 
     if isServingModel is False:
-      assert os.path.exists(self.model_file), '{model} targetted by model_file filename does not exist in the current working directory: {cwd}'.format(model=self.model_file, cwd=os.getcwd())
+      if os.path.exists(self.model_file) is False:
+        raise ValueError('{model} targetted by model_file filename does not exist in the current working directory: {cwd}'.format(model=self.model_file, cwd=os.getcwd()))
 
     #train and validation flags and functions
     self.get_total_loss=self.has('get_total_loss', 'function that receives parameters [inputs, model_outputs_dict, labels, weights_loss] that must return a graph node that represents the optimisation loss. This node will be drawn on the tensorboard as the \'loss\' variable.')
@@ -227,7 +229,8 @@ class ExperimentSettings(object):
     self.addon_callbacks=self.has('addon_callbacks', 'a function that receives tf.keras.model and train and val input pipelines as parameters and retruns a list of tf.keras.callbacks ')
 
     for key in vars(self).keys():
-      assert getattr(self,key)!=None, 'Parameter '+key+' not initialized'
+      if getattr(self,key) is None:
+        raise ValueError('Parameter '+key+' not initialized')
 
     print('INFO: All required parameters are set')
 
@@ -273,8 +276,10 @@ class ExperimentSettings(object):
     :raises AssertionError: If the parameter is not found or its value is not positive and above zero.
     """
     message='Specification error on variable {param}: {descr}. It must be set and be above 0'.format(param=param, descr=param_description)
-    assert hasattr(self.experiment_settings,param), message
-    assert getattr(self.experiment_settings,param)>0, message
+    if hasattr(self.experiment_settings,param) is False:
+      raise ValueError(message)
+    if getattr(self.experiment_settings,param)<=0:
+      raise ValueError(message)
     return getattr(self.experiment_settings,param)
   
   def assertPositive_above_equal_zero(self, param, param_description):
@@ -291,8 +296,10 @@ class ExperimentSettings(object):
     :raises AssertionError: If the parameter is not found or its value is not positive and above or equal to zero.
     """
     message='Specification error on variable {param}: {descr}. It must be set and be above 0'.format(param=param, descr=param_description)
-    assert hasattr(self.experiment_settings,param), message
-    assert getattr(self.experiment_settings,param)>=0, message
+    if hasattr(self.experiment_settings,param) is False:
+      raise ValueError(message)
+    if getattr(self.experiment_settings,param)<0:
+      raise ValueError(message)
     return getattr(self.experiment_settings,param)
 
   def assertType(self, param, type, param_description):
@@ -310,8 +317,9 @@ class ExperimentSettings(object):
 
     :raises AssertionError: If the parameter is not found or its value is not of the specified type.
     """
-    message='Specification error on variable {param}: {descr}. It must be of type '.format(param=param, descr=type)
-    assert isinstance(getattr(self.experiment_settings,param), type), message
+    if isinstance(getattr(self.experiment_settings,param), type) is False:
+      message='Specification error on variable {param}: {descr}. It must be of type '.format(param=param, descr=type)
+      raise ValueError(message)
     return getattr(self.experiment_settings,param)
 
   def has(self, param, error_message):
@@ -327,7 +335,8 @@ class ExperimentSettings(object):
 
     :raises AssertionError: If the parameter is missing in the experiment settings object.
     """
-    assert hasattr(self.experiment_settings, param), 'Missing {param} : {msg}'.format(param=param, msg=error_message)
+    if hasattr(self.experiment_settings, param) is False:
+      raise ValueError('Missing {param} : {msg}'.format(param=param, msg=error_message))
     return getattr(self.experiment_settings,param)
 
   def summary(self):

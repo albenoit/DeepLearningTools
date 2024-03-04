@@ -7,7 +7,7 @@
 # Brief: A set of helpers to experiment with kafka pubsub, maes use of tensor serialization/parsing helpers proposed in tensor_msg_io.py
 # for DeepLearningTools.
 # =========================================
-'''
+"""
 This module makes use of the tensor serialization/parsing helpers proposed in tensor_msg_io.py.
 
 Usage:
@@ -63,19 +63,19 @@ sleep 10
 # Get topic details
 
 ./kafka_2.13-2.7.1/bin/kafka-topics.sh  --bootstrap-server=localhost:9092 --describe --topic demo-pics
-'''
+"""
 
 import datetime
 import kafka
 try:
   from deeplearningtools.helpers import tensor_msg_io
-except:
+except ImportError:
   from . import tensor_msg_io
 import tensorflow as tf
 import tensorflow_io as tfio
 
 def error_callback(exc):
-  '''
+  """
   Error callback function for handling exceptions during data sending to Kafka.
 
   This function raises an Exception with the error message.
@@ -84,7 +84,7 @@ def error_callback(exc):
   :type exc: Exception
 
   :raises Exception: Raises an Exception with the error message.
-  '''
+  """
   raise Exception('Error while sendig data to kafka: {0}'.format(str(exc)))
 
 # -----------------------------------------
@@ -93,7 +93,7 @@ def error_callback(exc):
 
 class KafkaIO(object):
   def __init__(self, topic_name:str, element_spec, bootstrap_servers=['localhost:9092'], flush_every=20):
-    '''
+    """
     Setup a Kafka connection to push TensorFlow data samples to.
     
     :param topic_name: The name of the Kafka topic to write to.
@@ -103,7 +103,7 @@ class KafkaIO(object):
     :type bootstrap_servers: list, optional
     :param flush_every: The iteration period when data is flushed to Kafka. Defaults to 20.
     :type flush_every: int, optional
-    '''
+    """
     self.bootstrap_servers=bootstrap_servers
     self.topic_name=topic_name
     self.flush_every=flush_every
@@ -112,14 +112,14 @@ class KafkaIO(object):
 
     
   def kafka_producer_tf(self, items:tf.Tensor, log:str=None)->None:
-    '''
+    """
     Publish TensorFlow tensor sample pairs (tensor, label) in the form of tensorflow.Examples from an iterable (list of tensor tuples, or a dataset) or something similar.
     
     :param items: The TensorFlow tensor sample pairs to publish.
     :type items: tf.Tensor
     :param log: The path to the log file. Defaults to None.
     :type log: str, optional
-    '''
+    """
     producer=kafka.KafkaProducer(bootstrap_servers=self.bootstrap_servers)
 
     count=0
@@ -168,7 +168,7 @@ class KafkaIO(object):
         f.write(msg)
 
   def kafka_dataset_consumer_tf_basic(self, batch_size:int, shuffle:bool=False)->tfio.IODataset:
-    '''
+    """
     Consume TensorFlow tensor sample pairs (tensor, label) from a Kafka topic and return an IODataset.
     
     :param batch_size: The batch size.
@@ -177,13 +177,13 @@ class KafkaIO(object):
     :type shuffle: bool, optional
     :return: The IODataset containing the consumed data.
     :rtype: tfio.IODataset
-    '''
+    """
     @tf.function
     def decode_kafka_item(item):
-      '''
+      """
       specify here how to decode each item. Their basic structure being to be a pair item.key, item.message, each of them being simple tensors
       Here the type of each pair element should be taken into account carefully with respect to what was done at the encoding step
-      '''
+      """
       #tf.print('message', item.message)
       data = tensor_msg_io.decode_tensor_proto(item.message, dtype=self.element_spec[0].dtype)
       label =  tensor_msg_io.decode_tensor_proto(item.key, dtype=self.element_spec[1].dtype)
@@ -206,7 +206,7 @@ class KafkaIO(object):
     return ds
 
   def kafka_dataset_consumer_tf_custom(self, features, batch_size:int, shuffle:bool=False)->tfio.IODataset:
-    '''
+    """
     Consume TensorFlow tensor sample pairs (tensor, label) from a Kafka topic and return an IODataset with custom features.
     
     :param features: The features to decode.
@@ -217,13 +217,13 @@ class KafkaIO(object):
     :type shuffle: bool, optional
     :return: The IODataset containing the consumed data.
     :rtype: tfio.IODataset
-    '''
+    """
     @tf.function
     def decode_kafka_custom_items(item):
-      '''
+      """
       specify here how to decode each item. Their structure being to be a pair item.key, item.message BUT each can be a set of tensors
       Here the type of each pair element should be taken into account carefully with respect to what was done at the encoding step
-      '''
+      """
       tensor = tensor_msg_io.decode_multitensor_proto(features[0], item.message)
       label =  tensor_msg_io.decode_multitensor_proto(features[1], item.key)
       #tf.print('!!!! decoded', tensor, label)#tensor=label
@@ -250,7 +250,7 @@ class KafkaIO(object):
     return ds
 
   def kafka_dataset_incremental_consumer_tf(self, batch_size:int, shuffle:bool=False)->tfio.IODataset:
-    '''
+    """
     Create an incremental consumer for streaming datasets from Kafka using TensorFlow IODataset.
 
     Note: This feature is not yet implemented.
@@ -264,7 +264,7 @@ class KafkaIO(object):
 
     Raises:
         NotImplementedError: Streaming datasets are not yet implemented.
-    '''
+    """
     raise NotImplementedError('Streaming datasets not already implemented')
     online_train_ds = tfio.experimental.streaming.KafkaBatchIODataset(self.topic_name,
                                           partition=0,

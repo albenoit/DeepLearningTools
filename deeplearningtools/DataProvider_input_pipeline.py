@@ -7,30 +7,29 @@
 # Brief: A set of tools to preprocess data and build up input data pipelines
 # for DeepLearningTools.
 # =========================================
-'''
+"""
   Warning:
     - These are advanced datapipelines => simpler versions are shown as tutorials is examples/data_pipelines
     - You may have to remove one of the cv2 or gdal import depending on your machine compatibility
-'''
+"""
 try:
   import cv2
-except:
-  print('WARNING, could not load the opencv library, this will impact your data pipeline if willing to use it')
+except Exception as e:
+  print('WARNING, could not load the opencv library, this will impact your data pipeline if willing to use it. Error report:',e)
 try:
   from osgeo import gdal
-except:
-  print('WARNING, could not load the GDAL library, this will impact your data pipeline if willing to use it')
+except Exception as e:
+  print('WARNING, could not load the GDAL library, this will impact your data pipeline if willing to use it. Error report:', e)
 
 try:
   import rasterio
-except:
-  print('WARNING, could not load the rasterio library, this will impact your data pipeline if willing to use it')
+except Exception as e:
+  print('WARNING, could not load the rasterio library, this will impact your data pipeline if willing to use it. Error report:', e)
 
 import matplotlib.pyplot as plt
 import glob
 import os
 import numpy as np
-import time
 import copy
 import tensorflow as tf
 import unicodedata
@@ -107,7 +106,7 @@ def test_image_tfrecords_dataset(filename='test_dataset.tfrecords'):
     print('Sample value range (min, max)=({minVal}, {maxVal})'.format(minVal=sample_minVal, maxVal=sample_maxVal))
     input_crop_norm=(input_crop-sample_minVal)*255.0/(sample_maxVal-sample_minVal)
     cv2.imshow('TEST input crop rescaled (0-255)', cv2.cvtColor(input_crop_norm.astype(np.uint8), cv2.COLOR_RGB2BGR))
-    if reference != None:
+    if reference is None:
       cv2.imshow('TEST reference crop (classID*20)', reference.astype(np.uint8)*20)
     cv2.waitKey()
 
@@ -178,8 +177,8 @@ def scaleImg_0_255(img):
         maskValue=np.iinfo(img_copy.dtype).min
         #replace mask values by zeros
         img_copy[img_copy==maskValue]=0
-    except:
-        print('Failed to detect data type, if float value, then, following should run fine')
+    except Exception as e:
+        print('Failed to detect data type, if float value, then, following should run fine. Error report:', e)
     img_min=np.nanmin(img_copy)
     img_max=np.nanmax(img_copy)
     epsilon=1e-4
@@ -225,7 +224,7 @@ def extractFilenames(root_dir, file_extension="*.jpg", raiseOnEmpty=True):
             print('----> Found files:'+str(len(newfiles)))
         files.extend(newfiles)
 
-    if len(files)==0 and raiseOnEmpty == True:
+    if len(files)==0 and raiseOnEmpty is True:
         raise ValueError('No files found at '+msg)
     else:
         print('Found files : '+str(len(files)))
@@ -266,13 +265,13 @@ def imread_from_rasterio(filename, debug_mode=False):
   with rasterio.open(filename_str, 'r') as ds:
     arr = ds.read()  # read all raster values
 
-    if arr == None:
+    if arr is None:
       raise ValueError('Could no read file {file}, exists={exists}'.format(file=filename_str,
                                                                            exists=os.path.exists(filename_str)
                                                                            )
                       )
   raster_array=arr.transpose([1,2,0])
-  if debug_mode == True:
+  if debug_mode is True:
       print('Reading image with GDAL : {file}'.format(file=filename_str))
       print('Image shape='+str(raster_array.shape))
   img_array=raster_array.astype(np.float32)
@@ -292,7 +291,7 @@ def imread_from_gdal(filename, debug_mode=False):
   filename_str=the_ugly_string_manager(filename)
 
   ds=gdal.Open(filename_str)
-  if ds == None:
+  if ds is None:
     raise ValueError('Could no read file {file}, exists={exists}'.format(file=filename_str,
                                                                          exists=os.path.exists(filename_str)
                                                                          )
@@ -300,7 +299,7 @@ def imread_from_gdal(filename, debug_mode=False):
   raster_array=ds.ReadAsArray().transpose([1,2,0])
 
   del ds #finally free memory...
-  if debug_mode == True:
+  if debug_mode is True:
       print('Reading image with GDAL : {file}'.format(file=filename_str))
       print('Image shape='+str(raster_array.shape))
   img_array=raster_array.astype(np.float32)
@@ -334,13 +333,13 @@ def imread_from_opencv(filename, cv_imreadMode):
                                                                            exists=os.path.exists(str(filename))
                                                                            )
                         )
-  '''if debug_mode == True:
+  """if debug_mode == True:
       print('Image shape='+str(image.shape))
       if len(image.shape)>2:
           print('Image first layer min={minVal}, max={maxVal} (omitting nan values)'.format(minVal=np.nanmin(image[:,:,0]), maxVal=np.nanmax(image[:,:,0])))
       else:
           print('Image first layer min={minVal}, max={maxVal} (omitting nan values)'.format(minVal=np.nanmin(image), maxVal=np.nanmax(image)))
-  '''
+  """
   if len(image.shape)==3: ##reorder channels, from the loaded opencv BGR to tensorflow RGB use
     if image.shape[2]==3:
         return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -421,14 +420,14 @@ def get_samples_entropies(samples_batch):
 
 @tf.function(input_signature=[tf.TensorSpec(shape=[None, None, None], dtype=tf.int32)])
 def convert_semanticMap_contourMap(crops):
-  '''
+  """
   Convert a semantic map into a contour Map using Sobel operator.
 
   :param crops: the semantic reference map to obtain contour (expecting 4D tensor).
   :type crops: tf.Tensor
 
 	:return: An image batch containing contours of a semantic maps.
-	'''
+	"""
   #Border Sobel operator
   sobel_x = tf.constant([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], tf.int32)
   sobel_x_filter = tf.reshape(sobel_x, [3, 3, 1,1])
@@ -467,7 +466,7 @@ class FileListProcessor_Semantic_Segmentation:
       """
       with tf.name_scope('raw_data_whithening'):
           #apply whitening on the raw data only
-          if self.no_reference == False:
+          if self.no_reference is False:
               single_image_channels=tf.slice( sample,
                                               begin=[0,0,0],
                                               size=[-1,-1,self.single_image_raw_depth])
@@ -491,7 +490,7 @@ class FileListProcessor_Semantic_Segmentation:
       :param ref_img_filename: The filename of the reference image to load.
       :return: The concatenated image of same 2D size but of depth = raw.depth+ref.depth
       """
-      if self.use_alternative_imread != None:
+      if self.use_alternative_imread is not None:
         if self.use_alternative_imread == 'opencv':
           @tf.function
           def load_from_opencv(raw_ref_img_filenames):
@@ -621,7 +620,7 @@ class FileListProcessor_Semantic_Segmentation:
                   height=tf.cast(tf.shape(input_image)[0], dtype=tf.int32, name='image_height')
                   width=tf.cast(tf.shape(input_image)[1], dtype=tf.int32, name='image_width')
                   #tf.print('height, width',im [height, width])
-                  if self.shuffle_samples == True:
+                  if self.shuffle_samples is True:
                       self.nbPatches=tf.cast(self.image_area_coverage_factor*tf.cast(height*width, dtype=tf.float32)/tf.constant(self.patchSize*self.patchSize, dtype=tf.float32), dtype=tf.int32, name='number_of_patches')
                       self.nbPatches=tf.minimum(self.nbPatches, tf.constant(self.max_patches_per_image, name='max_patches_per_image'), name='saturate_number_of_patches')
                       random_vector_shape = tf.expand_dims(self.nbPatches,0)
@@ -657,7 +656,7 @@ class FileListProcessor_Semantic_Segmentation:
       """
       print('*************************** FILTERS ***************************')
       print(self.additionnal_filters)
-      if self.balance_classes_distribution == True  and self.no_reference == False: #TODO second test is a safety test that could be removed is safety test done before
+      if self.balance_classes_distribution is True  and self.no_reference is False: #TODO second test is a safety test that could be removed is safety test done before
           print('-> crops filter: crops filtering taking into account ground truth entropy')
           @tf.function #(input_signature=[tf.TensorSpec(shape=[None, None, None], dtype=self.dtype)])
           def balance_classes_entropy(crop):
@@ -693,7 +692,7 @@ class FileListProcessor_Semantic_Segmentation:
         with tf.name_scope('filter_crops'):
           #next processing wrt config
           
-          '''
+          """
           #run all filters as a cascade, one skip the remaining filters as long as one filter refuses the crop
           def run_filters_cond(filters, crop):
             #if no more filter should be applied, then the crop is accepted
@@ -712,15 +711,15 @@ class FileListProcessor_Semantic_Segmentation:
           filter_id, filter_ok = tf.while_loop(c, b, [filter_id, filter_ok])
           return filter_ok
 
-          '''
+          """
           filter_ok=True
           for i in range(self.nb_filters):
             filter_ok&= self.additionnal_filters[i](crop)
           return filter_ok
-          '''
+          """
           #selected_crop=tf.Print(selected_crop, [selected_crop], message=('Crop is selected'))
           return selected_crop
-          '''
+          """
       return crop_filter(crop)
 
     def _setup_image_transforms(self):
@@ -738,7 +737,7 @@ class FileListProcessor_Semantic_Segmentation:
           print('-> nan replacement by zeros')
           @tf.function
           def replace_nans_by_zeros(sample, seed):
-            ''' returns a tensor with input nan values replaced by zeros '''
+            """ returns a tensor with input nan values replaced by zeros """
             return tf.where(tf.math.is_nan(sample), tf.zeros_like(sample), sample)
           self.image_label_transforms.append(replace_nans_by_zeros)
       if self.apply_random_flip_left_right:
@@ -755,7 +754,7 @@ class FileListProcessor_Semantic_Segmentation:
           self.image_label_transforms.append(random_rot90)
 
       self.image_pixels_transforms=[]
-      if self.no_reference == False: #if using a reference channel, then apply transform only of the raw data
+      if self.no_reference is False: #if using a reference channel, then apply transform only of the raw data
           @tf.function
           def get_image_channels(img, seed):
             return tf.slice( img,
@@ -771,14 +770,14 @@ class FileListProcessor_Semantic_Segmentation:
             return tf.image.per_image_standardization(img)
           self.image_pixels_transforms.append(img_standardize)
           
-      if self.apply_random_brightness != None:
+      if self.apply_random_brightness is not None:
           print('-> random brightness, max_delta=', self.apply_random_brightness)
           @tf.function
           def apply_random_brightness(img, seed):
             return tf.image.stateless_random_brightness(img, max_delta=self.apply_random_brightness, seed=seed)
           self.image_pixels_transforms.append(apply_random_brightness)
 
-      if self.apply_random_saturation != None:
+      if self.apply_random_saturation is not None:
           low=1.0-self.apply_random_saturation
           high=1.0+self.apply_random_saturation
           print('-> random saturation (lower, upper)=', (low, high))
@@ -787,7 +786,7 @@ class FileListProcessor_Semantic_Segmentation:
             return tf.image.stateless_random_saturation(img, lower=low, upper=high, seed=seed)
           self.image_pixels_transforms.append(apply_random_saturation)
       
-      if self.apply_random_contrast != None:
+      if self.apply_random_contrast is not None:
           low=1.0-self.apply_random_contrast
           high=1.0+self.apply_random_contrast
           print('-> random contrast (lower, upper)=', (low, high))
@@ -796,7 +795,7 @@ class FileListProcessor_Semantic_Segmentation:
             return tf.image.stateless_random_contrast(img, lower=low, upper=high, seed=seed)
           self.image_pixels_transforms.append(apply_random_contrast)
       
-      if self.crops_postprocess != None:
+      if self.crops_postprocess is not None:
           print('-> userdefined post process')
           self.post_process_fn=self.crops_postprocess
       else:
@@ -834,7 +833,7 @@ class FileListProcessor_Semantic_Segmentation:
             #print('-> Datapipeline applyies global image transform:', transform)
             transformed_image=self.image_label_transforms[i](transformed_image, seed)
           
-          if self.no_reference == False: #if using a reference channel, then apply transform only of the raw data
+          if self.no_reference is False: #if using a reference channel, then apply transform only of the raw data
             reference_img=tf.slice( transformed_image,
                                       begin=[0,0,self.single_image_raw_depth],
                                       size=[-1,-1,self.single_image_reference_depth])
@@ -845,7 +844,7 @@ class FileListProcessor_Semantic_Segmentation:
             transformed_image=self.image_pixels_transforms[i](transformed_image, seed)
 
           
-          if self.no_reference == False:#get back to the input+reference images concat
+          if self.no_reference is False:#get back to the input+reference images concat
             transformed_image= tf.concat([tf.cast(transformed_image, dtype=self.dtype), reference_img], axis=2)
           
           transformed_image= self.post_process_fn(transformed_image, seed)
@@ -860,8 +859,6 @@ class FileListProcessor_Semantic_Segmentation:
       
       :return: Create the filenames dataset.
       """
-      raw_sample=None
-      datasetfiles=None
       if self.image_pairs_raw_ref_input:
           datasetFiles=[''+string1+filenames_separator+string2  for string1,string2 in zip(self.filelist_raw_data, self.filelist_reference_data)]
       else: #raw and ref data in the same image of only raw data use cases
@@ -899,7 +896,7 @@ class FileListProcessor_Semantic_Segmentation:
 
 
           #2. transform the dataset samples convert raw images into crops
-          if self.full_frame_mode == True:
+          if self.full_frame_mode is True:
             self.dataset=self.dataset.map(map_func=self._load_raw_images_from_filenames, num_parallel_calls=self.num_reader_threads).prefetch(1)
             with tf.name_scope('full_raw_frame_prefetching'):
               if self.apply_whitening:     # Subtract off the mean and divide by the variance of the pixels.
@@ -1016,7 +1013,7 @@ class FileListProcessor_Semantic_Segmentation:
       self.dtype=dtype
       self.seed=seed
       self.debug = debug
-      if additionnal_filters == None:
+      if additionnal_filters is None:
         self.additionnal_filters=[]
       else:
         self.additionnal_filters=additionnal_filters
@@ -1042,13 +1039,13 @@ class FileListProcessor_Semantic_Segmentation:
       #adjusting setup and pipeline architecture design depending on the inputs
       self.image_pairs_raw_ref_input=False
       self.no_reference=False
-      if filelist_reference_data == None:
+      if filelist_reference_data is None:
           #-> case of raw images that include reference as the last channel
           print('*** Dataprovider is sampling raw data and expects it to have reference (ground truth) at the last channel')
           self.single_image_raw_depth=raw0.shape[2]-1
           self.single_image_reference_depth=1
           self.fullframe_ref_shape=list(raw0.shape)
-      elif type(filelist_reference_data) == list:
+      elif isinstance(filelist_reference_data, list):
           print('*** Dataprovider is sampling raw data and reference data lists')
           self.image_pairs_raw_ref_input=True
           #-> case of raw images plus separate reference images
@@ -1096,7 +1093,7 @@ class FileListProcessor_Semantic_Segmentation:
           self.patchSize=int(raw0.shape[0]*patch_ratio_vs_input)
 
       self.full_frame_mode=self.patch_ratio_vs_input==self.max_patches_per_image==1
-      if self.full_frame_mode == True:
+      if self.full_frame_mode is True:
           print('==> each image will finally be processed globally following')
       else:
           print("Image patches will be of size:"+str(self.patchSize))
@@ -1107,7 +1104,7 @@ class FileListProcessor_Semantic_Segmentation:
           raise ValueError('field_of_view must be odd or 0 (current : {})'.format(self.field_of_view))
 
       #prepare the set of image transorms
-      if self.full_frame_mode == True:
+      if self.full_frame_mode is True:
         self.cropSize=self.fullframe_ref_shape
       else:
         self.cropSize=[self.patchSize,self.patchSize,self.single_image_raw_depth+self.single_image_reference_depth]
@@ -1255,6 +1252,7 @@ def FileListProcessor_image_classification(sourceFolder, file_extension,
   :param device : The device where to put the dataset provider (better to set on CPU ("/cpu:0")).
   :param debug: Boolean, if True, prints additionnal logs.
   """
+  raise NotImplementedError('FileListProcessor_image_classification is not yet implemented')
   ds = tf.data.Dataset.list_files(os.path.join(sourceFolder,file_extension))
   ds = ds.map(map_func=load_image)
 

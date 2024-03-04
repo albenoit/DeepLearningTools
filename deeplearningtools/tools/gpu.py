@@ -3,11 +3,11 @@ import os
 import tensorflow as tf
 # Custom generic functions applied when running experiments
 def check_GPU_available(usersettings):
-  '''check GPU requirements vs availability: if usersettings.used_gpu_IDs is not empty, then check GPU availability accordingly
+  """check GPU requirements vs availability: if usersettings.used_gpu_IDs is not empty, then check GPU availability accordingly
      Args:
       usersettings, the experiments settings defined by the user
      Raises SystemError if no GPU available
-  '''
+  """
   gpu_workers_nb=0
   print('*** GPU devices detection ***')
   # let ensorFlow automatically choose an existing and supported device to run the operations in case the specified one doesn't exist
@@ -55,6 +55,11 @@ def check_GPU_available(usersettings):
     print('No GPU required for this experiment (usersettings.used_gpu_IDs is empty)')
   return gpu_workers_nb
 
+def get_available_gpus():
+    """return the list of available GPUs
+    """
+    gpus = tf.config.list_physical_devices('GPU')
+    return gpus
 
 def check_mixed_precision_compatibility(model, usersettings):
     #check if mixed precision compatibility are satisfied: https://docs.nvidia.com/deeplearning/performance/index.html
@@ -67,6 +72,6 @@ def check_mixed_precision_compatibility(model, usersettings):
                 f.write('\n   layer.input_shape[-1], layer.input_shape[-1]'+str((layer.input_shape[-1], layer.output_shape[-1])))
                 if ((layer.input_shape[-1])%8 != 0) or ((layer.output_shape[-1])%8 != 0):
                     f.write('\n    -> /!\ Layer not tensorcore compliant (index, name, input, output):'+str((i,layer.name,layer.input_shape, layer.output_shape)))
-            except:
-                f.write('\n    -> /!\ Could not check layer:'+str((i, layer)))
+            except Exception as e:
+                f.write('\n    -> /!\ Could not check layer:'+str((i, layer))+str(e))
     

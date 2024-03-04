@@ -1,4 +1,4 @@
-'''
+"""
 @author: Alexandre Benoit, LISTIC lab, FRANCE
 @brief : simple personnal file that defines experiment specific keys to be used with our programs
 
@@ -15,17 +15,16 @@ python3 -m deeplearningtools.start_model_serving --model_dir=/absolute/path/to/e
 apptainer run --nv /path/to/tf2_addons.sif -m deeplearningtools.experiments_manager --predict_stream=-1 --model_dir=/absolute/path/to/experiments/examples/embedding/TS_trials_depth3_nstacks1_nlayers2_nneurons32_smoothedParamsTrue_nbEpoch100_bottleneckSize2_learningRate0.0005_tsLengthIn128_tsLengthOut10_nbChannels11_batchSize10_2023-04-04--07:46:31/
 
 Check training logs : apptainer exec --nv /path/to/tf2_addons.sif tensorboard --logdir experiments/examples/timeseries
-'''
-
-
-#my imports
-from deeplearningtools.helpers import loss as helpers_loss
-from deeplearningtools.helpers import model as helpers_model
+"""
 
 #libs imports
 import tensorflow as tf
 import numpy as np
 import os
+
+import glob #for filesystem exploration tools
+import pandas as pd #for csv files easy reading and timeseries processing
+import matplotlib.pyplot as plt
 
 #-> set here your own working folder
 workingFolder='experiments/examples/timeseries'
@@ -52,7 +51,7 @@ hparams={'depth':3,
          'batchSize':10
          }
 
-''''set the list of GPUs involved in the process. HOWTO:
+"""'set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
 ->if using multiple GPUs, each GPU ID will be considered
@@ -60,7 +59,7 @@ hparams={'depth':3,
 with other processing jobs, yours and the ones of your colleagues.
 Then, connect to the processing node and type in command line 'nvidia-smi'
 to check which gpu is free (very few used memory and GPU )
-'''
+"""
 used_gpu_IDs=[]
 #set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
 #XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
@@ -86,8 +85,8 @@ nbEpoch=hparams['nbEpoch']
 early_stopping_patience=10
 
 #set here paths to your data used for train, val
-raw_data_dir_train = "../../../../datasamples/timeseries"
-raw_data_dir_val =   "../../../../datasamples/timeseries" # WARNING, IN THIS DEMO TRAIN AND VAL DATA ARE THE SAME, DATASET MUST BE DISTINCT FOR REAL EXPERIMENTS
+raw_data_dir_train = "../../../../../datasamples/timeseries"
+raw_data_dir_val =   "../../../../../datasamples/timeseries" # WARNING, IN THIS DEMO TRAIN AND VAL DATA ARE THE SAME, DATASET MUST BE DISTINCT FOR REAL EXPERIMENTS
 raw_data_filename_extension='*.csv'
 temporal_series_length=hparams['tsLengthIn']+hparams['tsLengthOut']
 ts_windowing_shift_ratio=10
@@ -121,7 +120,7 @@ served_head_names=['prediction']
 
 ########## LOCAL PARAMETERS (ONLY USED BELOW) SECTION ################
 
-''' Normalization variable '''
+""" Normalization variable """
 mean_vals = [1043.7930703279815, 937.5039896396833, 587.9572398695195, 42.70257611833159, 46.427388557764374, 41.9650561862, 8.372859834289358, 63.985666757595325, 23.704879281756785, 22.60299797330886, 24.366915626761347]
 std_vals = [753.5115459652183, 625.5025770874278, 271.7532042774016, 7.292516897584224, 6.326844458353698, 6.974501426484209, 2.9139284071542098, 18.680419651268164, 2.292511632975457, 2.0780787914960706, 1.516894462249191]
 
@@ -129,45 +128,45 @@ std_vals = [753.5115459652183, 625.5025770874278, 271.7532042774016, 7.292516897
 
 # add here any additionnal callback to use along the train/val process
 def addon_callbacks(model, train_samples, val_samples):
-  ''' optionnal callbacks can be defined here
+  """ optionnal callbacks can be defined here
   Arg: the defined model
   Returns a list of tf.keras.callbacks or an empty list
-  '''
+  """
   return []
 
 def get_learningRate():
-  ''' define here the learning rate
+  """ define here the learning rate
   Returns a sclalar (float) of a scheduler
-  '''
+  """
   return hparams['learningRate']
-  '''tf.keras.optimizers.schedules.ExponentialDecay(
+  """tf.keras.optimizers.schedules.ExponentialDecay(
                                         initial_learning_rate=hparams['learningRate'],
                                         decay_steps=40,
                                         decay_rate=0.1,
                                         staircase=True)
-  '''
+  """
 
 def get_optimizer(model, loss, learning_rate):
-    '''define here the specific optimizer to be used
+    """define here the specific optimizer to be used
     Returns a tensorflow optimizer object
-    '''
+    """
     optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate)
     return optimizer
 
 def get_metrics(model, loss):
   return 'mean_absolute_error'
-  '''{
+  """{
           'dense_1': tf.keras.metrics.mean_squared_error,
-  }'''
+  }"""
 
 def get_total_loss(model):#inputs, model_outputs_dict, labels, weights_loss):
-    '''a specific loss for data reconstruction when dealing with autoencoders
+    """a specific loss for data reconstruction when dealing with autoencoders
     Args:
         inputs: the input data samples batch
         model_outputs_dict: the dictionnay of model outputs, field names must comply with the ones defined in the model_file
         labels: the reference data / ground truth if available
         weights_loss: the model weights loss that may be used for regularization
-    '''
+    """
     print('output=',model.outputs)
     #reconstruction_loss='mean_squared_error'
     # Create a loss function that adds the MSE loss to the mean of all squared activations of a specific layer
@@ -179,18 +178,18 @@ def get_total_loss(model):#inputs, model_outputs_dict, labels, weights_loss):
     # Return a function or a string indicating a standard loss to be used, ex: 'mean_squared_error'
     return loss
 
-'''Define here the input pipelines :
+"""Define here the input pipelines :
 -1. a common function for train and validation modes
 -2. a specific one for the serving model_extra_update_ops
-'''
+"""
 def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
-    ''' define an input pipeline able to load temporal series from a set of
+    """ define an input pipeline able to load temporal series from a set of
     CSV files and a batch size specified as inputs
     TODO, look at the doc here : https://www.tensorflow.org/programmers_guide/datasets
     @param batch_size : the expected size of a batch
     @param raw_data_files_folder : the folder where files are stored
     @param shuffle_batches : a boolean that activates batch shuffling
-    '''
+    """
     from deeplearningtools import DataProvider_input_pipeline #only import here to reduce dependencies in serving mode
     #load all csv files to use for training
     raw_data_files=DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_files_folder, file_extension=raw_data_filename_extension)
@@ -198,20 +197,19 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     raw_data_files=sorted(raw_data_files, key=lambda e: int((e.split('.')[-2]).split('_')[-1]))
     print('Input files found (SORTED IN TIME)='+str(raw_data_files))
     """def per_sample_process_function(single_period_data_block_raw, timestamps):
-        ''' let the raw data as is but reduce the timestamp to the first and last date
-        '''
+        # let the raw data as is but reduce the timestamp to the first and last date
         stack = [timestamps[0,0], timestamps[-1,temporal_series_length-1]]#tf.expand_dims(timestamps[0], axis=0), tf.expand_dims(timestamps[-1], axis=0)]
         #print(stack)
         timestamps_start_stop=tf.stack(stack)
         return single_period_data_block_raw[], single_period_data_block_raw#(single_period_data_block_raw, timestamps_start_stop)
     """
     def per_sample_process_function(single_period_data_block_raw, timestamps):
-        ''' this custom function is intended to post process each sample independantly.
+        """ this custom function is intended to post process each sample independantly.
         Here, it separates it does multiple stuff:
         1) it separates input data and expected outcome (labels)
         2) normalizes the data with respect to the precomputed feature means and deviations measured on the train dataset
         3) it transforms oversampled metadata into simple scalars 
-        '''
+        """
         print('### per_sample_process_function START')
         print('single_period_data_block', single_period_data_block_raw)
         single_period_data_block_raw=tf.transpose(single_period_data_block_raw)
@@ -255,19 +253,19 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     print('dataset', dataset)
 
     return dataset
-'''
+"""
 ################################################################################
 ## Serving (production) section, define here :
 -get_served_module():  define how the model will be applied on production data, applying custom pre and post processing
 -class Client_IO, a class to specifiy input data requests and response on the client side when serving a model
 For performance/enhancement of the model, have a look here for graph optimization: https://github.com/tensorflow/tensorflow/blob/r1.4/tensorflow/tools/graph_transforms/README.md
-'''
+"""
 time_series_input_serving_shape=[None, hparams['tsLengthIn'], input_features_nb]
 def get_served_module(model, model_name):
-  ''' following https://www.tensorflow.org/guide/saved_model
+  """ following https://www.tensorflow.org/guide/saved_model
       Create a custom module to specify how the model will be used in production/serving
       specific preprocessing can be defined as well as post-processing
-  '''
+  """
   class ExportedModule(tf.Module):
     def __init__(self, model):
       super().__init__()
@@ -278,34 +276,30 @@ def get_served_module(model, model_name):
                                   tf.TensorSpec(shape=(None, 1), dtype=tf.float32, name=served_input_names[2]),#'today_isfree'),
                                   tf.TensorSpec(shape=(None, 1), dtype=tf.float32, name=served_input_names[3])])#'tomorrow_isfree')])
     def served_model(self, input, yesterday_isfree, today_isfree, tomorrow_isfree):
-      ''' a decorated function that specifies the input data format, processing and output dict
+      """ a decorated function that specifies the input data format, processing and output dict
         Args: input tensor(s)
         Returns a dictionnary of {'output key':tensor}
-      '''
+      """
       pred =model([input, yesterday_isfree, today_isfree, tomorrow_isfree])
       print('Exporting model output :', pred)
       return {served_head_names[0]:pred}
   return ExportedModule(model)
 
-import glob #for filesystem exploration tools
-import pandas as pd #for csv files easy reading and timeseries processing
-import matplotlib.pyplot as plt
-
 class Client_IO:
-    ''' A specific class dedicated to clients that need to interract with
+    """ A specific class dedicated to clients that need to interract with
     a Tensorflow server that runs the above model
     --> must have the following methods:
     def __init__(self, clientInitSpecs, debugMode): constructor that receives a debug flag
     def getInputData(self, idx): that generates data to send to the server
     def decodeResponse(self, result): that receives the response
     def finalize(self): the method call at the end of the process
-    '''
+    """
     def __init__(self, clientInitSpecs={}, debugMode=False):
-        ''' constructor
+        """ constructor
             Args:
                clientInitSpecs: a dictionnary to setup the client is necessary
                debugMode: set True if some debug messages should be displayed
-        '''
+        """
         self.debugMode=debugMode
         if self.debugMode is True:
             print('RPC Client ready to interract with the server')
@@ -333,13 +327,13 @@ class Client_IO:
         self.std_vals=np.expand_dims(std_vals,0)+1e-6
 
     def getInputData(self, idx):
-        ''' method that returns data samples complying with the placeholder
+        """ method that returns data samples complying with the placeholder
         defined in function get_input_pipeline_serving
         Args:
            idx: the input data index
         Returns:
            the data sample with shape and type complying with the server input
-        '''
+        """
         print('time index=', idx)
         #get the x curve ticks and related data block
         t_start=self.current_time_idx-hparams['tsLengthIn']*self.neighborhood_range
@@ -347,9 +341,9 @@ class Client_IO:
         self.current_data_block=self.inputdata[t_start:t_stop,:]
         self.x=self.current_data_block[:,0]
         self.target=self.current_data_block[:,1:]
-        '''one have here a temporal block from (t-tsLenghtIn*neighborhood_range to (t+tsLengthOutneighborhood_range)
+        """one have here a temporal block from (t-tsLenghtIn*neighborhood_range to (t+tsLengthOutneighborhood_range)
         -> i.e. a temporal block of size tsLenghtIn*neighborhood_range+tsLenghtOut*neighborhood_range
-        '''
+        """
         #print('self.target.shape', self.target.shape)
         
         #focus on the request
@@ -398,12 +392,12 @@ class Client_IO:
         
 
     def decodeResponse(self, result):
-        ''' receive the server response and decode as requested
+        """ receive the server response and decode as requested
             have a look here for data types : https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/framework/tensor.proto
             have a look at gRPC error codes here : https://github.com/grpc/grpc/blob/master/doc/statuscodes.md
             Args:
             result: a PredictResponse object that contains the request result
-        '''
+        """
         response_recons = np.reshape(np.array(result.outputs[served_head_names[0]].float_val),
                               [1, hparams['tsLengthOut'], 11]).astype(np.float32)
         #print('Query shape='+str(self.request_values.shape))
@@ -429,5 +423,5 @@ class Client_IO:
         plt.pause(0.02)
 
     def finalize(self):
-        ''' a function called when the prediction loop ends '''
+        """ a function called when the prediction loop ends """
         print('Prediction process ended successfuly')

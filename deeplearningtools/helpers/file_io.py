@@ -13,7 +13,7 @@ import glob
 from subprocess import check_output
 
 def extractFilenames(root_dir, file_extension="*.jpg", raiseOnEmpty=True):
-    '''
+    r"""
     Utility function to extract filenames based on a root directory and file extension.
 
     Given a root directory and file extension, this function walks through the directory tree
@@ -30,7 +30,7 @@ def extractFilenames(root_dir, file_extension="*.jpg", raiseOnEmpty=True):
     :rtype: list[str]
 
     :raises ValueError: If no files are found and `raiseOnEmpty` is set to True.
-    '''
+    """
     files  = []
     msg='extractFilenames: from working directory {wd}, looking for files {path} with extension {ext}'.format(wd=os.getcwd(),
                                                                                                                 path=root_dir,

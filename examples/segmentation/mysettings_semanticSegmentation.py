@@ -1,4 +1,4 @@
-'''
+"""
 @author: Alexandre Benoit, LISTIC lab, FRANCE
 @brief : simple personnal file that defines experiment specific keys to be used with our programs
 ==> application : semantic segmentation on the cats and dogs Oxford III Pets dataset
@@ -12,12 +12,11 @@ singularity run --nv /home/alben/install/nvidia/tf2_addons.sif experiments_manag
 3. REQUEST MODEL : start a client that sends continuous requests to the server
 
 Check training logs : apptainer exec --nv /path/to/tf2_addons.sif tensorboard --logdir experiments/examples/semantic_segmentation
-'''
+"""
 
-import deeplearningtools.DataProvider_input_pipeline
 import tensorflow as tf
 import numpy as np
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
+import tensorflow_datasets as tfds
 
 import os
 import cv2 #for ClientIO only
@@ -28,11 +27,10 @@ workingFolder='experiments/examples/semantic_segmentation'
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
 session_name='Oxford-IIIT-Pets'
 
-''' define here some hyperparameters to adjust the experiment
+""" define here some hyperparameters to adjust the experiment
 ===> Note that this dictionnary will complete the session name
-'''
+"""
 hparams={'learningRate':0.001,
-         'nbClasses':34,#set the number of classes in the considered dataset
          'smoothedParams':True,
          'nbEpoch':20,
          'batchSize':4,
@@ -40,7 +38,7 @@ hparams={'learningRate':0.001,
          'patchSize':128,
         }
 
-''''set the list of GPUs involved in the process. HOWTO:
+"""'set the list of GPUs involved in the process. HOWTO:
 ->if using CPU only mode, let an empty list
 ->if using a single GPU, only the first ID of the list will be considered
 ->if using multiple GPUs, each GPU ID will be considered
@@ -48,7 +46,7 @@ hparams={'learningRate':0.001,
 with other processing jobs, yours and the ones of your colleagues.
 Then, connect to the processing node and type in command line 'nvidia-smi'
 to check which gpu is free (very few used memory and GPU )
-'''
+"""
 used_gpu_IDs=[]
 #set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
 useXLA=True
@@ -80,7 +78,6 @@ early_stopping_patience=10
 
 #set here paths to your data used for train, val
 #=> download tensorflow dataset for demo purpose
-import tensorflow_datasets as tfds
 dataset, info = tfds.load('oxford_iiit_pet:3.2.0', with_info=True)
 print('Dataset info :', info)
 nb_train_images=info.splits['train'].num_examples#len(DataProvider_input_pipeline.extractFilenames(root_dir=raw_data_dir_train_, file_extension=raw_data_filename_extension, raiseOnEmpty=False))
@@ -120,23 +117,23 @@ served_head_names=['semantic_labels', 'logits']
 
 # add here any additionnal callback to use along the train/val process
 def addon_callbacks(model, train_samples, val_samples):
-  ''' optionnal callbacks can be defined here
+  """ optionnal callbacks can be defined here
   Arg: the defined model
   Returns a list of tf.keras.callbacks or an empty list
-  '''
+  """
   # Note this link to add pr_curves : https://medium.com/@akionakas/precision-recall-curve-with-keras-cd92647685e1
   return []
 
 def get_learningRate():
-  ''' define here the learning rate
+  """ define here the learning rate
   Returns a sclalar (float) or a scheduler
-  '''
+  """
   return hparams['learningRate']
 
 def get_optimizer(model, loss, learning_rate):
-    '''define here the specific optimizer to be used
+    """define here the specific optimizer to be used
     Returns a tensorflow optimizer object
-    '''
+    """
     optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
     return optimizer
@@ -154,28 +151,28 @@ def get_metrics(model, loss):
   return ['accuracy', MeanIoU(num_classes=hparams['nbClasses'])]
 
 def get_total_loss(model):
-    '''a specific loss can be defined here or simply use a string that refers to a keras loss
+    """a specific loss can be defined here or simply use a string that refers to a keras loss
     Args:
         model: the model to be optimized that may be used to focus loss on a set of specific layers or so
     Returns:
         a keras implemented loss represented by a string or a custom loss
         => it is recommended to return a tensor named 'loss' in order to enable some
         useful default options such as early stopping
-    '''
+    """
 
 
     return 'sparse_categorical_crossentropy'
 
-'''
+"""
 Define here the input pipelines : a common function for train and validation modes
-'''
+"""
 def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
-  ''' define an input pipeline a basic example here:
+  """ define an input pipeline a basic example here:
   -> load a standard dataset with tuples (image, label)
   TODO, look at the doc here : https://www.tensorflow.org/programmers_guide/datasets
   @param raw_data_files_folder : the variable that could target a dataset/folder...
   @param isTraining : a boolean that activates batch shuffling
-  '''
+  """
   def normalize(input_image, input_mask):
     input_image = tf.cast(input_image, tf.float32) / 255.0
     input_mask -= 1
@@ -209,19 +206,19 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
 
   return target_dataset
 
-'''
+"""
 ################################################################################
 ## Serving (production) section, define here :
 -get_served_module():  define how the model will be applied on production data, applying custom pre and post processing
 -class Client_IO, a class to specifiy input data requests and response on the client side when serving a model
 For performance/enhancement of the model, have a look here for graph optimization: https://github.com/tensorflow/tensorflow/blob/r1.4/tensorflow/tools/graph_transforms/README.md
-'''
+"""
 serving_img_shape=[server_crops_per_batch, server_patch_size,server_patch_size,3]
 def get_served_module(model, model_name):
-  ''' following https://www.tensorflow.org/guide/saved_model
+  """ following https://www.tensorflow.org/guide/saved_model
       Create a custom module to specify how the model will be used in production/serving
       specific preprocessing can be defined as well as post-processing
-  '''
+  """
   class ExportedModule(tf.Module):
     def __init__(self, model):
       super().__init__()
@@ -229,10 +226,10 @@ def get_served_module(model, model_name):
 
     @tf.function(input_signature=[tf.TensorSpec(shape=serving_img_shape, dtype=tf.uint8, name=served_input_names[0])])
     def served_model(self, input):
-      ''' a decorated function that specifies the input data format, processing and output dict
+      """ a decorated function that specifies the input data format, processing and output dict
         Args: input tensor(s)
         Returns a dictionnary of {'output key':tensor}
-      '''
+      """
       def normalize(input_image):
         return input_image/ 255.0
 
@@ -244,20 +241,20 @@ def get_served_module(model, model_name):
   return ExportedModule(model)
 
 class Client_IO:
-    ''' A specific class dedicated to clients that need to interract with
+    """ A specific class dedicated to clients that need to interract with
     a Tensorflow server that runs the above model
     --> must have the following methods:
     def __init__(self, clientInitSpecs, debugMode): constructor that receives a debug flag
     def getInputData(self, idx): that generates data to send to the server
     def decodeResponse(self, result): that receives the response
     def finalize(self): the method call at the end of the process
-    '''
+    """
     def __init__(self, clientInitSpecs={}, debugMode=False):
-        ''' constructor
+        """ constructor
             Args:
                clientInitSpecs: a dictionnary to setup the client is necessary
                debugMode: set True if some debug messages should be displayed
-        '''
+        """
         self.onlineDisplay=False #set True to activate online imshow (maybe to show progress)
         self.outputFilename_prefix='segmentation.out'
         self.debugMode=debugMode
@@ -376,15 +373,15 @@ class Client_IO:
 
 
     def getInputData(self, idx):
-        ''' method that returns data samples complying with the placeholder
+        """ method that returns data samples complying with the placeholder
         defined in function get_input_pipeline_serving
         Args:
            idx: the input data index
         Returns:
            the data sample with shape and type complying with the server input
-        '''
+        """
 
-        ''' process image crop by crop '''
+        """ process image crop by crop """
         if self.crop_index>=len(self.crops_positions_in):
           #TODO, exit the process
           print('Input image has been fully parsed, program end...')
@@ -417,12 +414,12 @@ class Client_IO:
         return {served_input_names[0]:self.frame_patch}
 
     def decodeResponse(self, result):
-        ''' receive the server response and decode as requested
+        """ receive the server response and decode as requested
             have a look here for data types : https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/framework/tensor.proto
             have a look at gRPC error codes here : https://github.com/grpc/grpc/blob/master/doc/statuscodes.md
             Args:
             result: a PredictResponse object that contains the request result
-        '''
+        """
         response = np.reshape(np.array(result.outputs[served_head_names[0]].int_val),serving_img_shape[:-1]).astype(np.uint8)
 
         if self.debugMode is True:
@@ -463,7 +460,7 @@ class Client_IO:
 
 
     def add_segmentation_colors(self, segmentation_map, outputImage):
-        semantic_map_3c=cv2.cvtColor(segmentation_map, cv2.COLOR_GRAY2BGR);
+        semantic_map_3c=cv2.cvtColor(segmentation_map, cv2.COLOR_GRAY2BGR)
         semantic_map_color=cv2.LUT(semantic_map_3c, self.cityscapes_labels_colors)
         #applying the semantic segmentation map as an overlay on the input
         alpha=0.5
@@ -471,7 +468,7 @@ class Client_IO:
 
 
     def finalize(self):
-        ''' a function called when the prediction loop ends '''
+        """ a function called when the prediction loop ends """
         print('Prediction process ended successfuly, press a key to close')
         file_path_prefix=os.path.join(self.output_path, self.outputFilename_prefix)
         print('output images prefix='+str(file_path_prefix))

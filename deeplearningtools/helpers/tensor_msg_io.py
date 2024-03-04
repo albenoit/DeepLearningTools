@@ -214,9 +214,9 @@ def decode_multitensor_proto(data_feature_descriptions, example_proto):
   features_dict = tf.io.parse_single_example(example_proto, data_feature_descriptions['feature_specs'])
   #print('features_dict', features_dict)
   instance_tensor={key_name: tf.io.parse_tensor(features_dict[key_name], data_feature_descriptions['types'][key_name], name='parse_'+key_name) for key_name in data_feature_descriptions['types'].keys()}
-  '''for i in instance_tensor.keys():
+  """for i in instance_tensor.keys():
     tf.print(i, tf.shape(instance_tensor[i]))
-  '''
+  """
   return instance_tensor
 
 def get_data_label_features_from_dataset(dataset):
