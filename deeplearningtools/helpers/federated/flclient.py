@@ -9,6 +9,7 @@
 # =========================================
 
 import os
+import random
 import configparser
 import tensorflow as tf
 import flwr as fl
@@ -17,11 +18,30 @@ from deeplearningtools.tools.callbacks import define_callbacks
 from deeplearningtools.helpers.distance_network import deep_relative_trust, cosine_distance, l1, l2
 
 # -------------------------------------------
-# Define Flower client
+# A custom Flower client able to manage warm restart,
+#  manage optimisation history comparable with centralized learning,
+#  make use of experiment settings
+#  and relevant callbacks management to save model checkpoints and logs
 # -------------------------------------------
 
 class FlClient(fl.client.NumPyClient):
     def __init__(self, settings, model, train_data, train_iterations_per_epoch, val_data, val_iterations_per_epoch, workers, file_writer, log_dir, metrics=[], monitored_metric_initial_threshold=None):
+        """
+        Constructor for the FlClient. It merges a model and data sources
+        allocated externally into a single Flower client.
+        Args:
+            settings: Experiment settings that specify experiment hypermparameters, metrics, etc.
+            model: Model object.
+            train_data: Training data features.
+            train_iterations_per_epoch: Number of training iterations per epoch.
+            val_data: Validation data features.
+            val_iterations_per_epoch: Number of validation iterations per epoch.
+            workers: Number of workers.
+            file_writer: File writer.
+            log_dir: Log directory.
+            metrics: List of metrics.
+            monitored_metric_initial_threshold: Initial threshold for monitored metric (last best know loss value).
+        """
         self.history=None
         self.round=-1
         self.last_val_loss=np.inf
@@ -37,7 +57,7 @@ class FlClient(fl.client.NumPyClient):
         self.metrics=metrics
         #initialized a first time to allow for model first evaluation
         self.initial_value_threshold=monitored_metric_initial_threshold
-        self.all_callbacks_dict=define_callbacks(self.settings, self.model, self.train_iterations_per_epoch, self.file_writer, self.log_dir, metrics=self.metrics, previous_model_params=self.model.get_weights(), initial_value_threshold=self.initial_value_threshold)
+        self.all_callbacks_dict=define_callbacks(self.settings, self.model,self.val_data, self.train_iterations_per_epoch, self.file_writer, self.log_dir, metrics=self.metrics, previous_model_params=self.model.get_weights(), initial_value_threshold=self.initial_value_threshold)
 
         # some log info recovered on new round participation
         self.rounds_calls=0
@@ -132,19 +152,18 @@ class FlClient(fl.client.NumPyClient):
         print('## round : ', self.round)
         self.rounds_calls+=1 #one more round participation
         
-
         #set updated weights
         self.model.set_weights(parameters)
         # define each callbacks
         if self.round>0:
-            self.all_callbacks_dict=define_callbacks(self.settings, self.model, self.train_iterations_per_epoch, self.file_writer, self.log_dir, metrics=self.metrics, previous_model_params=self.model.get_weights(), initial_value_threshold=self.initial_value_threshold)
+            self.all_callbacks_dict=define_callbacks(self.settings, self.model, self.val_data, self.train_iterations_per_epoch, self.file_writer, self.log_dir, metrics=self.metrics, previous_model_params=self.model.get_weights(), initial_value_threshold=self.initial_value_threshold)
 
         #training for one epoch
         history=self.model.fit(
             x=self.train_data,
             y=None,#train_data,
             batch_size=None,
-            epochs=self.round*self.settings.nbEpoch+self.settings.nbEpoch,
+            epochs=self.settings.nbEpoch*(self.round+1),
             verbose=1,
             callbacks=self.all_callbacks_dict.values(),
             validation_split=0.0,
@@ -174,17 +193,19 @@ class FlClient(fl.client.NumPyClient):
         fit_log['trusted_distance'] = float(deep_relative_trust(first_network= last_model_parameters,
                                                                 second_network= parameters,
                                                                 return_drt_product=True)[0])
+
         fit_log['cosine_distance'] = float(cosine_distance(last_model_parameters, parameters))
         fit_log['l2_distance'] = float(l2(last_model_parameters, parameters))
         fit_log['l1_distance'] = float(l1(last_model_parameters, parameters))
         fit_log['client_id'] = self.settings.hparams['procID']
+        
         # TODO, maybe check earlier if some metrics return non compatible types
         # =>  scalars are expected to be python dtype, no numpy allowed in the current Flwer state
         for key in fit_log.keys():
             if isinstance(fit_log[key], np.floating):
                 fit_log[key]=float(fit_log[key])
         print('==> fit log=', fit_log)
-                
+
         #save last fit log values that will allow for updated restart
         #print('LAST MONITORED VALUE=', (self.settings.monitored_loss_name,
         #                               self.all_callbacks_dict['checkpoint_callback'].best))
@@ -193,7 +214,8 @@ class FlClient(fl.client.NumPyClient):
         #update self.initial_value_threshold wrt last monitored value
         #-> will trigger checkpointing/model export only if best results are obtained
         self.initial_value_threshold=fit_log[self.settings.monitored_loss_name]
-        return self.model.get_weights(), self.train_iterations_per_epoch*self.settings.batch_size, fit_log
+        
+        return self.model.get_weights(), int(self.train_iterations_per_epoch*self.settings.batch_size), fit_log
 
     def evaluate(self, parameters, config):
         """
@@ -204,6 +226,7 @@ class FlClient(fl.client.NumPyClient):
         :return: Tuple containing loss, number of validation samples, and a dictionary with accuracy.
         """
         print('Evaluating model from received parameters...')
+        print('config: ', config)
         self.model.set_weights(parameters)
         losses = self.model.evaluate(x=self.val_data,
                                 y=None,
@@ -217,9 +240,16 @@ class FlClient(fl.client.NumPyClient):
                                 use_multiprocessing=False,
                                 return_dict=True
                                 )
-        print('FlClient.evaluate losses:',losses)
 
-        return losses[self.settings.monitored_loss_name], self.val_iterations_per_epoch*self.settings.batch_size, losses#self.history.history#loss_dict
+        reported_loss=self.settings.monitored_loss_name
+        if reported_loss not in losses.keys():
+            #remove a possible 'val_' prefix
+            reported_loss_noprefix=self.settings.monitored_loss_name[4:]
+            if reported_loss_noprefix in losses.keys():
+                reported_loss=reported_loss_noprefix
+        print('FlClient.evaluate monitored losses:', reported_loss)
+        
+        return losses[reported_loss],int(self.val_iterations_per_epoch*self.settings.batch_size), losses#self.history.history#loss_dict
 
 # ------------------------------------------------------------------------------------------------------------------------------
 # A generic Flower client class, from https://github.com/adap/flower/blob/main/examples/simulation_tensorflow/sim.ipynb
