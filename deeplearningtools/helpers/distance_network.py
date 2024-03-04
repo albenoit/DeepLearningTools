@@ -18,7 +18,7 @@ def percentage_different_signs_gradients(
         second_network: Tuple[np.ndarray],
         use_align=False,
         cost_distance=None) -> np.ndarray:
-    """
+    r"""
     Compute the amount or percentage of weights or gradients that go in the same direction.
     The higher the percentage, the greater the distance between two layers.
     Referenced from the paper "CMFL: Mitigating Communication Overhead for Federated Learning" (https://home.cse.ust.hk/~weiwa/papers/cmfl-icdcs19.pdf).
@@ -58,7 +58,7 @@ def deep_relative_trust(
         use_align=False,
         cost_distance=None,
         return_drt_product=False) -> np.ndarray:
-    """
+    r"""
     Compute the deep relative trust between two networks or list of layers.
 
     Referenced from the paper "Deep Relative Trust" (https://arxiv.org/abs/2002.03432).
@@ -96,7 +96,7 @@ def deep_relative_trust(
     if return_drt_product:
         return (distances.prod() - 1, distances)
     else:
-        distances
+        return distances
 
 def deep_relative_trust_similarity(network_weights):
     nb_models=len(network_weights)
@@ -115,7 +115,7 @@ def euclidean_norm(
         second_network: Tuple[np.ndarray],
         use_align=False,
         cost_distance=None) -> np.ndarray:
-    """
+    r"""
     Compute the Euclidean norm between two networks or list of layers.
 
     The Euclidean norm can be calculated using the following equation:
@@ -146,7 +146,7 @@ def cosine_similarity(
         second_network: Tuple[np.ndarray],
         use_align=False,
         cost_distance=None) -> np.ndarray:
-    """
+    r"""
     Compute the pairwise cosine similarity between two networks or list of layers.
 
     Referred from the paper "Flexible Clustered Federated Learning" (https://arxiv.org/pdf/2108.09749.pdf).
@@ -188,7 +188,7 @@ def flatten(weights: List[np.ndarray]) -> np.ndarray:
     return np.hstack([w.flatten() for w in weights])
 
 def cosine_distance(w_a: List[np.ndarray], w_b: List[np.ndarray]) -> float:
-    """
+    r"""
     Compute the cosine distance between two sets of weights.
 
     The cosine distance between two sets of weights, w_a and w_b, can be calculated using the following equation:
@@ -203,7 +203,7 @@ def cosine_distance(w_a: List[np.ndarray], w_b: List[np.ndarray]) -> float:
     return cosine_distances(np.array([flatten(w) for w in [w_a, w_b]]))[0, 1]
 
 def l2(w_a: List[np.ndarray], w_b: List[np.ndarray]) -> float:
-    """
+    r"""
     Calculate the L2 distance between two arrays or vectors. 
     
     The L2 distance, also known as the Euclidean distance, between two arrays (or vectors) is a measure of the distance between these two points in Euclidean space. 
@@ -228,7 +228,7 @@ def l2(w_a: List[np.ndarray], w_b: List[np.ndarray]) -> float:
     return np.sqrt(np.sum(np.power(flatten(w_a) - flatten(w_b), 2)))
 
 def l1(w_a: List[np.ndarray], w_b: List[np.ndarray]) -> float:
-    """
+    r"""
     Calculate the L1 distance between two arrays or vectors.
 
     The L1 distance, also known as the Manhattan distance or taxicab distance, between two arrays (or vectors) is a measure of the absolute difference between 
