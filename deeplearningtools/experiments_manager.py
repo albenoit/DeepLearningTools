@@ -128,16 +128,15 @@ Some examples of such functions are put in the README.md and in the versionned e
 """
 
 #standard imports
-import os, shutil
-import datetime, time
-import numpy as np
-import pandas as pd
-import importlib
+import os
+import shutil
+import datetime
+import time
 import types
-import copy
 import configparser
 import glob
-
+import gitinfo
+import yaml
 #tensorflow related
 import tensorflow as tf
 from tensorflow.keras.utils import plot_model
@@ -153,18 +152,20 @@ from deeplearningtools.tools import experiments_settings_surgery
 from deeplearningtools.tools.command_line_parser import get_commands
 from deeplearningtools.tools.experiment_settings import  loadExperimentsSettings, loadModel_def_file, SETTINGSFILE_COPY_NAME
 from deeplearningtools.tools.callbacks import define_callbacks
+from deeplearningtools.tools.sessionFolder import create_session_folder
 from deeplearningtools.tools import gpu
-
 #optional libs imports
+# None
+
 try:
   import tensorflow_addons as tfa
-except:
-  print('WARNING, tensorflow_addons could not be loaded, this may generate errors for model optimization but should not impact model serving')
+except ModuleNotFoundError as e:
+  print('WARNING, tensorflow_addons could not be loaded, this may generate errors for model optimization but should not impact model serving. Error report:', e)
 
 try:
   import tensorflow_model_optimization as tfmot
-except:
-  print('WARNING, tensorflow_model_optimization could not be loaded, this may generate errors for model optimization for instance if usersettings.tensorflow_model_optimization=True')
+except ModuleNotFoundError as e:
+  print('WARNING, tensorflow_model_optimization could not be loaded, this may generate errors for model optimization for instance if usersettings.tensorflow_model_optimization=True. Error report:', e)
 
 
 federated_learning_available=False
@@ -181,7 +182,7 @@ WEIGHTS_MOVING_AVERAGE_DECAY=0.998
 #------------------------------------------------------------
 # Define and run experiment
 #------------------------------------------------------------
-
+        
 def build_run_training_session(cid: str=''):
   """
   Define and run the optimisation process.
@@ -192,6 +193,13 @@ def build_run_training_session(cid: str=''):
   as for transfer learning or federated learning.
   """
   print('Starting a single training session...')
+  try:
+    git_info=gitinfo.get_git_info()
+    print('from git code version:', git_info)
+    with open(os.path.join(os.getcwd(), 'git_info.yaml'), 'w') as outfile:
+      yaml.dump(git_info, outfile, default_flow_style=False)
+  except Exception as e:
+    print("Could'nt be able to retrieve the git version. Error report:", e)
   # load configuration, expects the process working directory
   # to contain all the necessary files including:
   # - the configuration file (experiment_settings.py)
@@ -259,15 +267,17 @@ def build_run_training_session(cid: str=''):
   #------------------------------------------------------------
   # define the input pipepelines (train/val)
   #------------------------------------------------------------
-
+  
   with tf.name_scope('Input_pipeline'):
     train_data =usersettings.get_input_pipeline(raw_data_files_folder=usersettings.raw_data_dir_train,
                                                       isTraining=True, batch_size=usersettings.batch_size,
                                                       nbEpoch=usersettings.nbEpoch)
+
     val_data = usersettings.get_input_pipeline(raw_data_files_folder=usersettings.raw_data_dir_val,
                                                       isTraining=False, batch_size=usersettings.batch_size,
                                                       nbEpoch=usersettings.nbEpoch)
-    print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++train_data', train_data)
+    print('train_data', train_data)
+    print('val_data', val_data)
     #data_it=train_data.as_numpy_iterator()
     #print("ELEMENTS", list(data_it))
     # if reading from a kafka log queue:
@@ -295,14 +305,15 @@ def build_run_training_session(cid: str=''):
   try:
     print('Train dataset size=', train_data.cardinality().numpy())
     print('Validation dataset size=', val_data.cardinality().numpy())
-    train_iterations_per_epoch=train_data.n//usersettings.batch_size
-    val_iterations_per_epoch=val_data.n//usersettings.batch_size
+    train_iterations_per_epoch=train_data.cardinality().numpy()
+    val_iterations_per_epoch=val_data.cardinality().numpy()
+    if train_iterations_per_epoch==-2 or val_iterations_per_epoch==-2:
+      raise Exception('Could not estimate dataset sizes')
   except Exception as e:
-    print('Could not estimate dataset sizes from input data pipeline, relying on settings nb_train_samples and nb_val_samples.')
+    print('Could not estimate dataset sizes from input data pipeline, relying on settings nb_train_samples and nb_val_samples.', e)
     train_iterations_per_epoch=usersettings.nb_train_samples//usersettings.batch_size
     val_iterations_per_epoch=usersettings.nb_val_samples//usersettings.batch_size
-
-      
+  
   if usersettings.enable_mixed_precision:
     # use AMP
     print('Using Automatic Mixed Precision along the optimization process')
@@ -319,7 +330,7 @@ def build_run_training_session(cid: str=''):
   # maybe try to load an existing pretrained model (checkpoint in working folder)
   initial_epoch=0
   must_create_new_model=True
-  if usersettings.recoverFromCheckpoint == True:
+  if usersettings.recoverFromCheckpoint is True:
     checkpoint_search_path=os.path.join(os.getcwd(),'checkpoints',cid, 'model_epoch_*')
     print('**** Restoring from checkpoint: searching in folder', checkpoint_search_path)
     available_models=sorted(glob.glob(checkpoint_search_path), key=os.path.getmtime)
@@ -337,7 +348,7 @@ def build_run_training_session(cid: str=''):
         model = tf.keras.models.load_model(loaded_model)
         must_create_new_model=False
       except Exception as e:
-        print('Could not load existing model, training from scratch...')
+        print('Could not load existing model, training from scratch.... Error report:', e)
   
   # logs and summaries management:
   #-> classical logging on Tensorboard (scalars, historams, and so on)
@@ -346,6 +357,10 @@ def build_run_training_session(cid: str=''):
   file_writer = tf.summary.create_file_writer(log_dir)
   file_writer.set_as_default()
 
+  #-> define the metrics to be used for training and validation
+  metrics=usersettings.get_metrics(None, None)
+
+  # create the model if not loaded from checkpoint
   if must_create_new_model: #if could not restore from checkpoint or start training from scratch
 
     print('**** Training from scratch...')
@@ -378,7 +393,6 @@ def build_run_training_session(cid: str=''):
               optimizer=tfa.optimizers.MovingAverage(optimizer, average_decay=ema_momentum_default, name='weights_ema')
             except Exception as e:
               print('Could not apply weights EMA:', e)
-      metrics=usersettings.get_metrics(model, loss)
 
       print('Compiling model...')
       exp_loss_weights=None
@@ -460,15 +474,16 @@ def build_run_training_session(cid: str=''):
       print('Have a look at https://www.youtube.com/watch?v=2tnWHCxP8Bk')
       model.summary()
     except Exception as e:
-      print('Could not apply model quantization, relying on the original model')
+      print('Could not apply model quantization, relying on the original model. Error report:', e)
   
   #-> train with (in memory) input data pipelines
   if train_data==val_data:
     raise ValueError('train_data and val_data are the same, please fix this error')
   
   # prepare callbacks
-  all_callbacks=define_callbacks(usersettings, model, train_iterations_per_epoch, file_writer, log_dir, metrics)
-
+  all_callbacks=define_callbacks(usersettings, model, val_data, train_iterations_per_epoch, file_writer, log_dir, metrics)
+  
+  # Start a training session, either centralized OR decentralized
   if usersettings.federated_learning is False or federated_learning_available is False:
     print('Now starting a CENTRALIZED model training session...')
     history = model.fit(
@@ -494,7 +509,7 @@ def build_run_training_session(cid: str=''):
   else:
     print('Now starting a FEDERATED model training session...')
     if 'isFLserver' in usersettings.hparams.keys():
-      if usersettings.hparams['isFLserver']==True:
+      if usersettings.hparams['isFLserver'] is True:
         print('-> model prepared, ready to be used on the server side')
         return usersettings, model, {'data_pipeline':train_data, 'steps_per_epoch':train_iterations_per_epoch}, {'data_pipeline':val_data, 'steps_per_epoch':val_iterations_per_epoch}, file_writer
     #implicit else
@@ -628,7 +643,7 @@ def do_inference(experiment_settings, host, port, model_name, clientIO_InitSpecs
 # Run script
 #--------------------------------------------
 
-def run(FLAGS, train_config_script=None, external_hparams={}):
+def run(FLAGS, train_config_script=None, external_hparams:dict={}):
   """ 
   The main script function that can receive hyperparameters as a dictionary to run an experiment.
 
@@ -650,6 +665,9 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
   If calling with a non-empty `train_config_script` and with non-empty `external_hparams`,
   then `external_hparams` will update hyperparameters already specified in the `train_config_script` script.
   """
+  sessionFolder = ""
+  if "session_folder" in external_hparams:
+    sessionFolder = external_hparams["session_folder"]
 
   experiments_output=None
   #tf.reset_default_graph()
@@ -664,7 +682,7 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
       print('WARNING, this function expects some libraries to be installed, mostly dedicated to the training processing.')
       print('-> to run tensorflow model server on minimal install run start_model_serving.py')
 
-      usersettings, sessionFolder = loadExperimentsSettings(os.path.join(FLAGS.model_dir,SETTINGSFILE_COPY_NAME), isServingModel=True)
+      usersettings, _ = loadExperimentsSettings(os.path.join(FLAGS.model_dir,SETTINGSFILE_COPY_NAME), isServingModel=True)
 
       #target the served models folder
       model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'exported_models')
@@ -673,19 +691,16 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
       stillWait=True
       while stillWait is True:
         print('Looking for a servable model in '+model_folder)
-        try:
-          #check served model existance
-          if not(os.path.exists(model_folder)):
-            raise ValueError('served models directory not found : '+model_folder)
-          #look for a model in the directory
-          one_model=next(os.walk(model_folder))[1][0]
-          one_model_path=os.path.join(model_folder, one_model)
-          if not(os.path.exists(one_model_path)):
-            raise ValueError('served models directory not found : '+one_model_path)
-          print('Found at least one servable model directory '+str(one_model_path))
-          stillWait=False
-        except Exception as e:
-          raise ValueError('Could not find servable model, error='+str(e.message))
+        #check served model existance
+        if not(os.path.exists(model_folder)):
+          raise ValueError('Could not find servable model, served models directory not found : '+model_folder)
+        #look for a model in the directory
+        one_model=next(os.walk(model_folder))[1][0]
+        one_model_path=os.path.join(model_folder, one_model)
+        if not(os.path.exists(one_model_path)):
+          raise ValueError('Could not find servable model, served models directory not found : '+one_model_path)
+        print('Found at least one servable model directory '+str(one_model_path))
+        stillWait=False
 
       model_serving_tools.get_served_model_info(one_model_path, usersettings.model_name)
       tensorflow_start_cmd=" --port={port} --model_name={model} --model_base_path={model_dir}".format(port=usersettings.tensorflow_server_port,
@@ -704,7 +719,7 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
       print('### PREDICT MODE, interacting with a tensorflow server ###')
       print('If necessary, check the served model behaviors using command line cli : saved_model_cli show --dir path/to/export/model/latest_model/1534610225/ --tag_set serve to get the MODEL_NAME(S)\n to get more details on the target MODEL_NAME, you can then add option --signature_def MODEL_NAME')
 
-      usersettings, sessionFolder = loadExperimentsSettings(os.path.join(FLAGS.model_dir,SETTINGSFILE_COPY_NAME), isServingModel=True)
+      usersettings, _ = loadExperimentsSettings(os.path.join(FLAGS.model_dir,SETTINGSFILE_COPY_NAME), isServingModel=True)
 
       #FIXME errors reported on gRPC: https://github.com/grpc/grpc/issues/13752 ... stay tuned, had to install a specific gpio version (pip install grpcio==1.7.3)
       '''server_ready=WaitForServerReady(usersettings.tensorflow_server_address, usersettings.tensorflow_server_port)
@@ -752,7 +767,7 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
       """ setting up default values from command line """
       settings_file=FLAGS.usersettings
       """ updating default values if running function from an upper level """
-
+      
       # manage eventual external custom settings and hyperparameters
       custom_settings=False
       if train_config_script is not None:
@@ -765,7 +780,11 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
         external_hparams['distributed']=True
       if len(external_hparams)>0:
         custom_settings=True
-        
+      
+      session_number=0 #single experiments session by default
+      if 'session_number' in external_hparams.keys():
+        session_number=int(external_hparams['session_number'])
+
       if custom_settings:
         print('Some custom settings have been specified : training from setup file {file} with the following external hyperparameters {params}'.format(file=train_config_script, params=external_hparams))
         settings_file=experiments_settings_surgery.insert_additionnal_hparams(settings_file, external_hparams)
@@ -774,36 +793,23 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
 
 
       #loading the experiment setup script
-      usersettings, sessionFolder = loadExperimentsSettings(settings_file,
-                                                                        restart_from_sessionFolder=FLAGS.model_dir,
-                                                                        isServingModel=False)
+      usersettings, sessionFolderBase = loadExperimentsSettings(settings_file,
+                                                restart_from_sessionFolder=FLAGS.model_dir,
+                                                isServingModel=False)
+      if sessionFolder == "":
+        sessionFolder = create_session_folder(sessionFolderBase=sessionFolderBase, usersettings=usersettings) 
 
-      #add additionnal hyperparams coming from an optionnal
-      if hasattr(usersettings, 'hparams'):
-        print('adding hypermarameters declared from the experiment settings script:'+str(usersettings.hparams))
-        #update sessionFolder name string
-        if not usersettings.recoverFromCheckpoint:
-          sessionFolder_splits=sessionFolder.split('_')
-          sessionFolder_addon=''
-          for key, value in usersettings.hparams.items():
-            sessionFolder_addon+='_'+key+str(value)
-          #insert sessionname addons in the original one
-          sessionFolder=''
-          for str_ in  sessionFolder_splits[:-1]:
-            sessionFolder+=str_+'_'
-          sessionFolder=sessionFolder[:-1]#remove the last '_'
-          sessionFolder+=sessionFolder_addon+'_'+sessionFolder_splits[-1]
-          usersettings.sessionFolder=sessionFolder
-          print('Found hparams: '+str(usersettings.hparams))
-      else:
-        print('No hparams dictionnary found in the experiment settings file')
-      print('Experiment session folder : '+sessionFolder)
-
+      sessionFolder=os.path.join(os.getcwd(), sessionFolder, "expe_" + str(session_number))
+      os.makedirs(sessionFolder)
+      
+      print('Preparing a single experiment:')
+      print("--- current working directory",os.getcwd())
+      print("--- target session Folder:",sessionFolder)
+      
       #deduce the experiments settings copy filename that is versionned in the experiment folder
       settings_copy_fullpath=os.path.join(sessionFolder, SETTINGSFILE_COPY_NAME)
       #copy settings and model file to the working folder
       if not usersettings.recoverFromCheckpoint:
-        os.makedirs(sessionFolder)
         if hasattr(usersettings, 'model_file'):
           shutil.copyfile(usersettings.model_file, os.path.join(sessionFolder, os.path.basename(usersettings.model_file)))
         settings_src_file=settings_file
@@ -817,10 +823,10 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
                             }
         with open(os.path.join(sessionFolder, 'model_serving_setup.ini'), 'w') as configfile:
           serving_config.write(configfile)
-        
       # now ready to start a training session
       # -> for classical/centralised learning, training starts
       # -> if this run function is called from start_feerated_server.py script, then sessionFolder is ready but do not start training at this step
+
       if 'isFLserver' not in external_hparams.keys():
         # Next keep initial working folder, move to the session folder and run experiment
         initial_wd=os.getcwd()
@@ -834,7 +840,10 @@ def run(FLAGS, train_config_script=None, external_hparams={}):
       else:
         print('SETUP mode, training session folder is prepared and ready to start training.\n No training is started at this step, to be conducted next')
         return sessionFolder
+
   return experiments_output
+
+
 
 if __name__ == "__main__":
   parser=get_commands()
