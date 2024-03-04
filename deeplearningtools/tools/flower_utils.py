@@ -36,6 +36,10 @@ def plot_metric_from_history(
     for key in metric_dict.keys():
 
         rounds, values = zip(*metric_dict[key])
+
+        if isinstance(values[0], dict):
+            print('Flower_utils.plot_metric_from_history, values is dict, skipping')
+            continue
         fig = plt.figure()
         axis = fig.add_subplot(111)
         plt.plot(np.asarray(rounds), np.asarray(values), label=key +r" other federated learning rounds")

@@ -37,7 +37,7 @@ def get_commands():
     parser.add_argument("-pid","--procID", default=None,
                         help="Specifiy here an ID to identify the process (useful for federated training sessions)")
     parser.add_argument("-dist","--distributed", action='store_true',
-                        help="activate this option to make use of sidtributed computing (approach depends on the expereiments settings specifications")
+                        help="activate this option to make use of distributed computing (approach depends on the expereiments settings specifications")
     parser.add_argument("-c","--commands", action='store_true',
                         help="show command examples")
     return parser
