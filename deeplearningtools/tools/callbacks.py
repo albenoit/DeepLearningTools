@@ -9,8 +9,10 @@
 # =========================================
 
 import os
+import pandas as pd
 from tensorboard.plugins.hparams import api as hp
 import tensorflow as tf
+import numpy as np
 
 class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
   """
@@ -69,7 +71,7 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
     super(MyCustomModelSaverExporterCallback, self).on_epoch_end(epoch, logs)
 
     #log model change wrt previous epoch
-    if self.previous_model_params !=None:
+    if self.previous_model_params is not None:
       self.model.track_weights_change(self.previous_model_params, epoch, prefix='on_epoch')
     self.previous_model_params=self.model.get_weights()
     if logs is None:
@@ -124,7 +126,7 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
           signatures=signatures,
           options=None
           )
-        with open(self.settings.model_export_filename+'/modelserving.signatures', 'w') as f:
+        with open(os.path.join(self.settings.model_export_filename,'modelserving.signatures'), 'w') as f:
           f.write(module_graph.pretty_printed_signature())  
     
         if len(self.settings.used_gpu_IDs)==0:
@@ -153,6 +155,19 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
           converter = tf.lite.TFLiteConverter.from_saved_model(output_path)
           #converter = tf.lite.TFLiteConverter.from_keras_model(exported_module)
           #converter.optimizations = [tf.lite.Optimize.DEFAULT]
+          #get more information here: https://www.tensorflow.org/lite/performance/post_training_quantization
+          """
+          FIXME: to be refined
+          converter.optimizations = [tf.lite.Optimize.DEFAULT]
+          converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8,
+                                       tf.lite.OpsSet.TFLITE_BUILTINS]
+          #define a tensorflow epresentative dataset from signatures:
+          def representative_dataset():
+            #making use of the identified signatures extracted previously
+            for i in range(100):
+              yield [tf.constant(0.0, shape=(1, self.settings.input_shape[0], self.settings.input_shape[1], self.settings.input_shape[2]))]
+          converter.representative_dataset = representative_dataset
+          """
           quantized_tflite_model = converter.convert()
           with open(output_path+'saved_model.tflite', 'wb') as f:
             f.write(quantized_tflite_model)
@@ -227,9 +242,12 @@ class ImageSummaryCallback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         super(ImageSummaryCallback, self).on_epoch_end(epoch, logs)
         tf.summary.image('confusion_matrix', self.object.get_image_summary(), step=epoch)
+        #tf.summary.image('gen_stats', self.object.gen_stats(), step=epoch) # to fix or to remove !
+        #print(self.settings)
 
 def define_callbacks(usersettings, 
                      model, 
+                     val_data,
                      train_iterations_per_epoch, 
                      file_writer, 
                      log_dir, 
@@ -272,7 +290,6 @@ def define_callbacks(usersettings,
   :rtype: dict
   """
   all_callbacks={}
-  #return all_callbacks
   #add the history callback
   all_callbacks['history_callback']=CustomHistory()#tf.keras.callbacks.History()
   # -> terminate on NaN loss values
@@ -307,11 +324,13 @@ def define_callbacks(usersettings,
         usersettings.custom_tensorboard_logs(model, epoch, logs)
       all_callbacks['on_epoch_end_custom_logger_callback']=tf.keras.callbacks.LambdaCallback(on_epoch_end=custom_logger_fn)
   #complete generic callbacks by user defined ones
-  #all_callbacks+=usersettings.addon_callbacks(model, train_data, val_data)
+  settings_addon_callback=usersettings.addon_callbacks(model, val_data, val_data)#FIXME: should addons callbacks receive the datasets ?
+  if isinstance(settings_addon_callback, dict):
+    all_callbacks.update(settings_addon_callback)
 
   #-> activate profiling if required
   profile_batch =0
-  if usersettings.use_profiling==True and train_iterations_per_epoch>0:
+  if usersettings.use_profiling is True and train_iterations_per_epoch>0:
     print('train_iterations_per_epoch', train_iterations_per_epoch)
     t_start=int(max(1,train_iterations_per_epoch//2-30))
     t_stop=int(t_start+min(60, train_iterations_per_epoch//4))
@@ -343,16 +362,31 @@ def define_callbacks(usersettings,
      if len(custom_callbacks.keys())>0:
       print('Found custom callbacks, adding to default callbacks')
       all_callbacks.update(custom_callbacks)
+  
 
   # look for metric callbacks
   # if any new custom metric has a target method that generates
   #  data to be logged on Tensorboard, the following loop look for them and adds the appropriate callbacks
   # For now, only  ImageSummaryCallback is called if a metric has the get_image_summary method
-  for metric in metrics:
-    if hasattr(metric, 'get_image_summary'):
-      all_callbacks[metric.name]=ImageSummaryCallback(metric)
-
+  def check_matric_maybe_add_callback(metrics_list):
+    for metric in metrics_list:
+      if 'get_image_summary' in dir(metric):#hasattr(metric, 'get_image_summary'):
+        print('Found metric with required ImageSummaryCallback callback:',metric)
+        all_callbacks[metric.name]=ImageSummaryCallback(metric)
+  
+  # check and adapt: metrics should be either :
+  # -> a single metric object or a list of metrics in case of a single output model
+  # -> or a dictionary of single metric object or lists of metrics in case of a multi output model
+  if isinstance(metrics, list):
+    check_matric_maybe_add_callback(metrics)
+  elif isinstance(metrics, dict):
+    for model_output in metrics.keys():
+      if isinstance(metrics[model_output], list):
+        check_matric_maybe_add_callback(metrics[model_output])
+      elif issubclass(metrics[model_output].__class__, tf.keras.metrics.Metric):
+        check_matric_maybe_add_callback([metrics[model_output]])
+  
+  elif issubclass(metrics.__class__, tf.keras.metrics.Metric):
+    check_matric_maybe_add_callback([metrics])
+  
   return all_callbacks
-
-
-
