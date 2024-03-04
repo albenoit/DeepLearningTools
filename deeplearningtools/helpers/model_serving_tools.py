@@ -15,13 +15,12 @@ import numpy as np
 try:
   import tensorflow as tf
   from tensorflow_serving.apis import predict_pb2 #for single head models
-  from tensorflow_serving.apis import inference_pb2 #for multi head models
   from tensorflow_serving.apis import prediction_service_pb2_grpc
   import grpc
   from grpc.framework.interfaces.face import face
   from tensorflow_serving.apis import prediction_service_pb2
-except:
-  print('Warning, tensorflow could not be loaded, some model_servin_tools may not work properly')
+except Exception as e:
+  print('Warning, tensorflow could not be loaded, some model_serving_tools may not work properly, error:', e)
 
 def decode_model_serving_answer(answer, output_names:list):
   """
@@ -41,7 +40,7 @@ def get_model_server_cfg(model_dir):
   :return: A dictionary that describes the expected server configuration.
   """
   model_server_config=model_dir+'/model_serving_setup.ini'
-  if os.path.exists(model_server_config) == False:
+  if os.path.exists(model_server_config) is False:
     raise ValueError("Config file does not exist")
   config=configparser.ConfigParser()
   config.read(model_server_config, encoding='utf8')
@@ -172,15 +171,14 @@ def _create_rpc_callback(client, debug):
     #print('Received response:'+str(result_future))
     exception = result_future.exception()
     if exception:
-      result_counter.inc_error()
-      print(exception)
+      print("_callback exception reported!")
     else:
       try:
           if debug:
               print(result_future.result())
           client.decodeResponse(result_future.result())
       except Exception as e:
-          raise ValueError('Exception encountered on client callback : '.format(error=e))
+          print('Exception encountered on client callback :', e)
   return _callback
 
 #-----------------------------------------------
