@@ -18,7 +18,7 @@ A quick presentation of the system is available [here](https://docs.google.com/p
 
 Online API doc is proposed [here](https://albenoit.github.io/DeepLearningTools/) (Thank you Christophe Lin-Kwong-Chon @LISTIC lab for that work!)
 
-This work has been facilitated by intensive experiments conducted on the JeanZay French supercomputer (Grants 2020-AD011011418 and 2021-AD011011418R1) (http://www.idris.fr/jean-zay/)
+This work has been facilitated by intensive experiments conducted on the JeanZay French supercomputer (Grants 2020-AD011011418, 2021-AD011011418R1 and A0171014113) (http://www.idris.fr/jean-zay/)
 
 ## Main ideas put together:
 
@@ -226,5 +226,6 @@ Relying on full system install:
  ```
  pytest test_framework.py
  ```
+
 
 
