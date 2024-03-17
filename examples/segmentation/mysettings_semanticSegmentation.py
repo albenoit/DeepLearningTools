@@ -31,7 +31,6 @@ session_name='Oxford-IIIT-Pets'
 ===> Note that this dictionnary will complete the session name
 """
 hparams={'learningRate':0.001,
-         'smoothedParams':True,
          'nbEpoch':20,
          'batchSize':4,
          'nbClasses':3,
@@ -48,17 +47,17 @@ Then, connect to the processing node and type in command line 'nvidia-smi'
 to check which gpu is free (very few used memory and GPU )
 """
 used_gpu_IDs=[]
-#set here XLA optimisation flags, either tf.OptimizerOptions.OFF#ON_1#OFF
+#activate XLA graph optimisation, if True, GPU AND CPU XLA is applied
 useXLA=True
 
 #profile some training steps to check pipeline processing time bottlenecks (from Tensorboard)
 use_profiling=True
 
-#-> define here the used model under variable 'model'
+# define here the used model under variable 'model'
 model_file='examples/segmentation/model_mobilenetV2_Unet.py'
 
 # activate weight moving averaging over itarations (Polyak-Ruppert)
-weights_moving_averages=False
+weights_moving_averages=True
 
 # random seed used to init weights, etc. Use an integer value to make experiments reproducible
 random_seed=42
@@ -75,6 +74,9 @@ server_crops_per_batch=4
 # stop condition, taking into account if val_loss does not decrease for early_stopping_patience epoch
 nbEpoch=hparams['nbEpoch']
 early_stopping_patience=10
+
+# add here any additionnal callback to use along the train/val process
+addon_callbacks=[]
 
 #set here paths to your data used for train, val
 #=> download tensorflow dataset for demo purpose
@@ -192,7 +194,7 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
 
       return input_image, input_mask
     target_dataset = dataset['train'].map(load_image_train, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    target_dataset=target_dataset.cache().shuffle(100).batch(batch_size).repeat()
+    target_dataset=target_dataset.cache().shuffle(100).batch(batch_size)
     target_dataset=target_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
   else:
     def load_image_test(datapoint):
@@ -364,7 +366,7 @@ class Client_IO:
         print('label_names=',self.label_names.keys())
         # id to color label object
         self.cityscapes_labels_colors=np.zeros((256,1,3), dtype=np.uint8)
-        self.cityscapes_labels_colors[0:35] = np.reshape(np.array([ label[7] for label in self.labels ], dtype=np.uint8), (35,1,3))
+        self.cityscapes_labels_colors[0:3] = np.reshape(np.array([ label[7] for label in self.labels ], dtype=np.uint8), (3,1,3))
 
         if self.debugMode is True:
             print('cityscapes_labels_colors'+str(self.cityscapes_labels_colors))
