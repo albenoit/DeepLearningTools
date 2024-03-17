@@ -1,2 +1,0 @@
-model_checkpoint_path: "embedding_values"
-all_model_checkpoint_paths: "embedding_values"
