@@ -1,0 +1,100 @@
+BootStrap: docker
+From: tensorflow/tensorflow:2.14.0-gpu-jupyter
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    python3 -m pip install --upgrade pip
+    pip list
+    apt-get update
+    apt-get -qq  install -y wget
+    apt-get -qq  install -y libgdal-dev
+    #apt-get -qq  install -y python3-pip
+    #apt-get -qq  install -y ipython3
+    #apt-get -qq  install -y python3-gdal
+    #apt-get -qq  install -y python3-tk
+    apt-get -qq  install -y graphviz
+    apt-get -qq  install -y redis-server
+    apt-get -qq  install -y build-essential cmake git pkg-config libjpeg8-dev libtiff5-dev  libavcodec-dev libavformat-dev libswscale-dev libv4l-dev  libgtk2.0-dev libatlas-base-dev gfortran
+    apt-get -qq  install -y nvidia-modprobe libcupti-dev
+    apt-get -qq  install -y gstreamer1.0-opencv libopencv-contrib-dev
+
+    python3 -m pip install ipython
+    python3 -m pip install GDAL==3.4.1
+    #python3 -m pip install python3-tk
+    python3 -m pip install opencv-python    
+    python3 -m pip install opencv-contrib-python  
+    
+    python3 -m pip install python-git-info
+    python3 -m pip install scipy>=1.10
+    
+    python3 -m pip install sphinx furo sphinx-copybutton
+    python3 -m pip install openpyxl
+    python3 -m pip install pytest pytest-cov
+    python3 -m pip install redis
+    python3 -m pip install tqdm
+    python3 -m pip install netgraph
+    python3 -m pip install scikit-learn
+    python3 -m pip install scikit-image
+    python3 -m pip install scikit-network networkx cdlib
+    python3 -m pip install rustworkx
+    python3 -m pip install hyperopt
+    python3 -m pip install statsmodels
+    python3 -m pip install rasterio
+    python3 -m pip install geopandas
+    python3 -m pip install shapely
+    python3 -m pip install plotly
+    python3 -m pip install seaborn
+    python3 -m pip install pydot pydot-ng
+    python3 -m pip install ipywidgets bqplot    
+    #python3 -m pip install pandas-profiling great-expectations
+    python3 -m pip install kafka-python
+    python3 -m pip install msgpack msgpack-numpy
+    python3 -m pip install POT
+    python3 -m pip install cdlib
+    #python3 -m pip install numba==0.53.1
+    python3 -m pip install shap
+    #python3 -m pip install fairness_indicators==0.43.0
+    #python3 -m pip install aequitas
+    #python3 -m pip install tensorboard-plugin-fairness-indicators==0.43.0
+    #python3 -m pip install model-card-toolkit[tensorflow]
+    python3 -m pip install tensorflow==2.14.1
+    python3 -m pip install tensorflow-datasets
+    # ONNX converter, check https://github.com/onnx/tensorflow-onnx/releases
+    #python3 -m pip install -U tf2onnx==1.16.1    
+    # Profiler check https://github.com/tensorflow/profiler/tags
+    python3 -m pip install -U tensorboard_plugin_profile
+    # TF addons, check https://github.com/tensorflow/addons/tags
+    python3 -m pip install tensorflow-addons==0.22.0
+    python3 -m pip install -q git+https://github.com/tensorflow/examples.git
+    # TF IO, check https://github.com/tensorflow/io
+    python3 -m pip install tensorflow-io==0.35.0
+    # TF Probability, check https://github.com/tensorflow/probability/tags
+    python3 -m pip install tensorflow-probability==0.22.1
+    # TF Model Optimization, check https://github.com/tensorflow/model-optimization/releases/
+    python3 -m pip install tensorflow-serving-api==2.14.1
+    python3 -m pip install tensorflow-model-optimization==0.8.0
+    python3 -m pip install transformers
+    python3 -m pip install flwr["simulation"]
+    # already with flower[simulation]: python3 -m pip install ray==2.9.3
+    #python3 -m pip install protobuf==3.20.*
+    
+    #python3 -m pip install tfx==0.25.0
+    #python3 -m pip install Pillow
+    
+    python3 -m pip list
+
+%runscript
+    exec /usr/bin/python3 "$@"
+
+%help
+    A singularity container ready to run Tensorflow with optimized compilation with NVIDIA GPUs with compute capacity >5. Additional libraries have been added to the standard nvidia tensorflow container to run all the DeepLearningTools framework (https://github.com/albenoit/DeepLearningTools). Usage example:
+
+    * build the container: apptainer build tf2_addons.sif tf2_addons.def
+
+    * running as a shell : apptainer shell --nv --bind /workspace/DeepLearningTools/:/DeepLearningTools/ tf2_addons.sif
+
+    * running python scripts : cd DeepLearningTools && apptainer run tf2_addons.sif experiments_manager.py --usersettings=examples/regression/mysettings_curve_fitting.py
+
+    * create the requirements.txt file that corresponds to the build container python packages: 
+%labels
+    Author Alexandre Benoit, LISTIC Lab, 2023
