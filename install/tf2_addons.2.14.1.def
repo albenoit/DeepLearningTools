@@ -8,10 +8,7 @@ From: tensorflow/tensorflow:2.14.0-gpu-jupyter
     apt-get update
     apt-get -qq  install -y wget
     apt-get -qq  install -y libgdal-dev
-    #apt-get -qq  install -y python3-pip
-    #apt-get -qq  install -y ipython3
-    #apt-get -qq  install -y python3-gdal
-    #apt-get -qq  install -y python3-tk
+    apt-get -qq  install -y python3-tk
     apt-get -qq  install -y graphviz
     apt-get -qq  install -y redis-server
     apt-get -qq  install -y build-essential cmake git pkg-config libjpeg8-dev libtiff5-dev  libavcodec-dev libavformat-dev libswscale-dev libv4l-dev  libgtk2.0-dev libatlas-base-dev gfortran
@@ -19,8 +16,9 @@ From: tensorflow/tensorflow:2.14.0-gpu-jupyter
     apt-get -qq  install -y gstreamer1.0-opencv libopencv-contrib-dev
 
     python3 -m pip install ipython
+    python3 -m pip install tqdm
+    #python3 -m pip install kivy
     python3 -m pip install GDAL==3.4.1
-    #python3 -m pip install python3-tk
     python3 -m pip install opencv-python    
     python3 -m pip install opencv-contrib-python  
     
@@ -31,7 +29,6 @@ From: tensorflow/tensorflow:2.14.0-gpu-jupyter
     python3 -m pip install openpyxl
     python3 -m pip install pytest pytest-cov
     python3 -m pip install redis
-    python3 -m pip install tqdm
     python3 -m pip install netgraph
     python3 -m pip install scikit-learn
     python3 -m pip install scikit-image
@@ -46,7 +43,8 @@ From: tensorflow/tensorflow:2.14.0-gpu-jupyter
     python3 -m pip install seaborn
     python3 -m pip install pydot pydot-ng
     python3 -m pip install ipywidgets bqplot    
-    #python3 -m pip install pandas-profiling great-expectations
+    #python3 -m pip install pandas-profiling -> JOBLIB version issue
+    python3 -m pip install great-expectations
     python3 -m pip install kafka-python
     python3 -m pip install msgpack msgpack-numpy
     python3 -m pip install POT
