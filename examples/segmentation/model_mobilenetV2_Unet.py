@@ -8,10 +8,10 @@ from tensorflow_examples.models.pix2pix import pix2pix
 
 def model(usersettings):
 
-  patchSize=usersettings.hparams['patchSize']
+  patch_size=usersettings.hparams['patchSize']
   output_channels=usersettings.hparams['nbClasses']
 
-  base_model = tf.keras.applications.MobileNetV2(input_shape=[patchSize, patchSize, 3], include_top=False)
+  base_model = tf.keras.applications.MobileNetV2(input_shape=[patch_size, patch_size, 3], include_top=False)
 
   # Use the activations of these layers
   layer_names = [
@@ -41,7 +41,7 @@ def model(usersettings):
       output_channels, 3, strides=2,
       padding='same', activation='softmax')  #64x64 -> 128x128
 
-  inputs = tf.keras.layers.Input(shape=[patchSize, patchSize, 3])
+  inputs = tf.keras.layers.Input(shape=[patch_size, patch_size, 3])
 
   x = inputs
 
