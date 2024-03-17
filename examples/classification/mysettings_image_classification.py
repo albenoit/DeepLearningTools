@@ -256,7 +256,8 @@ class Client_IO:
            the data sample with shape and type complying with the server input
         """
         #here, capture a frame from the webcam
-        frame = cv2.resize(self.read_frame(), (hparams['imgHeight'], hparams['imgWidth']))
+        frame = cv2.cvtColor(cv2.resize(self.read_frame(), (hparams['imgHeight'], hparams['imgWidth'])),
+                              cv2.COLOR_BGR2RGB)
 
         self.frame = np.expand_dims(frame, 0)
         return {served_input_names[0]:self.frame}
