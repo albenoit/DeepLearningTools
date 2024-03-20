@@ -518,7 +518,7 @@ def build_run_training_session(cid: str=''):
     federated_learner=FlClient(usersettings, model, train_data, train_iterations_per_epoch, val_data, val_iterations_per_epoch, workers, file_writer, log_dir, metrics)
     if 'cid' not in usersettings.hparams.keys(): #if not in simulation mode, start flower client
       print('CLient is real runner')
-      fl.client.start_numpy_client(server_address=usersettings.federated_learning_server_address, client=federated_learner)
+      fl.client.start_client(server_address=usersettings.federated_learning_server_address, client=federated_learner.to_client())
       history=federated_learner.history
     else:
       # if function is called for flower simulation, then only the client instance is returned

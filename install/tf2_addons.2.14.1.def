@@ -69,8 +69,11 @@ From: tensorflow/tensorflow:2.14.0-gpu-jupyter
     # TF Probability, check https://github.com/tensorflow/probability/tags
     python3 -m pip install tensorflow-probability==0.22.1
     # TF Model Optimization, check https://github.com/tensorflow/model-optimization/releases/
-    python3 -m pip install tensorflow-serving-api==2.14.1
     python3 -m pip install tensorflow-model-optimization==0.8.0
+    # TF agents, check https://github.com/tensorflow/agents
+    python3 -m pip install tf-agents[reverb]==0.18.0
+    # TF Serving, should be same version as tensorflow
+    python3 -m pip install tensorflow-serving-api==2.14.1
     python3 -m pip install transformers
     python3 -m pip install flwr["simulation"]
     # for now, need a more advanced ray version
