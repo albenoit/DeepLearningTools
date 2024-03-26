@@ -51,6 +51,9 @@ From: tensorflow/tensorflow:2.14.0-gpu-jupyter
     python3 -m pip install cdlib
     #python3 -m pip install numba==0.53.1
     python3 -m pip install shap
+    python3 -m pip install temporian -U
+    python3 -m pip install bokeh -q
+    
     #python3 -m pip install fairness_indicators==0.43.0
     #python3 -m pip install aequitas
     #python3 -m pip install tensorboard-plugin-fairness-indicators==0.43.0
