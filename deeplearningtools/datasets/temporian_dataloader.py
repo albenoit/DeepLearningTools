@@ -5,11 +5,16 @@
 """
 
 from typing import List
+
 import temporian as tp
 import tensorflow as tf
 
+
 def temporian_load_csv(
-    filename: str, timestamps_colname: str, sep: str = ";", selected_features: List = []
+    filename: str,
+    timestamps_colname: str,
+    sep: str = ";",
+    selected_features: List = None,
 ):
     """Create a Temporian even set from a CSV file
 
@@ -31,12 +36,13 @@ def temporian_load_csv(
 
     feature_names = raw_data.schema.feature_names()
     print("feature_names", feature_names)
-    if len(selected_features) > 0:
-        data = raw_data[selected_features]
-    else:
-        data = raw_data
+    data = raw_data
+    if selected_features is not None:
+        if len(selected_features) > 0:
+            data = raw_data[selected_features]
+
     # select columns of interest AND add sample enumeration
-    data = tp.glue(raw_data.enumerate(), data)
+    data = tp.glue(data.enumerate(), data)
     n_events = len(data.get_index_value(()))
     print("Number of events", n_events)
     return data
@@ -76,22 +82,26 @@ def temporian_train_val_test_split(
     return train_data, val_data, test_data
 
 
-def get_tf_dataset(
-    temporian_data,
+def temporian_to_tfdataset(
+    temporian_data: List[tp.EventSet],
     temporal_series_length: int,
-    batch_size: int,
-    shuffle: bool,
+    batch_size: int=0,
+    prepare_example_fn: callable = None,
+    shuffle_size: int = 100,
+    filter_fn: callable = None,
     jitter: bool = False,
 ):
     """
     Returns a TensorFlow dataset for training or evaluation from a Temporian evenset.
 
     Args:
-            temporian_data (tp.EventSet): The input data.
+            temporian_data (tp.EventSet): a temporian eventset.
             temporal_series_length (int): The length of each temporal series.
-            batch_size (int): The batch size.
-            shuffle (bool): Whether to shuffle the dataset.
-            jitter (bool, optional): Whether to apply jittering. Defaults to False.
+            batch_size (int): the batch size. If 0, the no batching is applied.
+            filter_fn (fl): an optional function to filter the dataset BEFORE prepare_example_fn is applied.
+            prepare_example_fn (fn): a function that receives a single data sample and deduces related (input,label)
+            shuffle_size (int): if >0, then shuffle the related last values.
+            jitter (bool, optional): Whether to apply jittering on the temporal axis. Defaults to False.
 
     Returns:
             tf.data.Dataset: The TensorFlow dataset.
@@ -100,15 +110,18 @@ def get_tf_dataset(
 
     if jitter:
         n_events_orig = len(temporian_data.get_index_value(()))
-        if "enumerate" not in data.schema.feature_names():
-            sample_positions = data.enumerate()
+        if "enumerate" not in temporian_data.schema.feature_names():
+            sample_positions = temporian_data.enumerate()
         else:
             sample_positions = temporian_data["enumerate"]
 
-        sample_offset = tf.random.uniform(
-            shape=[], minval=0, maxval=temporal_series_length, dtype=tf.int64
-        ).numpy().item()
-        print("sample_offset", sample_offset, type(sample_offset))
+        sample_offset = (
+            tf.random.uniform(
+                shape=[], minval=0, maxval=temporal_series_length, dtype=tf.int64
+            )
+            .numpy()
+            .item()
+        )
         temporian_data = temporian_data.filter(sample_positions > sample_offset)
         n_events_after = len(temporian_data.get_index_value(()))
         print("n events (before, after) jitter", (n_events_orig, n_events_after))
@@ -120,20 +133,74 @@ def get_tf_dataset(
     ts_dataset_seq = ts_dataset.batch(
         temporal_series_length, drop_remainder=True
     )  # group time steps into sequences
-    ts_dataset = ts_dataset_seq.map(
-        extract_label
-    )  # extract data and labels of interest
+
+    if filter_fn is not None:  # remove some samples
+        ts_dataset_seq = ts_dataset_seq.filter(filter_fn)
+
+    if prepare_example_fn is not None:
+        ts_dataset = ts_dataset_seq.map(
+            prepare_example_fn,
+            num_parallel_calls=tf.data.AUTOTUNE,
+            deterministic=shuffle_size <= 0,
+        )  # extract data and labels of interest
+
     # finally prepare time series batchs
-    if shuffle:
-        ts_dataset = ts_dataset.shuffle(batch_size * 100)
-    dataset = ts_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
-    """print('ts_dataset', ts_dataset, type(ts_dataset))
-                print('ts_dataset_seq', ts_dataset_seq)
-                print('one raw sample     =', ts_dataset.take(1))
-                print('one sample sequence=', ts_dataset_seq.take(1))
-                print('dataset', dataset)
-                """
-    return dataset
+    if shuffle_size>0:
+        ts_dataset = ts_dataset.shuffle(shuffle_size)
+    if batch_size >0:
+        ts_dataset = ts_dataset.batch(batch_size)
+
+    return ts_dataset.prefetch(tf.data.AUTOTUNE)
+
+
+# global function that chains the csv loading and the tfdataset creation
+def build_timeseries_tfdataset(
+    filename: str,
+    timestamps_colname: str,
+    sep: str,
+    temporal_series_length: int,
+    batch_size: int=0,
+    selected_features: List = None,
+    prepare_example_fn: callable = None,
+    shuffle_size: int = 100,
+    filter_fn: callable = None,
+    jitter: bool = False,
+):
+    """
+    Load a temporian dataset from a CSV file and convert it to a TensorFlow dataset.
+
+    Args:
+            filename (str): path to the target file
+            timestamps_colname (str): the name of the column that represents the timestamps
+            sep (str): column separator
+            selected_features (List): optionnal, the list of column names to consider, all others would be discarded
+            temporal_series_length (int): The length of each temporal series.
+            batch_size (int): the batch size. If 0, the no batching is applied.
+            filter_fn (fl): an optional function to filter the dataset BEFORE prepare_example_fn is applied.
+            prepare_example_fn (fn): a function that receives a single data sample and deduces related (input,label)
+            shuffle_size (int): if >0, then shuffle the related last values.
+            jitter (bool, optional): Whether to apply jittering on the temporal axis. Defaults to False.
+
+    Returns:
+            tf.data.Dataset: The TensorFlow dataset.
+
+    """
+    data = temporian_load_csv(
+        filename=filename,
+        timestamps_colname=timestamps_colname,
+        sep=sep,
+        selected_features=selected_features,
+    )
+
+    return temporian_to_tfdataset(
+        temporian_data=data,
+        temporal_series_length=temporal_series_length,
+        batch_size=batch_size,
+        prepare_example_fn=prepare_example_fn,
+        shuffle_size=shuffle_size,
+        filter_fn=filter_fn,
+        jitter=jitter,
+    )
 
 
 def test_temporian_load_csv():
@@ -154,21 +221,62 @@ def test_temporian_load_csv():
     assert n_events == 1000
 
 
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-
-    # global configuration hyperparameters
+def test_build_timeseries_tfdataset():
     selected_features = [
         "RDC-ChambreEnfants_CO2_GAS_CONCENTRATIONppm<>Avg",
         "RDC-ChambreParents_CO2_GAS_CONCENTRATIONppm<>Avg",
         "RDC-Séjour_CO2_GAS_CONCENTRATIONppm<>Avg",
     ]
     selected_labels = ["RDC-Séjour_Humidité_HUMIDITY%<>Avg"]
-    
-    temporal_series_length=20
-    batch_size=5
 
-    # load data    
+    temporal_series_length = 20
+    batch_size = 5
+
+    def extract_label(example):
+        data_cols = {
+            feat: tf.convert_to_tensor(example.pop(feat)) for feat in selected_features
+        }
+        label_cols = {
+            feat: tf.convert_to_tensor(example.pop(feat)) for feat in selected_labels
+        }
+        return data_cols, label_cols
+
+    dataset = build_timeseries_tfdataset(
+        filename="datasamples/timeseries/House1_bid-data_127.csv",
+        timestamps_colname="firstDate",
+        sep=",",
+        selected_features=selected_features + selected_labels,
+        temporal_series_length=temporal_series_length,
+        batch_size=batch_size,
+        prepare_example_fn=extract_label,
+        shuffle_size=10,
+        # filter_fn=filter_fn,
+        jitter=True,
+    )
+
+    for data, labels in dataset.take(1):
+        assert data is not None
+        assert labels is not None
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    # global configuration hyperparameters
+    selected_features = [
+        "RDC-ChambreEnfants_CO2_GAS_CONCENTRATIONppm<>Avg",
+        # "RDC-ChambreParents_CO2_GAS_CONCENTRATIONppm<>Avg",
+        # "RDC-Séjour_CO2_GAS_CONCENTRATIONppm<>Avg",
+    ]
+    selected_labels = ["RDC-Séjour_Humidité_HUMIDITY%<>Avg"]
+
+    temporal_series_length = 5
+    batch_size = 1
+
+    """ FIRST APPROACH, more control by chaining the functions and allows to split the data
+     before creating the tensorflow dataset
+    """
+    # load data
     data = temporian_load_csv(
         filename="datasamples/timeseries/House1_bid-data_127.csv",
         timestamps_colname="firstDate",
@@ -196,25 +304,56 @@ if __name__ == "__main__":
             feat: tf.convert_to_tensor(example.pop(feat)) for feat in selected_labels
         }
         return data_cols, label_cols
+    # define a local filter function (optionnal, here we remove non finite values)
+    def filter_is_finite(example):
+        return tf.reduce_all(
+            [tf.math.is_finite(example[key]) for key in selected_features+selected_labels]
+        )  # data_is_finite and label_is_finite
 
-    train_dataset = get_tf_dataset(
+    train_dataset = temporian_to_tfdataset(
         temporian_data=train_data,
         temporal_series_length=temporal_series_length,
         batch_size=batch_size,
-        shuffle=True,
+        prepare_example_fn=extract_label,
+        shuffle_size=10,
+        filter_fn=filter_is_finite,
         jitter=True,
     )
-    val_dataset = get_tf_dataset(
+    val_dataset = temporian_to_tfdataset(
         temporian_data=val_data,
         temporal_series_length=temporal_series_length,
         batch_size=batch_size,
-        shuffle=False,
+        prepare_example_fn=extract_label,
+        shuffle_size=0,
+        filter_fn=filter_is_finite,
         jitter=False,
     )
-
+    """
     for data, labels in train_dataset.take(1):
         print("data", data)
         print("labels", labels)
         plt.plot(data["RDC-ChambreEnfants_CO2_GAS_CONCENTRATIONppm<>Avg"][0])
-        plt.show()
+    """
 
+    """ SECOND APPROACH, all in one function, more appropriate for a single dataset
+    """
+    # all in one function
+    dataset = build_timeseries_tfdataset(
+        filename="datasamples/timeseries/House1_bid-data_127.csv",
+        timestamps_colname="firstDate",
+        sep=",",
+        selected_features=selected_features + selected_labels,
+        temporal_series_length=temporal_series_length,
+        batch_size=batch_size,
+        prepare_example_fn=extract_label,
+        shuffle_size=10,
+        filter_fn=filter_is_finite,
+        jitter=True,
+    )
+
+    for data, labels in dataset.take(1):
+        print("data", data)
+        print("labels", labels)
+        plt.plot(data["RDC-ChambreEnfants_CO2_GAS_CONCENTRATIONppm<>Avg"][0])
+        plt.show()
+    print("done")
