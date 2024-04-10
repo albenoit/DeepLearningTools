@@ -327,6 +327,8 @@ def define_callbacks(usersettings,
   settings_addon_callback=usersettings.addon_callbacks(model, val_data, val_data)#FIXME: should addons callbacks receive the datasets ?
   if isinstance(settings_addon_callback, dict):
     all_callbacks.update(settings_addon_callback)
+  else:
+    raise ValueError('Addon callback specified in the experiment settings file should be a python dictionnary (at least an empty one)')
 
   #-> activate profiling if required
   profile_batch =0
@@ -368,7 +370,7 @@ def define_callbacks(usersettings,
   # if any new custom metric has a target method that generates
   #  data to be logged on Tensorboard, the following loop look for them and adds the appropriate callbacks
   # For now, only  ImageSummaryCallback is called if a metric has the get_image_summary method
-  def check_matric_maybe_add_callback(metrics_list):
+  def check_metric_maybe_add_callback(metrics_list):
     for metric in metrics_list:
       if 'get_image_summary' in dir(metric):#hasattr(metric, 'get_image_summary'):
         print('Found metric with required ImageSummaryCallback callback:',metric)
@@ -378,15 +380,15 @@ def define_callbacks(usersettings,
   # -> a single metric object or a list of metrics in case of a single output model
   # -> or a dictionary of single metric object or lists of metrics in case of a multi output model
   if isinstance(metrics, list):
-    check_matric_maybe_add_callback(metrics)
+    check_metric_maybe_add_callback(metrics)
   elif isinstance(metrics, dict):
     for model_output in metrics.keys():
       if isinstance(metrics[model_output], list):
-        check_matric_maybe_add_callback(metrics[model_output])
+        check_metric_maybe_add_callback(metrics[model_output])
       elif issubclass(metrics[model_output].__class__, tf.keras.metrics.Metric):
-        check_matric_maybe_add_callback([metrics[model_output]])
+        check_metric_maybe_add_callback([metrics[model_output]])
   
   elif issubclass(metrics.__class__, tf.keras.metrics.Metric):
-    check_matric_maybe_add_callback([metrics])
+    check_metric_maybe_add_callback([metrics])
   
   return all_callbacks

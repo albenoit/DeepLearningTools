@@ -123,8 +123,23 @@ def addon_callbacks(model, train_samples, val_samples):
   Arg: the defined model
   Returns a list of tf.keras.callbacks or an empty list
   """
-  # Note this link to add pr_curves : https://medium.com/@akionakas/precision-recall-curve-with-keras-cd92647685e1
-  return []
+  print('CWD', os.getcwd())
+  print('path=', os.path.join(os.getcwd(), '../../../datasamples/TheCat_480p.jpg'))
+  test_img=cv2.imread('../../../../../datasamples/TheCat_480p.jpg', 1)
+  test_img=cv2.resize(test_img, (128,128))
+  test_img=cv2.cvtColor(test_img, cv2.COLOR_BGR2RGB)
+  test_img_shape=test_img.reshape([1]+list(test_img.shape))
+  def my_logger(epoch, logs):
+      #define model input data
+      input_data=test_img_shape
+      preds = model.predict(input_data)
+      if epoch ==1:
+         #log input image only one time to reduce log size
+         tf.summary.image("InputImage", test_img_shape, step=epoch)
+      tf.summary.image("SegmentationResult", preds, step=epoch)
+
+  my_callback = tf.keras.callbacks.LambdaCallback(on_epoch_end=my_logger)
+  return {'Segmentation test':my_callback}
 
 def get_learningRate():
   """ define here the learning rate

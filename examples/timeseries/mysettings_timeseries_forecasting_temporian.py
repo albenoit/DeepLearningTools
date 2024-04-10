@@ -213,7 +213,7 @@ def addon_callbacks(model, train_samples, val_samples):
     Arg: the defined model
     Returns a list of tf.keras.callbacks or an empty list
     """
-    return []
+    return {}
 
 
 def get_learningRate():

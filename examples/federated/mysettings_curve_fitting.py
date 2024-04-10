@@ -40,14 +40,14 @@ session_name='my_test'
 """
 hparams={
          'federated':'FedAvg',#set '' if not making use of federated learning or set the flower strategy name of a custom one from deeplearningtools.helpers
-         'minCl':10,#minimum number of clients to allow for federated learning
+         'minCl':30,#minimum number of clients to allow for federated learning
          'minFit':3,#minimum number of clients to allow for a federated learning fitting round
          'hiddenNeurons':10,#set the number of neurons per hidden layers
          'predictSmoothParams':True, #set True to activate parameters moving averages use for prediction
          'learningRate':0.01,
          'nbEpoch':1, #when in federated learning mode, this represents the client number of local epochs to be performed for each round
          'addNoise':True, #set True to add noise to the target curve
-         'range':2,
+         'range':0.5,
          'procID':0, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
          'clusteringMethod':'SpectralClustering' #choose among available options, currently SpectralClustering, MADC, EDC
         }
@@ -137,7 +137,7 @@ def addon_callbacks(model, train_samples, val_samples):
   Arg: the defined model
   Returns a list of tf.keras.callbacks or an empty list
   """
-  return []
+  return {}
 
 def get_learningRate():
   """ define here the learning rate

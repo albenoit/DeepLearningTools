@@ -15,6 +15,7 @@ def temporian_load_csv(
     timestamps_colname: str,
     sep: str = ";",
     selected_features: List = None,
+    raw_data_cast: dict = None,
 ):
     """Create a Temporian even set from a CSV file
 
@@ -23,6 +24,9 @@ def temporian_load_csv(
             timestamps_colname (str): the name of the column that represents the timestamps
             sep (str): column separator
             selected_features (List): optionnal, the list of column names to consider, all others would be discarded
+            raw_data_preproc (dict): optionnal, the dictionnary with keys 'cast', 'scale', 'offset', 'fillna'
+                (and maybe more later) that specify transformations to be applied for each feature,
+                 specifying, each time an inner dict of 'featurename':param to apply just after data is loaded
 
     Returns:
             a Temporian eventset
@@ -33,16 +37,30 @@ def temporian_load_csv(
         timestamps=timestamps_colname,
         sep=sep,
     )
+    @tp.compile
+    def load_tp_data(tp_events: tp.EventSet):
+        if raw_data_cast is not None:# immediately cast the data if required
+            if 'cast' in raw_data_cast.keys():
+                tp_events = tp_events.cast(raw_data_cast['cast'])
 
-    feature_names = raw_data.schema.feature_names()
-    print("feature_names", feature_names)
-    data = raw_data
-    if selected_features is not None:
-        if len(selected_features) > 0:
-            data = raw_data[selected_features]
+            if False:#'offset' in raw_data_cast.keys() and 'scale' in raw_data_cast.keys():
+                def normalize(x):
+                    for feature in selected_features:
+                        x[feature] = (x[feature] - raw_data_cast['offset'][feature]) / raw_data_cast['scale'][feature]
+                    return x
+                tp_events = tp_events.map(normalize)
+                
+        feature_names = tp_events.schema.feature_names()
+        print("feature_names", feature_names)
+        data = tp_events
+        if selected_features is not None:
+            if len(selected_features) > 0:
+                data = tp_events[selected_features]
 
-    # select columns of interest AND add sample enumeration
-    data = tp.glue(data.enumerate(), data)
+            # select columns of interest AND add sample enumeration
+            data = tp.glue(data.enumerate(), data)
+            return data
+    data=load_tp_data(raw_data)
     n_events = len(data.get_index_value(()))
     print("Number of events", n_events)
     return data
@@ -128,7 +146,7 @@ def temporian_to_tfdataset(
 
     ts_dataset = tp.to_tensorflow_dataset(
         temporian_data
-    )  # convert to tensorflow dataset
+    ).prefetch(tf.data.AUTOTUNE)  # convert to tensorflow dataset
 
     ts_dataset_seq = ts_dataset.batch(
         temporal_series_length, drop_remainder=True
@@ -141,7 +159,7 @@ def temporian_to_tfdataset(
         ts_dataset = ts_dataset_seq.map(
             prepare_example_fn,
             num_parallel_calls=tf.data.AUTOTUNE,
-            deterministic=shuffle_size <= 0,
+            deterministic=shuffle_size <= 0,# if not shuffling as for validation set, ensure determinism
         )  # extract data and labels of interest
 
     # finally prepare time series batchs
@@ -152,7 +170,6 @@ def temporian_to_tfdataset(
 
     return ts_dataset.prefetch(tf.data.AUTOTUNE)
 
-
 # global function that chains the csv loading and the tfdataset creation
 def build_timeseries_tfdataset(
     filename: str,
@@ -161,6 +178,7 @@ def build_timeseries_tfdataset(
     temporal_series_length: int,
     batch_size: int=0,
     selected_features: List = None,
+    raw_data_preproc:dict = None,
     prepare_example_fn: callable = None,
     shuffle_size: int = 100,
     filter_fn: callable = None,
@@ -174,6 +192,9 @@ def build_timeseries_tfdataset(
             timestamps_colname (str): the name of the column that represents the timestamps
             sep (str): column separator
             selected_features (List): optionnal, the list of column names to consider, all others would be discarded
+            raw_data_preproc (dict): optionnal, the dictionnary with keys 'cast', 'scale', 'offset', 'fillna'
+                (and maybe more later) that specify transformations to be applied for each feature,
+                 specifying, each time an inner dict of 'featurename':param to apply just after data is loaded
             temporal_series_length (int): The length of each temporal series.
             batch_size (int): the batch size. If 0, the no batching is applied.
             filter_fn (fl): an optional function to filter the dataset BEFORE prepare_example_fn is applied.
@@ -183,13 +204,14 @@ def build_timeseries_tfdataset(
 
     Returns:
             tf.data.Dataset: The TensorFlow dataset.
-
     """
     data = temporian_load_csv(
         filename=filename,
         timestamps_colname=timestamps_colname,
         sep=sep,
         selected_features=selected_features,
+        raw_data_cast=raw_data_preproc,
+
     )
 
     return temporian_to_tfdataset(

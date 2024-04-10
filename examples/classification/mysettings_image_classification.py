@@ -105,7 +105,7 @@ def addon_callbacks(model, train_samples, val_samples):
   """
   # Note this link to add pr_curves : https://medium.com/@akionakas/precision-recall-curve-with-keras-cd92647685e1
 
-  return []
+  return {}
 
 def get_learningRate():
   """ define here the learning rate

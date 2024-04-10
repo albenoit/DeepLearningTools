@@ -50,7 +50,7 @@ session_name='my_trials'
 hparams={
          'federated':'FedAvg',#set '' if not making use of federated learning or set the flower strategy name of a custom one from deeplearningtools.helpers
          'minCl':10,#minimum number of clients to allow for federated learning
-         'minFit':3,#minimum number of clients to allow for a federated learning fitting round
+         'minFit':2,#minimum number of clients to allow for a federated learning fitting round
          'learningRate':0.001,
          'nbEpoch':1,#sets either the number of epoch per cleint for each federated round OR sets the total number of epoch for centralised learning
          'procID':0, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
@@ -157,7 +157,7 @@ def addon_callbacks(model, train_samples, val_samples):
   '''
   # Note this link to add pr_curves : https://medium.com/@akionakas/precision-recall-curve-with-keras-cd92647685e1
 
-  return []
+  return {}
 
 def get_learningRate():
   ''' define here the learning rate

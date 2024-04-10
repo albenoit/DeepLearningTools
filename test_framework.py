@@ -78,9 +78,25 @@ def test_timeseries():
   print('Test end, loss=', loss)
   assert loss < 500
 
+def test_timeseries_temporian():
+  FLAGS = get_default_args()
+  FLAGS.usersettings='examples/timeseries/mysettings_timeseries_forecasting_temporian.py'
+  print(FLAGS)
+  jobState, jobSessionFolder, loss = start_training_script(FLAGS, FLAGS.usersettings, {'nbEpoch':2})
+  print('Test end, loss=', loss)
+  assert loss < 1500
+
 def test_classification():
   FLAGS = get_default_args()
   FLAGS.usersettings='examples/classification/mysettings_image_classification.py'
+  print(FLAGS)
+  jobState, jobSessionFolder, loss = start_training_script(FLAGS, FLAGS.usersettings, {'nbEpoch':2})
+  print('Test end, loss=', loss)
+  assert loss < 2
+
+def tRest_semantic_segmentation():
+  FLAGS = get_default_args()
+  FLAGS.usersettings='examples/segmentation/mysettings_semanticSegmentation.py'
   print(FLAGS)
   jobState, jobSessionFolder, loss = start_training_script(FLAGS, FLAGS.usersettings, {'nbEpoch':2})
   print('Test end, loss=', loss)
