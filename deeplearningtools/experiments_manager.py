@@ -8,7 +8,7 @@
 # for DeepLearningTools.
 # =========================================
 """
-What's that ? A set of script that demonstrate the use of Tensorflow experiments and estimators on different data types for various tasks.
+What's that ? A set of script that demonstrate the use of Tensorflow  on different data types for various tasks in a unified approach.
 
 Brief: The main script that enables training, validation and serving Tensorflow based models merging all needs in a single script to train, evaluate, export and serve. taking large inspirations of official tensorflow demos.
 

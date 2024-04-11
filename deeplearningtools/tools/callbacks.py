@@ -328,7 +328,7 @@ def define_callbacks(usersettings,
   if isinstance(settings_addon_callback, dict):
     all_callbacks.update(settings_addon_callback)
   else:
-    raise ValueError('Addon callback specified in the experiment settings file should be a python dictionnary (at least an empty one)')
+    raise ValueError('Addon callback specified in the experiment settings file should return a python dictionnary (at least an empty one)')
 
   #-> activate profiling if required
   profile_batch =0
