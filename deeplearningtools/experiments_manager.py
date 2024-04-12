@@ -8,7 +8,7 @@
 # for DeepLearningTools.
 # =========================================
 """
-What's that ? A set of script that demonstrate the use of Tensorflow experiments and estimators on different data types for various tasks.
+What's that ? A set of script that demonstrate the use of Tensorflow  on different data types for various tasks in a unified approach.
 
 Brief: The main script that enables training, validation and serving Tensorflow based models merging all needs in a single script to train, evaluate, export and serve. taking large inspirations of official tensorflow demos.
 
@@ -310,9 +310,9 @@ def build_run_training_session(cid: str=''):
     if train_iterations_per_epoch==-2 or val_iterations_per_epoch==-2:
       raise Exception('Could not estimate dataset sizes')
   except Exception as e:
-    print('Could not estimate dataset sizes from input data pipeline, relying on settings nb_train_samples and nb_val_samples.', e)
     train_iterations_per_epoch=usersettings.nb_train_samples//usersettings.batch_size
     val_iterations_per_epoch=usersettings.nb_val_samples//usersettings.batch_size
+    print('Could not estimate dataset sizes from input data pipeline, relying on settings nb_train_samples ({train_it}) and nb_val_samples ({val_it}).'.format(train_it=train_iterations_per_epoch, val_it=val_iterations_per_epoch), e)
   
   if usersettings.enable_mixed_precision:
     # use AMP
@@ -523,7 +523,7 @@ def build_run_training_session(cid: str=''):
     else:
       # if function is called for flower simulation, then only the client instance is returned
       print('Client is simulated runner')
-      return federated_learner
+      return federated_learner.to_client()
   return history
 
 def run_experiment(usersettings):
