@@ -71,8 +71,8 @@ class FlClient(fl.client.NumPyClient):
         :return: Standardized config name.
         :rtype: str
         """
-        fileID='lastinfo_client'+self.settings.hparams['procID']+'.ini'
-        file_fullpath=os.path.join(os.getcwd(), fileID)
+        file_id='lastinfo_client'+str(self.settings.hparams['procID'])+'.ini'
+        file_fullpath=os.path.join(os.getcwd(), file_id)
         return file_fullpath
     
     def write_restart_config(self, monitored_loss_val):
