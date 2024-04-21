@@ -688,8 +688,8 @@ def run(FLAGS, train_config_script=None, external_hparams:dict={}):
       model_folder=os.path.join(scripts_WD,FLAGS.model_dir,'exported_models')
       print('Considering served model parent directory:'+model_folder)
       #check if at least one served model exists in the target models directory
-      stillWait=True
-      while stillWait is True:
+      still_wait=True
+      while still_wait is True:
         print('Looking for a servable model in '+model_folder)
         #check served model existance
         if not(os.path.exists(model_folder)):
@@ -700,7 +700,7 @@ def run(FLAGS, train_config_script=None, external_hparams:dict={}):
         if not(os.path.exists(one_model_path)):
           raise ValueError('Could not find servable model, served models directory not found : '+one_model_path)
         print('Found at least one servable model directory '+str(one_model_path))
-        stillWait=False
+        still_wait=False
 
       model_serving_tools.get_served_model_info(one_model_path, usersettings.model_name)
       tensorflow_start_cmd=" --port={port} --model_name={model} --model_base_path={model_dir}".format(port=usersettings.tensorflow_server_port,
