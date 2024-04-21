@@ -29,12 +29,9 @@ def loadModel_def_file(usersettings, absolute_path=False):
     model_path=os.path.basename(usersettings.model_file)
   if absolute_path is True:
     model_path=usersettings.model_file
-  try:
-    spec=importlib.util.spec_from_file_location('model_def', model_path)
-    model_def = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(model_def)
-  except Exception as e:
-    print('loadModel_def_file: Failed to load model file {model}, error message={err}'.format(model=usersettings.model_file, err=e))
+  spec=importlib.util.spec_from_file_location('model_def', model_path)
+  model_def = importlib.util.module_from_spec(spec)
+  spec.loader.exec_module(model_def)
   model=model_def.model
 
   print('loaded model file {file}'.format(file=model_path))
@@ -108,35 +105,18 @@ class ExperimentSettings(object):
     :raises ValueError: If the expected parameters are missing or wrong.
     """
     # load the settings file
-    print('Trying to load experiments settings file : '+str(settingsFile))
-    try:
-        settingsFile=os.path.normpath(settingsFile) #convert to standard path with single '/' separators
+    print('******************************************************')
+    print('-> Trying to load user defined experiments settings file : '+str(settingsFile))
+    print('... basic syntax, import and so on errors may compromise loading')
+    settingsFile=os.path.normpath(settingsFile) #convert to standard path with single '/' separators
 
-        module_spec = importlib.util.spec_from_file_location('settings', settingsFile)
-        self.experiment_settings = importlib.util.module_from_spec(module_spec)
-        module_spec.loader.exec_module(self.experiment_settings)
-
-        """settings_module=settingsFile[:-3].split('/')
-        if len(settings_module)>1:
-          settingsFolder=os.path.join(*settings_module[:-1]).replace('/','.')
-          settings_module=settings_module[-1]
-          settings_module=settingsFolder+'.'+settings_module
-        else:# as for serve and predict mode, working directory is expected to be the experiment folder
-          settings_module=settingsFile[:-3]
-        print('-> loading as module : '+settings_module)
-        print(os.getcwd())
-        print(os.listdir())
-        print('settings file exists:',os.path.exists(settings_module+'.py'))
-        self.experiment_settings = importlib.import_module(settings_module)
-        """
-    except Exception as e:
-        print('Failed to load {settings} file. Error message is {error}. This generally comes from a) file does not exist, b)basic python syntax errors'.format(settings=settingsFile, error=e))
+    module_spec = importlib.util.spec_from_file_location('settings', settingsFile)
+    self.experiment_settings = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(self.experiment_settings)
 
     #experiment session parameters
-    print('******************************************************')
-    print('* Checking the experiments settings file...')
-    print('* look at the README.md file to read a working example')
-    print('* look at the experiment_settings_checker script to see all the required fields')
+    print('-> Loaded successfully, now checking experiments settings file and expected varaibles and functions...')
+    print('... all expected items are check by the tools.experiment_settings.ExperimentSettings class. Have a look at it and error messages if any to fix your settings file')
 
     #experiment session parameters
     self.random_seed=self.assertType('random_seed', int, 'an integer to specify the random seed to apply')
