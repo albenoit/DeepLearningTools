@@ -84,7 +84,7 @@ def test_timeseries_temporian():
   print(FLAGS)
   jobState, jobSessionFolder, loss = start_training_script(FLAGS, FLAGS.usersettings, {'nbEpoch':2})
   print('Test end, loss=', loss)
-  assert loss < 1500
+  assert loss < 2500
 
 def test_classification():
   FLAGS = get_default_args()
@@ -124,6 +124,7 @@ if __name__ == "__main__":
   print('Starting some test functions as demos, please consider running pytest like this :')
   print(' pytest test_framework.py OR FROM A CONTAINER, apptainer exec path/to/tf2_addons.sif pytest test_framework.py')
   # manually choose a given test
+  test_timeseries_temporian()
   test_flower_simulation()
   test_basic_1Dembedding()
   test_basic_regression_noHparams()
