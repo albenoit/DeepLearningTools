@@ -300,8 +300,8 @@ def load_dataset_info(hparams:dict, need_resampling=False):
         print('train_path', train_path, 'test_path', test_path)
         print(os.getcwd())
         print("Need to prepare datasets...")
-        return prepare_datasets(train_split=hparams["trainSplit"])
-    print('Data already prepared in', train_path, test_path)
+        prepare_datasets(train_split=hparams["trainSplit"])
+    print('Data ready in', train_path, test_path)
 
     # load train data
     train_info = pd.read_csv(train_path).sort_values(by=["client_names"])
