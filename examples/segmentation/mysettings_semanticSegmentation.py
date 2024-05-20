@@ -121,7 +121,7 @@ served_head_names=['semantic_labels', 'logits']
 def addon_callbacks(model, train_samples, val_samples):
   """ optionnal callbacks can be defined here
   Arg: the defined model
-  Returns a list of tf.keras.callbacks or an empty list
+  Returns a dict of tf.keras.callbacks or an empty dict
   """
   test_img=cv2.imread('../../../../../datasamples/TheCat_480p.jpg', 1)
   test_img=cv2.resize(test_img, (128,128))
@@ -129,9 +129,8 @@ def addon_callbacks(model, train_samples, val_samples):
   test_img_normalized=test_img.astype(float)/255.
   test_img_normalized_4d=test_img_normalized.reshape([1]+list(test_img.shape))
   def my_logger(epoch, logs):
-      #define model input data
-      input_data=test_img_normalized_4d
-      preds = model.predict(input_data)
+      #define model input data and predict
+      preds = model.predict(test_img_normalized_4d)
       if epoch ==1:
          #log input image only one time to reduce log size
          tf.summary.image("InputImage", test_img_normalized_4d, step=epoch)
