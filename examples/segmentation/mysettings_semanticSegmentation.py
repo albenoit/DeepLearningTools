@@ -130,7 +130,11 @@ def addon_callbacks(model, train_samples, val_samples):
   test_img_normalized_4d=test_img_normalized.reshape([1]+list(test_img.shape))
   def my_logger(epoch, logs):
       #define model input data and predict
-      preds = model.predict(test_img_normalized_4d)
+      #create a safe copy of the current model to predict
+      # This is necessary to avoid model training history distorsion...
+      prediction_model = tf.keras.models.clone_model(model)
+      prediction_model.set_weights(model.get_weights())
+      preds = prediction_model.predict(test_img_normalized_4d)
       if epoch ==1:
          #log input image only one time to reduce log size
          tf.summary.image("InputImage", test_img_normalized_4d, step=epoch)
