@@ -10,17 +10,17 @@
 # main parameter server, should be started first
 
 import numpy as np
+import shutil
 import os
 import importlib
 from typing import Dict, Optional, Tuple
 import flwr as fl
 from flwr.common import NDArrays, Scalar
+from flwr.simulation.ray_transport.utils import enable_tf_gpu_growth
 import json 
 import deeplearningtools
 from deeplearningtools import experiments_manager # make use of all the standard tools of the framework
 from deeplearningtools import tools
-
-import os
 
 global monitored_value_threshold # monitored discrepancy value (loss or other) used to trigger logging on better model
 
@@ -282,17 +282,20 @@ def run(FLAGS, parameters={}):
     print('--> have a look at logs at /tmp/ray/session_latest/logs/')
 
     #UGLY IMPORT but ray should be loaded only once here in case this script is called multiple times
+    # ray init is already made in "fl.simulation.start_simulation", probably no need to do it twice
+    '''
     if 'ray' not in dir():
       import ray
       if parameters is None:
         ray.init(num_gpus=num_available_GPU) # @bug might be a problem for a multi experiments run
-
+    '''
 
     # @debug
     #ressources = ray.available_resources() # ray will be imported by flower in the next few lines
     #print('INFO : available ressources reported by ray: ', ressources)
 
     client_training_fn=experiments_manager.build_run_training_session
+
     # before starting simulation, help local modules to be loaded properly
     # on the ray client side by adding them a __path__ property to mke them loadable  
     deeplearningtools.__path__=[os.path.join(initial_wd, 'deeplearningtools')]
@@ -309,16 +312,17 @@ def run(FLAGS, parameters={}):
               "_temp_dir": parameters['tmp_dir'],
               #"_memory": 16000 * 1024 * 1024,#16Gb
               "runtime_env":{ "working_dir":os.path.join(initial_wd,job_session_folder),
-                              "py_modules": [deeplearningtools],                          
+                              "py_modules": [deeplearningtools],
+                              "excludes": ["*.log", "*.gpickle", "*.txt", "*.png", "*.json", "*.pb", "*.signature"]
                             }
     }
     # FIXME, maybe use below 'client_resources' or delete
     client_resources = {
             "num_cpus": 2,
-            "num_gpus": 1.0/(usersettings.hparams['minCl']+1) if num_available_GPU >0 else 0,# 0.2,
+            "num_gpus": 1.0/(usersettings.hparams['minCl']+1) if num_available_GPU > 0 else 0
     }
 
-    # start simulation           
+    # start simulation
     result=fl.simulation.start_simulation(
       client_fn=client_training_fn,
       num_clients=min_available_clients,
@@ -326,10 +330,20 @@ def run(FLAGS, parameters={}):
       strategy=strategy,
       ray_init_args=ray_server_config,
       client_resources=client_resources,
+      actor_kwargs={
+        "on_actor_init_fn": enable_tf_gpu_growth  # Enable GPU growth upon actor init
+      },
     )
+    print("###################### FEDERATED SERVER END ######################")
     # create a symbolic link to the ray logs related to simulated clients into the main experiment folder
-    os.symlink(os.path.realpath("/tmp/ray/session_latest/"), os.path.join(os.getcwd(), 'ray_logs'))
-    
+    #os.symlink(os.path.realpath("/tmp/ray/session_latest/"), os.path.join(os.getcwd(), 'ray_logs'))
+    client_logs_path_raw='/tmp/ray/session_latest/runtime_resources/working_dir_files'
+    client_logs_path_exp=os.path.join(os.getcwd(), 'ray_logs')
+    print('Copying client logs from : {src} to : {dst}'.format(src=client_logs_path_raw, dst=client_logs_path_exp)) 
+    shutil.copytree(client_logs_path_raw,
+                    client_logs_path_exp,
+                    #ignore = shutil.ignore_patterns("Common")
+                   )    
   log_path = "metrics"
   filename = "metrics.json"
   metrics = {}
@@ -346,8 +360,8 @@ def run(FLAGS, parameters={}):
 
   #end of the job, recover initial working directory
   os.chdir(initial_wd)
-  print("###################### FEDERATED SERVER END ######################")
-  print("Result:", result, type(result))
+  print("### Result:")
+  print(result)
   return result
 
 if __name__ == "__main__":
