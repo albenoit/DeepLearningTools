@@ -217,7 +217,7 @@ class CustomHistory(tf.keras.callbacks.History):
     """
     Callback function called at the end of each epoch.
     """
-    print('******** HISTORY on_epoch_end...')
+    #print('******** HISTORY on_epoch_end... logs=',logs)
     super(CustomHistory, self).on_epoch_end(epoch, logs)
 
   def get_config(self):
