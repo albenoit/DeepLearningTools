@@ -154,6 +154,7 @@ from deeplearningtools.tools.experiment_settings import  loadExperimentsSettings
 from deeplearningtools.tools.callbacks import define_callbacks
 from deeplearningtools.tools.sessionFolder import create_session_folder
 from deeplearningtools.tools import gpu
+
 #optional libs imports
 # None
 
@@ -303,8 +304,8 @@ def build_run_training_session(cid: str=''):
       print("KAFKA dataset specs:\n->", train_data.element_spec)
       print('Kafka connectors ready !')
   try:
-    print('Train dataset size=', train_data.cardinality().numpy())
-    print('Validation dataset size=', val_data.cardinality().numpy())
+    print('Train dataset pipeline size (number of batches):', train_data.cardinality().numpy())
+    print('Validation dataset pipeline size (number of batches):', val_data.cardinality().numpy())
     train_iterations_per_epoch=train_data.cardinality().numpy()
     val_iterations_per_epoch=val_data.cardinality().numpy()
     if train_iterations_per_epoch==-2 or val_iterations_per_epoch==-2:
@@ -342,8 +343,8 @@ def build_run_training_session(cid: str=''):
       loaded_model=available_models[-1]
       print(loaded_model.split('_')[-1])
       initial_epoch=int(loaded_model.split('_')[-1])
-      print('Restarting optimization from epoch: '+str(initial_epoch))
-      print('loading ',loaded_model)
+      print('cid({cid}) -> Restarting optimization from epoch: {ep}'.format(cid=cid, ep=initial_epoch))
+      print('cid({cid}) -> loading {mod}'.format(cid=cid, mod=loaded_model))
       try:
         model = tf.keras.models.load_model(loaded_model)
         must_create_new_model=False
@@ -384,7 +385,7 @@ def build_run_training_session(cid: str=''):
           print('Overriding optimizer option and enabling exponential weights moving average (EMA) along training...')
           ema_momentum_default=0.99
         
-          if hasattr(optimizer, 'ema'):
+          if hasattr(optimizer, 'use_ema'):
             optimizer.use_ema=True
             optimizer.ema_momentum=ema_momentum_default
           else:
@@ -549,11 +550,15 @@ def run_experiment(usersettings):
 
   print('\nhistory dict:', history.history)
 
-  print('Training session end, loss={loss} '.format(loss=history.history['loss'][-1]))
+  print('Training session end')
   print('Have a look at the experiments details saved in folder ', os.getcwd())
-  final_result=None
-  if final_result is None:
-    final_result={'loss':history.history['loss'][-1]}
+  final_result={}
+  if 'loss' in history.history.keys():
+    final_loss=history.history['loss'][-1]
+    print('-> final loss={loss} '.format(loss=final_loss))
+    final_result={'loss':final_loss}
+  else:
+    print('WARNING: could not find the loss in the history dict')
   return final_result, usersettings.model_export_filename
 
 #------------------------------------------------------------
@@ -835,7 +840,9 @@ def run(FLAGS, train_config_script=None, external_hparams:dict={}):
         # Finally recover initial working directory
         os.chdir(initial_wd)
         #refactor result in a single updated dictionnary
-        experiments_output=res  
+        experiments_output=res
+        if last_exported_model is None:
+          experiments_output={}
         experiments_output.update({'last_exported_model':last_exported_model, 'sessionFolder':sessionFolder})
       else:
         print('SETUP mode, training session folder is prepared and ready to start training.\n No training is started at this step, to be conducted next')
