@@ -393,6 +393,7 @@ def tensor_gram_matrix(tensor):
   gm = tf.linalg.matmul(a=w, b=w, transpose_a=True)
   return gm
 
+@tf.keras.saving.register_keras_serializable()
 class Regularizer_soft_orthogonality(tf.Module):
   """
   Soft orthogonalization regularizer.
@@ -431,7 +432,8 @@ class Regularizer_soft_orthogonality(tf.Module):
     """
     return{'l':self.l}
 
-class Regularizer_Spectral_Restricted_Isometry(tf.Module):
+@tf.keras.saving.register_keras_serializable()
+class Regularizer_Spectral_Restricted_Isometry(tf.keras.regularizers.Regularizer):
   def __init__(self, l=0.0001, nb_filters=0):
     """
     Spectral Restricted Isometry regularizer for weights.
@@ -448,6 +450,7 @@ class Regularizer_Spectral_Restricted_Isometry(tf.Module):
     SRIPv2 variant here (TO BE TESTED): https://github.com/VITA-Group/Orthogonality-in-CNNs/blob/master/SVHN/train.py
     REMINDER : Other ideas with spectral norm : https://github.com/taki0112/Spectral_Normalization-Tensorflow
     """
+    super(Regularizer_Spectral_Restricted_Isometry, self).__init__()
     self.l=l
     self.nb_filters = tf.keras.backend.constant(nb_filters, tf.int32, name='nb_filters')
     w_init = tf.random_normal_initializer()
@@ -489,18 +492,22 @@ class Regularizer_Spectral_Restricted_Isometry(tf.Module):
     return self.l*loss
 
   def get_config(self):
-    return{'l':self.l, 'nb_filters':int(self.nb_filters)}
+    config=super(Regularizer_Spectral_Restricted_Isometry, self).get_config()
+    config.update({'l': float(self.l), 'nb_filters':int(self.nb_filters)})
+    return config
 
-class Regularizer_None(tf.Module):
+@tf.keras.saving.register_keras_serializable()
+class Regularizer_None(tf.keras.regularizers.Regularizer):
   """
   Custom regularizer that applies no regularization.
   """
   def __call__(self, x):
     return K.constant(0., dtype=tf.float32)
   def get_config(self):
-    return{}
+    return super(Regularizer_None, self).get_config()
 
-class Regularizer_L1L2Ortho(tf.Module):
+@tf.keras.saving.register_keras_serializable()
+class Regularizer_L1L2Ortho(tf.keras.regularizers.Regularizer):
   """
   A regularizer that combine multiple ones (testing)
   """
@@ -526,6 +533,7 @@ class Regularizer_L1L2Ortho(tf.Module):
     :ivar L1L2_reg: Instance of L1L2 regularizer for L1/L2 weight regularization.
     :ivar Ortho_reg: Instance of orthogonality regularizer for soft orthogonality regularization.
     """
+    super(Regularizer_L1L2Ortho, self).__init__()
     self.l1 = tf.keras.backend.cast_to_floatx(l1)
     self.l2 = tf.keras.backend.cast_to_floatx(l2)
     self.ortho = tf.keras.backend.cast_to_floatx(ortho)
@@ -552,7 +560,9 @@ class Regularizer_L1L2Ortho(tf.Module):
     return self.L1L2_reg(x)+self.Ortho_reg(x)
     
   def get_config(self):
-      return {'l1': float(self.l1), 'l2': float(self.l2), 'nb_filters':int(self.nb_filters), 'ortho':float(self.ortho), 'ortho_type':str(self.ortho_type)}
+      config=super(Regularizer_L1L2Ortho, self).get_config()
+      config.update({'l1': float(self.l1), 'l2': float(self.l2), 'nb_filters':int(self.nb_filters), 'ortho':float(self.ortho), 'ortho_type':str(self.ortho_type)})
+      return config
 
 
 def multi_loss(lossesList):

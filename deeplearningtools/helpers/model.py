@@ -44,6 +44,7 @@ def track_weights_change(model, weights, round:int, prefix:str=''): # as for ker
     trusted_dist=deep_relative_trust(first_network= model.get_weights(), second_network= weights, return_drt_product=True)[0]
     tf.summary.scalar(prefix+'local_global_model_trusted_dist', data=np.float32(trusted_dist), step=round)
 
+@tf.keras.saving.register_keras_serializable()
 class ReplicatedOrthogonalInitialize(tf.keras.initializers.Orthogonal):
 
     def __init__(self, scale, gain=1.0, seed=None):
@@ -96,7 +97,8 @@ def test_ReplicatedOrthogonalInitialize(shape=[3,3,16,32], scale=2):
     plt.show()
     return inits_3c_disp_normed
 
-class SubpixelConv2D(tf.Module):
+@tf.keras.saving.register_keras_serializable()
+class SubpixelConv2D(tf.keras.layers.Layer):
     """
     Subpixel convolution/pixelshuffling approach (https://arxiv.org/abs/1609.05158)
 
@@ -107,6 +109,7 @@ class SubpixelConv2D(tf.Module):
             :param input_dims: The list of dimensions of the input tensor to be upscaled.
             :param factor: The upscaling factor to be applied.
         """
+        super(SubpixelConv2D, self).__init__()
         self.input_dims=input_dims
         self.factor=factor
         self.conv_output_dims = ( self.input_dims[0],
@@ -149,7 +152,9 @@ class SubpixelConv2D(tf.Module):
         return tf.nn.depth_to_space(lr_features, self.factor)
 
     def get_config(self):
-        return {'input_dims':self.input_dims, 'factor':self.factor}
+        config=super(SubpixelConv2D, self).get_config()
+        config.update({'input_dims':self.input_dims, 'factor':self.factor})
+        return config
 
 
 
