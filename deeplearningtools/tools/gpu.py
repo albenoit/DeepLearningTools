@@ -24,7 +24,7 @@ def check_GPU_available(usersettings):
       #-> first try to wake it up
       os.system("nvidia-modprobe -u -c=0")
       gpus = tf.config.list_physical_devices('GPU')
-      if len(gpus) ==0 and len(usersettings.used_gpu_IDs):
+      if len(gpus) == 0 and len(usersettings.used_gpu_IDs):
         print('No GPU found')
         raise SystemError('Required GPU(s) not found')
 
@@ -63,7 +63,9 @@ def get_available_gpus():
 
 def check_mixed_precision_compatibility(model, usersettings):
     #check if mixed precision compatibility are satisfied: https://docs.nvidia.com/deeplearning/performance/index.html
-    with open(usersettings.sessionFolder+'/model_mixed_precision_compatibility.info', 'w')as f:
+    try:
+       logfile=os.path.join(usersettings.sessionFolder,'model_mixed_precision_compatibility.info')
+       with open(logfile, 'w')as f:
         if usersettings.batch_size%64!=0:
             f.write('Suboptimal batch size (should be a multiple of 64 to get efficient tiling and reduced overhead') 
         for i,layer in enumerate(model.layers[1:]):
@@ -71,7 +73,8 @@ def check_mixed_precision_compatibility(model, usersettings):
             try:
                 f.write('\n   layer.input_shape[-1], layer.input_shape[-1]'+str((layer.input_shape[-1], layer.output_shape[-1])))
                 if ((layer.input_shape[-1])%8 != 0) or ((layer.output_shape[-1])%8 != 0):
-                    f.write('\n    -> /!\ Layer not tensorcore compliant (index, name, input, output):'+str((i,layer.name,layer.input_shape, layer.output_shape)))
+                    f.write('\n    -> /!\\ Layer not tensorcore compliant (index, name, input, output):'+str((i,layer.name,layer.input_shape, layer.output_shape)))
             except Exception as e:
-                f.write('\n    -> /!\ Could not check layer:'+str((i, layer))+str(e))
-    
+                f.write('\n    -> /!\\ Could not check layer:'+str((i, layer))+str(e))
+    except Exception as e:
+        print('Could not write {logfile}:'+str(e))
