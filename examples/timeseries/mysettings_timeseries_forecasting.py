@@ -65,6 +65,9 @@ used_gpu_IDs=[]
 #XLA_FLAG=tf.OptimizerOptions.OFF#ON_1#OFF
 useXLA=True
 
+#activate mixed precision training (last model layer must be casted to float32 if True)
+enable_mixed_precision=False #WARNING, NOT WORKING WITH TCN MODEL
+
 #profile some training steps to check pipeline processing time bottlenecks (from Tensorboard)
 use_profiling=True
 
