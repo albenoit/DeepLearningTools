@@ -84,15 +84,15 @@ def insert_additionnal_hparams(settings_file, hparams):
   #Prepending string
   updated_settings_data.insert(hparams_line_insert,additionnal_hparams)
   # write the updated settings file to a tmp folder
-  randomID=np.random.randint(0,1e6)
-  updated_settings_filename=os.path.basename(settings_file)+'.withAddedHparams.'+str(randomID)+'.py'
+  random_id=np.random.randint(0,1e6)
+  updated_settings_filename=os.path.basename(settings_file)+'.withAddedHparams.'+str(random_id)+'.py'
   tmpdir='tmp/'
   #write temporary settings file
   try:
     print('Creating folder :', tmpdir)
     os.makedirs(tmpdir)
   except Exception as e:
-    print('Could not create ',tmpdir, 'already exists:', os.path.exists(tmpdir), ' Exception:',e)
+    print('INFO: could not create ',tmpdir, 'already exists:', os.path.exists(tmpdir), ' Exception:',e)
   updated_settings_filename=os.path.join(tmpdir, updated_settings_filename)
   print('updated_settings_filename',updated_settings_filename)
   try:
