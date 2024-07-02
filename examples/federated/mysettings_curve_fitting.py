@@ -143,6 +143,10 @@ def get_learningRate():
   """ define here the learning rate
   Returns a sclalar (float) or a scheduler
   """
+  if 'isFLserver' in hparams.keys():
+    if hparams['isFLserver']==True:
+      # no fine tuning on the centralised model
+      return 0.0
   return hparams['learningRate']
 
 def get_optimizer(model, loss, learning_rate):
