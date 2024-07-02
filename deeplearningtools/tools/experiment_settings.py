@@ -116,7 +116,7 @@ class ExperimentSettings(object):
 
     #experiment session parameters
     print('-> Loaded successfully, now checking experiments settings file and expected varaibles and functions...')
-    print('... all expected items are check by the tools.experiment_settings.ExperimentSettings class. Have a look at it and error messages if any to fix your settings file')
+    print('... all expected items are checked by the tools.experiment_settings.ExperimentSettings class. Have a look at it and error messages if any to fix your settings file')
 
     #experiment session parameters
     self.random_seed=self.assertType('random_seed', int, 'an integer to specify the random seed to apply')
@@ -297,6 +297,11 @@ class ExperimentSettings(object):
 
     :raises AssertionError: If the parameter is not found or its value is not of the specified type.
     """
+    if not hasattr(self.experiment_settings,param):
+      message='{param} does not exist in the experiment settings : {file}.'.format(param=param, file=self.experiment_settings)
+      raise ValueError(message)
+    else:
+      print(param, "does exist in the experiment settings :", self.experiment_settings)
     if isinstance(getattr(self.experiment_settings,param), type) is False:
       message='Specification error on variable {param}: {descr}. It must be of type '.format(param=param, descr=type)
       raise ValueError(message)
