@@ -40,6 +40,7 @@ def get_commands():
                         help="activate this option to make use of distributed computing (approach depends on the expereiments settings specifications")
     parser.add_argument("-c","--commands", action='store_true',
                         help="show command examples")
+
     return parser
 
 

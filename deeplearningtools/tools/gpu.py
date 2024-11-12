@@ -32,6 +32,7 @@ def check_GPU_available(usersettings):
     if gpus:
       # Restrict TensorFlow to only use the first GPU
       visible_devices=[gpus[id] for id in usersettings.used_gpu_IDs]
+
       print('Setting visible devices:',visible_devices)
       try:
         tf.config.set_visible_devices(visible_devices, 'GPU')
