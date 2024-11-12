@@ -393,7 +393,7 @@ def tensor_gram_matrix(tensor):
   gm = tf.linalg.matmul(a=w, b=w, transpose_a=True)
   return gm
 
-@tf.keras.saving.register_keras_serializable()
+@tf.keras.utils.register_keras_serializable()
 class Regularizer_soft_orthogonality(tf.Module):
   """
   Soft orthogonalization regularizer.
@@ -432,7 +432,7 @@ class Regularizer_soft_orthogonality(tf.Module):
     """
     return{'l':self.l}
 
-@tf.keras.saving.register_keras_serializable()
+@tf.keras.utils.register_keras_serializable()
 class Regularizer_Spectral_Restricted_Isometry(tf.keras.regularizers.Regularizer):
   def __init__(self, l=0.0001, nb_filters=0):
     """
@@ -496,7 +496,7 @@ class Regularizer_Spectral_Restricted_Isometry(tf.keras.regularizers.Regularizer
     config.update({'l': float(self.l), 'nb_filters':int(self.nb_filters)})
     return config
 
-@tf.keras.saving.register_keras_serializable()
+@tf.keras.utils.register_keras_serializable()
 class Regularizer_None(tf.keras.regularizers.Regularizer):
   """
   Custom regularizer that applies no regularization.
@@ -506,7 +506,7 @@ class Regularizer_None(tf.keras.regularizers.Regularizer):
   def get_config(self):
     return super(Regularizer_None, self).get_config()
 
-@tf.keras.saving.register_keras_serializable()
+@tf.keras.utils.register_keras_serializable()
 class Regularizer_L1L2Ortho(tf.keras.regularizers.Regularizer):
   """
   A regularizer that combine multiple ones (testing)

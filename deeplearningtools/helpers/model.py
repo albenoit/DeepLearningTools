@@ -12,14 +12,14 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.keras import layers
 from deeplearningtools.helpers import loss
-from deeplearningtools.helpers.distance_network import deep_relative_trust
+from deeplearningtools.helpers.distance_metrics.metrics import ModelMetric
 import os
 
 #--------------------------------------------------------------------------------
 # Add a method to track model weights changes on model.set_weights() calls
 #--------------------------------------------------------------------------------
 
-def track_weights_change(model, weights, round:int, prefix:str=''): # as for keras/keras/engine/base_layer.py
+def track_weights_change(model, weights, round:int, prefix:str='', dst_metrics=None): # as for keras/keras/engine/base_layer.py
     """
     Tracks the change in weights between two sets of weights and writes simple numeric values for later analysis in TensorBoard.
 
@@ -27,24 +27,24 @@ def track_weights_change(model, weights, round:int, prefix:str=''): # as for ker
     :param weights: The reference set of weights to compare with.
     :param round: The current training round or step.
     :param prefix: Optional prefix for the summary names.
+    return: The metrics dictionary.
     """
     nlayers=len(weights)
     nlayers_model=len(model.get_weights())
     if len(weights)!=len(model.get_weights()):
         err_msg='Number of model layers {a} and weight layers {b} do not correspond'.format(a=nlayers_model, b=nlayers)
         raise ValueError(err_msg)
-    weights_change_norm=[tf.linalg.norm(model.get_weights()[i]-weights[i]) for i in range(nlayers)]
-    weights_change_norm_relative=[tf.cast(weights_change_norm[i], tf.float32)/tf.cast(tf.linalg.norm(model.get_weights()[i]), tf.float32) for i in range(nlayers)]
-    #print('gradient norm move tracking')
-    #for i in range(len(weights)):
-    #  tf.summary.scalar('layer_weights_changes_l'+str(i),data=weights_change_norm[i], step=round)
-    #  tf.summary.scalar('layer_weights_changes_l'+str(i)+'relative',data=weights_change_norm_relative[i], step=round)
-    tf.summary.scalar(prefix+'layer_weights_changes_avg', data=np.mean(weights_change_norm), step=round)
-    tf.summary.scalar(prefix+'layer_weights_changes_avg_relative', data=np.mean(weights_change_norm_relative), step=round)
-    trusted_dist=deep_relative_trust(first_network= model.get_weights(), second_network= weights, return_drt_product=True)[0]
-    tf.summary.scalar(prefix+'local_global_model_trusted_dist', data=np.float32(trusted_dist), step=round)
+    metrics_values={}
+    if dst_metrics:
+        for dst_metric in dst_metrics:
+            if not isinstance(dst_metric, ModelMetric): continue
+            dst = float(dst_metric.model_distance(model.get_weights(), weights, ignored_steps=None))
+            metric_name=prefix+'_'+dst_metric.name
+            metrics_values[metric_name]=dst
+            tf.summary.scalar(metric_name, data=dst, step=round)
+    return metrics_values
 
-@tf.keras.saving.register_keras_serializable()
+@tf.keras.utils.register_keras_serializable()
 class ReplicatedOrthogonalInitialize(tf.keras.initializers.Orthogonal):
 
     def __init__(self, scale, gain=1.0, seed=None):
@@ -97,7 +97,7 @@ def test_ReplicatedOrthogonalInitialize(shape=[3,3,16,32], scale=2):
     plt.show()
     return inits_3c_disp_normed
 
-@tf.keras.saving.register_keras_serializable()
+@tf.keras.utils.register_keras_serializable()
 class SubpixelConv2D(tf.keras.layers.Layer):
     """
     Subpixel convolution/pixelshuffling approach (https://arxiv.org/abs/1609.05158)
