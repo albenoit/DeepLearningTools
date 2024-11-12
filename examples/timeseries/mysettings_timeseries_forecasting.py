@@ -176,7 +176,7 @@ def get_total_loss(model):#inputs, model_outputs_dict, labels, weights_loss):
     def loss(y_true,y_pred):
       print('y_true=',y_true)
       print('y_pred=',y_pred)
-      return tf.keras.losses.MSE(y_pred, y_true)
+      return tf.keras.losses.mean_absolute_error(y_pred, y_true)
 
     # Return a function or a string indicating a standard loss to be used, ex: 'mean_squared_error'
     return loss
