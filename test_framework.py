@@ -118,17 +118,17 @@ def test_flower_simulation():
   FLAGS.num_rounds=expected_nb_rounds
   # run federated experiment in simulation mode
   result=start_federated_server.run(FLAGS)#, {'session_number':0, 'session_folder':sessionFolder})
-  assert len(result.metrics_centralized['loss']) == expected_nb_rounds+1
+  assert len(result.metrics_centralized['val_loss']) == expected_nb_rounds+1
 
 if __name__ == "__main__":
   print('Starting some test functions as demos, please consider running pytest like this :')
   print(' pytest test_framework.py OR FROM A CONTAINER, apptainer exec path/to/tf2_addons.sif pytest test_framework.py')
   # manually choose a given test
-  test_timeseries_temporian()
   test_flower_simulation()
   test_basic_1Dembedding()
   test_basic_regression_noHparams()
   test_basic_regression_epochHparams()
   test_timeseries()
+  test_timeseries_temporian()
   test_classification()
   print("END")
