@@ -169,6 +169,11 @@ class ExperimentSettings(object):
     self.consume_data_from_kafka=self.hasOrDefault('consume_data_from_kafka', False)
     #input pipelines
     self.get_input_pipeline=self.has('get_input_pipeline', 'the train and validation input data pipelines function params=[batch_size, raw_data_files_folder, shuffle_batches], must return an input function as described here : https://www.tensorflow.org/programmers_guide/datasets')
+    # @debugRL - start
+    self.init_environment=self.hasOrDefault('init_environment', False, message='you might need the init_env function for running RL algorithms, etc.)')
+    # @debugRL - end
+    self.get_all_test_data=self.hasOrDefault('get_all_test_data', False, "No get_all_test_data function fund. Not required for RL but recommended for supervised learning.")
+    self.prepare_datasets=self.hasOrDefault('prepare_datasets', False, "No data preparation function fund.")
     self.custom_tensorboard_logs=self.hasOrDefault('custom_tensorboard_logs', False, message='specify a function able to add some tf.summary.x (x could be image, etc.)')
     #tensorflow serving and client dialog
     self.save_only_last_best_model=self.hasOrDefault('save_only_last_best_model', True, message='set True in order to only save the last best model in the exported model folder (keep disk space)')

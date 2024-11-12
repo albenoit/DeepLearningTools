@@ -56,6 +56,7 @@ def insert_additionnal_hparams(settings_file, hparams):
     #raw_input('hparams_stop_line='+str(line_after_hparams_dict))
 
     return found_hparams_dict, line_after_hparams_dict
+
   def find_last_hparams_addons_line(allLines):
     """"
     Tries to find ADDITIONNAL_PARAMS_FINAL_LINE within the provided lines

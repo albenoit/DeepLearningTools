@@ -8,6 +8,7 @@
 # for DeepLearningTools.
 # =========================================
 
+from deeplearningtools.helpers.distance_metrics.metrics import METRIC_SET
 import os
 import pandas as pd
 from tensorboard.plugins.hparams import api as hp
@@ -44,7 +45,8 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
                                                               )
     self.settings=settings
     self.settings.model_export_filename=os.path.join(os.getcwd(),'exported_models')
-    self.previous_model_params=previous_model_params
+    self.previous_model_params=previous_model_params.copy() if previous_model_params is not None else None
+    self.dst_metrics = METRIC_SET.get_metrics(["fb-trusted_dst", "fb-model_cosine_dst"])
 
   def get_config(self):
     """
@@ -72,7 +74,7 @@ class MyCustomModelSaverExporterCallback(tf.keras.callbacks.ModelCheckpoint):
 
     #log model change wrt previous epoch
     if self.previous_model_params is not None:
-      self.model.track_weights_change(self.previous_model_params, epoch, prefix='on_epoch')
+      self.model.track_weights_change(self.previous_model_params, epoch, prefix='epoch_local_model_change', dst_metrics=self.dst_metrics)
     self.previous_model_params=self.model.get_weights()
     if logs is None:
       print('WARNING, no logs dict is provided to ModelCheckpoint.on_epoch_end, checkpointing on best epoch will not work')
@@ -255,6 +257,7 @@ def define_callbacks(usersettings,
                      previous_model_params=None, 
                      custom_callbacks:dict={}, 
                      initial_value_threshold=None,
+                     monitored_loss_name_override=None
                      ):
   """
   Define callbacks for training a model.
@@ -274,6 +277,9 @@ def define_callbacks(usersettings,
   :param log_dir: The directory for log files.
   :type log_dir: str
 
+  :param metrics: The set of metrics used along the optimisation process.
+  :type initial_value_threshold: list, optional
+
   :param previous_model_params: Parameters from a previous model.
   :type previous_model_params: dict, optional
 
@@ -283,12 +289,16 @@ def define_callbacks(usersettings,
   :param initial_value_threshold: Threshold for initial value comparison.
   :type initial_value_threshold: float, optional
 
-  :param metrics: The set of metrics used along the optimisation process.
-  :type initial_value_threshold: list, optional
+  :param monitored_loss_name_override: The name of the monitored loss to consider in place of usersettings.monitored_loss_name.
+  :type monitored_loss_name_override: str, optional
   
   :return: The dictionary of callbacks.
   :rtype: dict
   """
+  monitored_loss_name=usersettings.monitored_loss_name
+  if monitored_loss_name_override:
+    monitored_loss_name=monitored_loss_name_override
+
   all_callbacks={}
   #add the history callback
   all_callbacks['history_callback']=CustomHistory()#tf.keras.callbacks.History()
@@ -297,18 +307,18 @@ def define_callbacks(usersettings,
   # -> apply early stopping
   early_stopping_patience=usersettings.early_stopping_patience if hasattr(usersettings, 'early_stopping_patience') else 5
   all_callbacks['earlystopping_callback']=tf.keras.callbacks.EarlyStopping(
-                            monitor=usersettings.monitored_loss_name,
+                            monitor=monitored_loss_name,
                             patience=early_stopping_patience,
                             restore_best_weights=True
                           )
-  all_callbacks['reduceLROnPlateau_callback']=tf.keras.callbacks.ReduceLROnPlateau(monitor=usersettings.monitored_loss_name, factor=0.1,
+  all_callbacks['reduceLROnPlateau_callback']=tf.keras.callbacks.ReduceLROnPlateau(monitor=monitored_loss_name, factor=0.1,
                               patience=(early_stopping_patience*2)//3, min_lr=0.000001, verbose=True)
 
   #-> checkpoint each epoch
   all_callbacks['checkpoint_callback']=MyCustomModelSaverExporterCallback(#tf.keras.callbacks.ModelCheckpoint(
                                             os.path.join(os.getcwd(),'checkpoints/', usersettings.cid),
                                             usersettings,
-                                            monitor=usersettings.monitored_loss_name,
+                                            monitor=monitored_loss_name,
                                             verbose=1,
                                             save_best_only=True,
                                             save_weights_only=False,
@@ -342,8 +352,9 @@ def define_callbacks(usersettings,
     profile_batch = '{t1},{t2}'.format(t1=t_start, t2=t_stop)
     print('Profiling is applied, for more details and log analysis, check : https://www.tensorflow.org/tensorboard/tensorboard_profiling_keras')
   # -> set embeddings to be logged
-  embeddings_layer_names={output.name:output.name+'.tsv' for output in model.outputs}
-  print('Model outputs:',embeddings_layer_names)
+  if not 'isRL' in usersettings.hparams.keys():
+    embeddings_layer_names={output.name:output.name+'.tsv' for output in model.outputs}
+    print('Model outputs:',embeddings_layer_names)
   #-> set tensorboard logging
   #FIXME: https://github.com/tensorflow/tensorboard/issues/2471
   all_callbacks['tensorboard_callback']=tf.keras.callbacks.TensorBoard(log_dir,
