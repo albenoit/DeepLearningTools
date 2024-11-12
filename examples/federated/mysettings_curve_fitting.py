@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt
 workingFolder='experiments/examples/federated/regression'
 
 #set here a 'nickname' to your session to help understanding, must be at least an empty string
-session_name='my_test'
+session_name='adam'
 
 """ define here some hyperparameters to adjust the experiment
 ===> Note that this dictionnary will complete the session name
@@ -41,15 +41,16 @@ session_name='my_test'
 hparams={
          'federated':'FedAvg',#set '' if not making use of federated learning or set the flower strategy name of a custom one from deeplearningtools.helpers
          'minCl':30,#minimum number of clients to allow for federated learning
-         'minFit':3,#minimum number of clients to allow for a federated learning fitting round
-         'hiddenNeurons':10,#set the number of neurons per hidden layers
-         'predictSmoothParams':True, #set True to activate parameters moving averages use for prediction
-         'learningRate':0.01,
-         'nbEpoch':1, #when in federated learning mode, this represents the client number of local epochs to be performed for each round
-         'addNoise':True, #set True to add noise to the target curve
+         'minFit':30,#minimum number of clients to allow for a federated learning fitting round
+         'hiddenNeurons':0,#set the number of neurons per hidden layers
+         'activation':'linear',
+         'learningRate':0.05,
+         'nbEpoch':10, #when in federated learning mode, this represents the client number of local epochs to be performed for each round
+         'addNoise':False,#True, #set True to add noise to the target curve
          'range':0.5,
-         'procID':0, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
-         'clusteringMethod':'SpectralClustering' #choose among available options, currently SpectralClustering, MADC, EDC
+         'procID':3, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
+         'fitConfig':'1nn', #set the fitting configuration to use for each client, 'wnn' to send them a weighted sum of their nearest cluster, '1nn' to assign clsest cluster, anyother thing to use the global model
+         'louvainResolution':1.20
         }
 
 """'set the list of GPUs involved in the process. HOWTO:
@@ -66,7 +67,7 @@ used_gpu_IDs=[]
 useXLA=True
 
 #profile some training steps to check pipeline processing time bottlenecks (from Tensorboard)
-use_profiling=True
+use_profiling=False#True
 
 #activate federated learning if required
 enable_federated_learning=False
@@ -85,16 +86,16 @@ random_seed=41
 # stop condition, taking into account if val_loss does not decrease for early_stopping_patience epoch
 nbEpoch=hparams['nbEpoch']
 early_stopping_patience=10
-monitored_loss_name='val_mean_squared_error'
+monitored_loss_name='val_mean_absolute_error'
 #set here paths to your data used for train, val
 raw_data_dir_train = ''
 raw_data_dir_val = ''
 raw_data_filename_extension=''
-nb_train_samples=1000 #manually adjust here the number of temporal items out of the temporal block size
-nb_val_samples=1000
+nb_train_samples=100000 #manually adjust here the number of temporal items out of the temporal block size
+nb_val_samples=10000
 steps_per_epoch=100
-validation_steps=100
-batch_size=10
+validation_steps=10
+batch_size=1000
 reference_labels=['values']
 
 ########## FEDERATED SERVER PARAMETERS SECTION ################
@@ -123,10 +124,10 @@ served_head_names=['prediction']
 ########## LOCAL PARAMETERS (ONLY USED BELOW) SECTION ################
 def target_curve(x):
     #y=(x/2-1)**3+3*(x/2-1)**2-2
-    y = (np.sin(x) + x)/hparams['minCl']
+    y = np.sin(x)#(np.sin(x) + x)/hparams['minCl']
 
     if hparams['addNoise'] is True:
-        noise=np.random.normal(loc=0.0, scale=1/(2*hparams['minCl']), size=x.shape).astype(np.float32)
+        noise=np.random.normal(loc=0.0, scale=0.5, size=x.shape).astype(np.float32)#1/(3*hparams['minCl']), size=x.shape).astype(np.float32)
         y+=noise
     return y
 
@@ -143,22 +144,18 @@ def get_learningRate():
   """ define here the learning rate
   Returns a sclalar (float) or a scheduler
   """
-  if 'isFLserver' in hparams.keys():
-    if hparams['isFLserver']==True:
-      # no fine tuning on the centralised model
-      return 0.0
   return hparams['learningRate']
 
 def get_optimizer(model, loss, learning_rate):
     """define here the specific optimizer to be used
     Returns a tensorflow optimizer object
     """
-    optimizer=tf.keras.optimizers.RMSprop(learning_rate=learning_rate)
+    optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate)
     return optimizer
 
 def get_metrics(model, loss):
   return {
-          'dense_1': [tf.keras.metrics.MAE, tf.keras.metrics.mean_squared_error],
+          'output': [tf.keras.metrics.MAE, tf.keras.metrics.mean_squared_error],
           }
 
 def get_total_loss(model):#inputs, model_outputs_dict, labels, weights_loss):
@@ -171,7 +168,7 @@ def get_total_loss(model):#inputs, model_outputs_dict, labels, weights_loss):
         useful default options such as early stopping
     """
 
-    reconstruction_loss=tf.keras.losses.MSE
+    reconstruction_loss=tf.keras.losses.MeanAbsoluteError()
     return reconstruction_loss
 
 """Define here the input pipelines :
@@ -186,14 +183,23 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     @param isTraining : a boolean that activates batch shuffling
     """
     """ nb clients = hparams['minCl'] ; current client in range [0, hparams['minCl']-1]]
-    -> sampling interval = [procID-minCl/2-range, procID-minCl/2+range] """
-    sampling_center=int(int(hparams['procID'])-int(hparams['minCl'])/2)
-    sampling_interval_min=sampling_center-int(hparams['range'])
-    sampling_interval_max=sampling_center+int(hparams['range'])
-
+    -> sampling interval = [pi/2*procID%4-pi/4*range, pi/2*procID%4+pi/4*range] """
+    sampling_center=float(np.mod(int(hparams['procID']),4))*np.pi/2 #each id is centered on a pi/2 multiples (either, ascending or descending slope or top/bottom peak)
+    half_range=float(hparams['range'])*np.pi/4 #each client data range is over range=pi/2
+    sampling_interval_min=sampling_center-half_range
+    sampling_interval_max=sampling_center+half_range
+    
+    print('DATA PIPELINE X range=', (sampling_interval_min, sampling_interval_max)) 
     dataset_sample=nb_train_samples if isTraining else nb_val_samples
     x=np.random.uniform(size=dataset_sample, low=sampling_interval_min, high=sampling_interval_max)
     targets = target_curve(x)
+    """
+    # DEBUG purpose: uncomment to plot clients data
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots( nrows=1, ncols=1 )
+    plt.plot(x,targets, '+')
+    plt.savefig('/home/alex/Bureau/'+str(hparams['procID'])+'.png')    
+    """
     dataset = tf.data.Dataset.from_tensor_slices((x, targets)).batch(batch_size).prefetch(1)
     return dataset
 

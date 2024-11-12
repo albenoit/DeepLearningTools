@@ -3,11 +3,22 @@ import tensorflow as tf
 def model(usersettings):
 
     input_dim=1
-    x=tf.keras.Input(shape=[input_dim], name='input')
+    x_in=tf.keras.Input(shape=[input_dim], name='input')
 
-    h=tf.keras.layers.Dense(units=usersettings.hparams['hiddenNeurons'],
-                    activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01))(x)#tf.keras.regularizers.l2(0.01))(data)
+    if usersettings.hparams['hiddenNeurons']>0:
+        h=tf.keras.layers.Dense(units=usersettings.hparams['hiddenNeurons'],
+                                activation=usersettings.hparams['activation'],
+                                kernel_initializer=tf.keras.initializers.GlorotNormal(),
+                                bias_initializer=tf.keras.initializers.Constant(0.1),
+                                kernel_regularizer=tf.keras.regularizers.l2(0.01))(x)
+    else:
+        h=x_in
     pred=tf.keras.layers.Dense(units=input_dim,
-                    activation=None, kernel_regularizer=tf.keras.regularizers.l2(0.01))(h)
-    myModel=tf.keras.Model(inputs=x, outputs=[pred])
+                               activation=None,
+                               kernel_initializer=tf.keras.initializers.GlorotNormal(),
+                               bias_initializer=tf.keras.initializers.Constant(0.1),
+                               name='output')(h)
+    myModel=tf.keras.Model(inputs=x_in, outputs=[pred])
     return myModel
+
+
