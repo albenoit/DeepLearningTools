@@ -1,5 +1,5 @@
 BootStrap: docker
-From: tensorflow/serving:2.11.0-gpu
+From: tensorflow/serving:2.14.1
 
 %runscript
     exec /usr/bin/tensorflow_model_server "$@"

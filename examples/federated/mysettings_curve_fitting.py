@@ -45,7 +45,7 @@ hparams={
          'hiddenNeurons':0,#set the number of neurons per hidden layers
          'activation':'linear',
          'learningRate':0.05,
-         'nbEpoch':10, #when in federated learning mode, this represents the client number of local epochs to be performed for each round
+         'nbEpoch':1, #when in federated learning mode, this represents the client number of local epochs to be performed for each round
          'addNoise':False,#True, #set True to add noise to the target curve
          'range':0.5,
          'procID':3, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
@@ -91,7 +91,7 @@ monitored_loss_name='val_mean_absolute_error'
 raw_data_dir_train = ''
 raw_data_dir_val = ''
 raw_data_filename_extension=''
-nb_train_samples=100000 #manually adjust here the number of temporal items out of the temporal block size
+nb_train_samples=10000 #manually adjust here the number of temporal items out of the temporal block size
 nb_val_samples=10000
 steps_per_epoch=100
 validation_steps=10
@@ -201,6 +201,15 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     plt.savefig('/home/alex/Bureau/'+str(hparams['procID'])+'.png')    
     """
     dataset = tf.data.Dataset.from_tensor_slices((x, targets)).batch(batch_size).prefetch(1)
+
+    print("\n\n")
+    print("-------- DATASET GET_INPUT_PIPELINE ---------")
+    print("batch_size : ", batch_size)
+    print("len(x) : ", len(x))
+    print("len(val_data) : ", len(list(dataset)))
+    print("procID : ", hparams["procID"])
+    print("\n\n")
+
     return dataset
 
 """

@@ -123,7 +123,7 @@ def get_optimizer(model, loss, learning_rate):
     return optimizer
 
 def get_metrics(model, loss):
-  return [tf.keras.metrics.categorical_crossentropy, 'accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall(), tf.keras.metrics.AUC()]
+  return [tf.keras.metrics.binary_crossentropy, 'accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall(), tf.keras.metrics.AUC()]
 
 def get_total_loss(model):
     """a specific loss can be defined here or simply use a string that refers to a keras loss

@@ -120,6 +120,20 @@ def test_flower_simulation():
   result=start_federated_server.run(FLAGS)#, {'session_number':0, 'session_folder':sessionFolder})
   assert len(result.metrics_centralized['val_loss']) == expected_nb_rounds+1
 
+
+def test_flower_simulation_listiccfl():
+  expected_nb_rounds=1
+  FLAGS = start_federated_server.get_commands().parse_args([])
+  FLAGS.usersettings='examples/federated/mysettings_curve_fitting.py'
+  FLAGS.agregation='ListicCFL_strategy'
+  FLAGS.simulation=True
+  FLAGS.num_rounds=expected_nb_rounds
+  # run federated experiment in simulation mode
+  result=start_federated_server.run(FLAGS)#, {'session_number':0, 'session_folder':sessionFolder})
+  assert len(result.metrics_centralized['val_loss']) == expected_nb_rounds+1
+
+
+
 if __name__ == "__main__":
   print('Starting some test functions as demos, please consider running pytest like this :')
   print(' pytest test_framework.py OR FROM A CONTAINER, apptainer exec path/to/tf2_addons.sif pytest test_framework.py')

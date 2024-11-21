@@ -9,13 +9,11 @@
 # =========================================
 
 import os
-import random
 import configparser
-import tensorflow as tf
 import flwr as fl
 import numpy as np
 from deeplearningtools.tools.callbacks import define_callbacks
-from deeplearningtools.helpers.distance_network import deep_relative_trust, cosine_distance, l1, l2
+from deeplearningtools.helpers.distance_metrics.metrics import METRIC_SET, ModelMetric
 
 # -------------------------------------------
 # A custom Flower client able to manage warm restart,
@@ -58,9 +56,10 @@ class FlClient(fl.client.NumPyClient):
         #initialized a first time to allow for model first evaluation
         self.initial_value_threshold=monitored_metric_initial_threshold
         self.all_callbacks_dict=define_callbacks(self.settings, self.model,self.val_data, self.train_iterations_per_epoch, self.file_writer, self.log_dir, metrics=self.metrics, previous_model_params=self.model.get_weights(), initial_value_threshold=self.initial_value_threshold)
-
         # some log info recovered on new round participation
         self.rounds_calls=0
+
+        self.dst_metrics = METRIC_SET.get_metrics(["fb-trusted_dst", "fb-model_cosine_dst"]) 
 
     def get_client_config_filename(self):
         """
@@ -152,11 +151,12 @@ class FlClient(fl.client.NumPyClient):
         print('## round : ', self.round)
         self.rounds_calls+=1 #one more round participation
         
-        #set updated weights
-        self.model.set_weights(parameters)
         # define each callbacks
         if self.round>0:
             self.all_callbacks_dict=define_callbacks(self.settings, self.model, self.val_data, self.train_iterations_per_epoch, self.file_writer, self.log_dir, metrics=self.metrics, previous_model_params=self.model.get_weights(), initial_value_threshold=self.initial_value_threshold)
+
+        #set updated weights
+        self.model.set_weights(parameters)
 
         #training for one epoch
         history=self.model.fit(
@@ -180,7 +180,7 @@ class FlClient(fl.client.NumPyClient):
             use_multiprocessing=False,
         )
         
-        self.model.track_weights_change(parameters, self.round)
+        change_from_global_metrics=self.model.track_weights_change(parameters, self.round, prefix='round_change_from_global', dst_metrics=self.dst_metrics)
         print('Client fit step done')
         print('-> FlClient.fit round result, history=', self.round,history.history)
 
@@ -188,15 +188,9 @@ class FlClient(fl.client.NumPyClient):
             self.history=history
         
         # prepare emitted logs
-        last_model_parameters=self.get_parameters()
         fit_log = { key:history.history[key][-1] for key in history.history.keys()} #{k: np.mean(v) for k, v in history.history.items()}
-        fit_log['trusted_distance'] = float(deep_relative_trust(first_network= last_model_parameters,
-                                                                second_network= parameters,
-                                                                return_drt_product=True)[0])
+        fit_log.update(change_from_global_metrics)
 
-        fit_log['cosine_distance'] = float(cosine_distance(last_model_parameters, parameters))
-        fit_log['l2_distance'] = float(l2(last_model_parameters, parameters))
-        fit_log['l1_distance'] = float(l1(last_model_parameters, parameters))
         fit_log['client_id'] = self.settings.hparams['procID']
         
         # TODO, maybe check earlier if some metrics return non compatible types
@@ -214,7 +208,7 @@ class FlClient(fl.client.NumPyClient):
         #update self.initial_value_threshold wrt last monitored value
         #-> will trigger checkpointing/model export only if best results are obtained
         self.initial_value_threshold=fit_log[self.settings.monitored_loss_name]
-        
+
         return self.model.get_weights(), int(self.train_iterations_per_epoch*self.settings.batch_size), fit_log
 
     def evaluate(self, parameters, config):
@@ -248,61 +242,6 @@ class FlClient(fl.client.NumPyClient):
             if reported_loss_noprefix in losses.keys():
                 reported_loss=reported_loss_noprefix
         print('FlClient.evaluate monitored losses:', reported_loss)
-        
+
         return losses[reported_loss],int(self.val_iterations_per_epoch*self.settings.batch_size), losses#self.history.history#loss_dict
-
-# ------------------------------------------------------------------------------------------------------------------------------
-# A generic Flower client class, from https://github.com/adap/flower/blob/main/examples/simulation_tensorflow/sim.ipynb
-# ------------------------------------------------------------------------------------------------------------------------------
-
-class FlowerClient_(fl.client.NumPyClient):
-    def __init__(self, model, x_train, y_train, x_val, y_val) -> None:
-        """
-        Constructor for the FlowerClient. It merges a model and data sources
-        allocated externally into a single Flower client.
-
-        :param model: Model object.
-        :param x_train: Training data features.
-        :param y_train: Training data labels.
-        :param x_val: Validation data features.
-        :param y_val: Validation data labels.
-        """
-        self.model = model
-        self.x_train, self.y_train = x_train, y_train
-        self.x_val, self.y_val = x_val, y_val
-
-    def get_parameters(self, config):
-        """
-        Get the FL client model parameters.
-
-        :param config: Configuration dictionary.
-        :return: Model parameters.
-        """
-        return self.model.get_weights()
-
-    def fit(self, parameters, config):
-        """
-        Fit the FL client model.
-
-        :param parameters: Model parameters.
-        :param config: Configuration dictionary.
-        :return: Tuple containing updated model parameters, number of training samples, 'and an empty dictionary'. TODO utility of this empty dict
-        """
-        self.model.set_weights(parameters)
-        self.model.fit(self.x_train, self.y_train, epochs=1, verbose=2)
-        return self.model.get_weights(), len(self.x_train), {}
-
-    def evaluate(self, parameters, config):
-        """
-        Evaluate the FL client model.
-
-        :param parameters: Model parameters.
-        :param config: Configuration dictionary.
-        :return: Tuple containing loss, number of validation samples, and a dictionary with accuracy.
-        """
-        self.model.set_weights(parameters)
-        loss, acc = self.model.evaluate(self.x_val, self.y_val, verbose=2)
-        return loss, len(self.x_val), {"accuracy": acc}
-
-
 

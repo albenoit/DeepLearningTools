@@ -51,14 +51,14 @@ hparams={
          'simMetric':'nb-trusted_dst',
          'federated':'FedAvg',#set '' if not making use of federated learning or set the flower strategy name of a custom one from deeplearningtools.helpers
          'minCl':10,#minimum number of clients to allow for federated learning
-         'minFit':5,#minimum number of clients to allow for a federated learning fitting round
+         'minFit':10,#minimum number of clients to allow for a federated learning fitting round
          'learningRate':0.001,
          'nbEpoch':4,#sets either the number of epoch per cleint for each federated round OR sets the total number of epoch for centralised learning
          'procID':0, #index of learning client in the federated learning setup, may be automatically overloaded on the next few lines...
          'dropout':0.1, #used in the model definition 0.0 mean, no unit is dropped out (all data is kept)
          'dataConfig':3, #set the data samples configuration to use, 1, 2 or 3
          'model':'cnn',#set the model to use, 'cnn' to use a convnet model or 'mlp' to rely on a sompler multilayer perceptron
-         'fitConfig':'wnn', #set the fitting configuration to use for each client, 'wnn' to send them a weighted sum of their nearest cluster, '1nn' to assign clsest cluster, anyother thing to use the global model
+         'fitConfig':'1nn', #set the fitting configuration to use for each client, 'wnn' to send them a weighted sum of their nearest cluster, '1nn' to assign clsest cluster, anyother thing to use the global model
         }
 
 ''''set the list of GPUs involved in the process. HOWTO:
@@ -109,15 +109,10 @@ early_stopping_patience=10
 maybe_download_data()
 #switch from federated learning to centralised depending on hyperparameter setting
 if enable_federated_learning:
-    client_id = int(hparams['procID']) + 1 #client ID is 0-based while dataset is 1-based
+    client_id = int(hparams['procID']) #client ID is 0-based while dataset is 1-based
     #look for a single file related to a specific client
-    #if 'isFLserver' in hparams.keys() and hparams['isFLserver']==True:
-    raw_data_dir_train = os.path.join(os.path.expanduser("~"),'workspace/unbiasedfederatedlearning_lynda_phd-current/deeplearningtools/datasamples/federated_mnist_100/','mnist_train_' + str(client_id-1) + '.csv')
-    raw_data_dir_val = os.path.join(os.path.expanduser("~"),'workspace/unbiasedfederatedlearning_lynda_phd-current/deeplearningtools/datasamples/federated_mnist_100/','mnist_test_' + str(client_id-1) + '.csv')
-    #raw_data_dir_train = os.path.join(os.path.expanduser("~"),'/home/mickael/Projets/DeepLearningTools/deeplearningtools/datasamples/federated_mnist/mnist-data/', 'config'+str(hparams['dataConfig'])+'/', 'client'+str(client_id)+'/', 'client'+str(client_id)+'.csv')
-    #raw_data_dir_val = os.path.join(os.path.expanduser("~"),'/home/mickael/Projets/DeepLearningTools/deeplearningtools/datasamples/federated_mnist_100/','mnist_test.csv')
-    if 'isFLserver' in hparams.keys() and hparams['isFLserver']:
-        raw_data_dir_val = os.path.join(os.path.expanduser("~"),'workspace/unbiasedfederatedlearning_lynda_phd-current/deeplearningtools/datasamples/federated_mnist_100/','mnist_test.csv')
+    raw_data_dir_train = '/home/mickael/Projets/DeepLearningTools/deeplearningtools/datasamples/federated_mnist_100/'
+    raw_data_dir_val = '/home/mickael/Projets/DeepLearningTools/deeplearningtools/datasamples/federated_mnist_100/'
 else:
     #look for all client files as a single dataset as for centralised learning
     raw_data_dir_train = os.path.join(os.path.expanduser("~"),'.keras/datasets/mnist-data/', 'config'+str(hparams['dataConfig']))
@@ -229,7 +224,13 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
     '''
     print('Creating data pipeline, loading data from ', raw_data_files_folder, ' is training mode : ', isTraining)   
     
-
+    if 'isFLserver' in hparams.keys() and hparams['isFLserver']:
+        raw_data_files_folder = os.path.join(raw_data_files_folder,'mnist_test.csv')
+    elif isTraining:
+        raw_data_files_folder = os.path.join(raw_data_files_folder, 'mnist_train_'+str(hparams["procID"])+'.csv')
+    else:
+        raw_data_files_folder = os.path.join(raw_data_files_folder, 'mnist_test_'+str(hparams["procID"])+'.csv')
+    
     dataframe = load_dataframes(raw_data_files_folder)
     features = dataframe.iloc[:,1:]
     targets = dataframe.iloc[:,:1]
@@ -242,22 +243,6 @@ def get_input_pipeline(raw_data_files_folder, isTraining, batch_size, nbEpoch):
 
     return dataset.shuffle(batch_size*20).batch(batch_size, drop_remainder=True).prefetch(1)
 
-
-def get_all_test_data(raw_data_files_folder, isTraining, batch_size, nbEpoch):
-    print('Creating data pipeline, loading data from ', raw_data_files_folder, ' is training mode : ', isTraining)
-      
-    dataframe = load_dataframes(raw_data_files_folder)
-    features = dataframe.iloc[:,1:]
-    targets = dataframe.iloc[:,:1]
-
-    #convert each sample from shape (784,1) to (28,28,1) to allow for convolutional layers processing
-    #also, data samples are normalised to range [0;1] (casted to float) instead of the original uint8 format with range [0;255]
-    dataset = tf.data.Dataset.from_tensor_slices((features, targets))
-    def reshape_to_2D_normalise(sample, label):
-        return tf.cast(tf.reshape(sample, [28, 28, 1]), tf.float32)/255.0, label
-    dataset=dataset.map(reshape_to_2D_normalise)
-
-    return features, targets, dataset
 
 
 '''

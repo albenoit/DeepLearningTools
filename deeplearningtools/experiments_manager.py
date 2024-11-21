@@ -200,11 +200,11 @@ def build_run_training_session(cid: str=''):
     with open(os.path.join(os.getcwd(), 'git_info.yaml'), 'w') as outfile:
       yaml.dump(git_info, outfile, default_flow_style=False)
   except Exception as e:
-    print("Could'nt be able to retrieve the git version. Error report:", e)
+    print("Could not be retrieve the git version. Error report:", e)
   # load configuration, expects the process working directory
   # to contain all the necessary files including:
   # - the configuration file (experiment_settings.py)
-  # - optionally a 'checkpoints' folder in order to pursue training (recover from previous interruption) 
+  # - optionally a 'checkpoints' folder in order to pursue training (recover from previous interruption)
   settings_file=os.path.join(os.getcwd(), SETTINGSFILE_COPY_NAME)
   if cid!='':
     message='\nINFO: cid {cid} with cwd={cwd} and job_session_folder in locals={l} or job_session_folder in globals={g}'.format(cid=cid,
@@ -277,10 +277,7 @@ def build_run_training_session(cid: str=''):
     val_data = usersettings.get_input_pipeline(raw_data_files_folder=usersettings.raw_data_dir_val,
                                                       isTraining=False, batch_size=usersettings.batch_size,
                                                       nbEpoch=usersettings.nbEpoch)
-    print('train_data', train_data)
-    print('val_data', val_data)
-    #data_it=train_data.as_numpy_iterator()
-    #print("ELEMENTS", list(data_it))
+
     # if reading from a kafka log queue:
     if usersettings.consume_data_from_kafka: 
       print("Original dataset specs:\n->", train_data.element_spec)
@@ -518,9 +515,12 @@ def build_run_training_session(cid: str=''):
     # Start Flower client
     federated_learner=FlClient(usersettings, model, train_data, train_iterations_per_epoch, val_data, val_iterations_per_epoch, workers, file_writer, log_dir, metrics)
     if 'cid' not in usersettings.hparams.keys(): #if not in simulation mode, start flower client
-      print('CLient is real runner')
+      print('Client is real runner')
       fl.client.start_client(server_address=usersettings.federated_learning_server_address, client=federated_learner.to_client())
       history=federated_learner.history
+      print("/////////////////////////////////////////////////")
+      print("federated_learner : ", federated_learner)
+      print("federated_learner.history : ", federated_learner.history)
     else:
       # if function is called for flower simulation, then only the client instance is returned
       print('Client is simulated runner')
@@ -801,11 +801,19 @@ def run(FLAGS, train_config_script=None, external_hparams:dict={}):
       usersettings, sessionFolderBase = loadExperimentsSettings(settings_file,
                                                 restart_from_sessionFolder=FLAGS.model_dir,
                                                 isServingModel=False)
+      if "resolution" in external_hparams:
+        usersettings.hparams["resolution"] = external_hparams["resolution"]
       if sessionFolder == "":
         sessionFolder = create_session_folder(sessionFolderBase=sessionFolderBase, usersettings=usersettings) 
 
-      sessionFolder=os.path.join(os.getcwd(), sessionFolder, "expe_" + str(session_number))
-      os.makedirs(sessionFolder)
+      parent_sessionFolder=os.path.join(os.getcwd(), sessionFolder)
+      parent_sessionFolder=sessionFolder
+      sessionFolder = os.path.join(parent_sessionFolder, "expe_" + str(session_number))
+      try:
+        os.makedirs(parent_sessionFolder, exist_ok=True)
+        os.makedirs(sessionFolder)
+      except:
+        pass
       
       print('Preparing a single experiment:')
       print("--- current working directory",os.getcwd())

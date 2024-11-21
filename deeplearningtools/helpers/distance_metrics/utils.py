@@ -7,6 +7,17 @@ def default_distances_to_similarities(distances:np.ndarray) -> np.ndarray:
     #return np.power(np.log(1+(1/(distances+1))), 2) * 100
     #return np.nanmax(distances) - distances
     return dist_to_sim__normalized_power(distances, 3)
+    #return dist_to_sim__power(distances, 3)
+
+
+def dist_to_sim__power(distances:np.ndarray, p:float):
+    mini, maxi = np.nanmin(distances), np.nanmax(distances)
+    if mini == maxi: return distances
+
+    n_distances = maxi - distances
+    n_distances = np.power(n_distances, p)
+
+    return n_distances
 
 def dist_to_sim__normalized_power(distances:np.ndarray, p:float):
     mini, maxi = np.nanmin(distances), np.nanmax(distances)
