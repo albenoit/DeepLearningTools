@@ -36,7 +36,10 @@ This work has been facilitated by intensive experiments conducted on the JeanZay
 * Kafka data pipeline management: users can produce data to a kafka pipeline and the model optimization can be fed by kafka pipelines ! *Have a look at install/kafka/README.md*. For a given and working centralized project, your experiment config file contains all information to produce data on other ressources.
 * *Have a look at the examples folder to start from typical ML problem examples.*
 * **News** : 
-  * Federated Learning compliant
+  * Federated Learning (FL) compliant!
+    * standard FL relying on the standard methods proposed by the Flower library
+    * An original contribution introducing Clustered Federated learning for both enhancing FL convergence AND discover client communities [paper](https://hal.science/hal-04696543)
+
   * **XAI** (eXplainable Artificial Intelligence) compliant, check out our semantic segmentation XAI in *examples/xaie* [ICPR-XAIE2022 paper](https://hal.archives-ouvertes.fr/hal-03719597).
 
 ## Approach:
